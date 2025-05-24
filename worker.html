@@ -209,9 +209,15 @@
                 <h3>Instructions:</h3>
                 <ul>
                     <li>Check the boxes for shifts you're available to work</li>
-                    <li><strong>Weekend shifts (Friday evening - Saturday evening) pay premium rates 💰</strong></li>
+                    <li><strong>Premium shifts (Friday evening → Saturday evening) pay extra 💰</strong></li>
                     <li>M = Morning shift, E = Evening shift, N = Night shift</li>
-                    <li>You can update your preferences anytime before the schedule is finalized</li>
+                    <li><strong>New Rules:</strong>
+                        <ul>
+                            <li>You can only work 1 shift per day (even if you select all 3)</li>
+                            <li>No morning shift the day after working night shift</li>
+                            <li>Premium pay applies Friday evening through Saturday evening only</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
 
@@ -267,7 +273,8 @@
                 
                 const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
                 const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
-                const isWeekendPremium = (day === 5 || day === 6 || day === 12 || day === 13); // Friday/Saturday of both weeks
+                // Premium shifts: Friday evening to Saturday evening (days 5-6 and 12-13)
+                const isWeekendPremium = (day === 5) || (day === 6) || (day === 12) || (day === 13);
                 
                 gridHTML += `
                     <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
@@ -285,7 +292,7 @@
                         
                         <div class="shift-option">
                             <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})">
-                            <label for="evening_${day}">E</label>
+                            <label for="evening_${day}">E ${(day === 5 || day === 12) ? '💰' : ''}</label>
                         </div>
                         
                         <div class="shift-option">
@@ -293,7 +300,7 @@
                             <label for="night_${day}">N</label>
                         </div>
                         
-                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium</div>' : ''}
+                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
                     </div>
                 `;
             }
