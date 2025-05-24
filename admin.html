@@ -429,7 +429,7 @@
                         <div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">
                             <strong>Scheduling Rules Applied:</strong><br>
                             • Max 1 shift per day<br>
-                            • <strong>Max 2 night shifts per week ⭐</strong><br>
+                            • Max 2 night shifts per week<br>
                             • No morning after night shift<br>
                             • Premium: Fri evening → Sat evening only
                         </div>
@@ -501,18 +501,20 @@
             const schedule = {};
             const workers = approvedSubmissions.map(s => s.name);
             
-            // Track night shifts per worker per week (very important rule!)
-            const nightShiftCountWeek1 = {};
-            const nightShiftCountWeek2 = {};
+            // Track shifts per worker
+            const nightShiftCount = {};
             const weekendShiftCount = {};
             const totalShiftCount = {};
+            const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
+            const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
             const assignedWorkers = {}; // Track who is assigned to which shifts
             
             workers.forEach(worker => {
-                nightShiftCountWeek1[worker] = 0;
-                nightShiftCountWeek2[worker] = 0;
+                nightShiftCount[worker] = 0;
                 weekendShiftCount[worker] = 0;
                 totalShiftCount[worker] = 0;
+                nightShiftsWeek1[worker] = 0;
+                nightShiftsWeek2[worker] = 0;
             });
 
             // Generate schedule for 14 days
@@ -560,15 +562,15 @@
                         }
                     }
 
-                    // Rule 3: VERY IMPORTANT - Maximum 2 night shifts per week!
+                    // Rule 3: Maximum 2 night shifts per week
                     if (shift === 'night') {
                         availableWorkers = availableWorkers.filter(worker => {
-                            if (day < 7) {
+                            if (day <= 6) {
                                 // Week 1 (days 0-6)
-                                return nightShiftCountWeek1[worker] < 2;
+                                return nightShiftsWeek1[worker] < 2;
                             } else {
                                 // Week 2 (days 7-13)
-                                return nightShiftCountWeek2[worker] < 2;
+                                return nightShiftsWeek2[worker] < 2;
                             }
                         });
                     }
@@ -580,27 +582,24 @@
                     let selectedWorker;
 
                     if (shift === 'night') {
-                        // For night shifts, prioritize workers with fewer night shifts in current week
+                        // For night shifts, prioritize workers with fewer night shifts (considering both weeks)
                         selectedWorker = availableWorkers.reduce((best, current) => {
-                            const currentWeekNights = day < 7 ? nightShiftCountWeek1[current] : nightShiftCountWeek2[current];
-                            const bestWeekNights = day < 7 ? nightShiftCountWeek1[best] : nightShiftCountWeek2[best];
+                            const currentWeekNights = day <= 6 ? nightShiftsWeek1[current] : nightShiftsWeek2[current];
+                            const bestWeekNights = day <= 6 ? nightShiftsWeek1[best] : nightShiftsWeek2[best];
                             
-                            if (currentWeekNights < bestWeekNights) {
-                                return current;
-                            } else if (currentWeekNights === bestWeekNights) {
-                                // If same week nights, prioritize by total nights across both weeks
-                                const currentTotalNights = nightShiftCountWeek1[current] + nightShiftCountWeek2[current];
-                                const bestTotalNights = nightShiftCountWeek1[best] + nightShiftCountWeek2[best];
-                                return currentTotalNights < bestTotalNights ? current : best;
+                            // First priority: fewer nights this week
+                            if (currentWeekNights !== bestWeekNights) {
+                                return currentWeekNights < bestWeekNights ? current : best;
                             }
-                            return best;
+                            // Second priority: fewer total nights overall
+                            return nightShiftCount[current] < nightShiftCount[best] ? current : best;
                         });
                         
-                        // Update night shift count for appropriate week
-                        if (day < 7) {
-                            nightShiftCountWeek1[selectedWorker]++;
+                        nightShiftCount[selectedWorker]++;
+                        if (day <= 6) {
+                            nightShiftsWeek1[selectedWorker]++;
                         } else {
-                            nightShiftCountWeek2[selectedWorker]++;
+                            nightShiftsWeek2[selectedWorker]++;
                         }
                     } else if (isPremiumShift) {
                         // For weekend premium shifts, prioritize workers with fewer weekend shifts
@@ -622,11 +621,11 @@
             }
 
             generatedScheduleData = schedule;
-            displaySchedule(schedule, nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount);
-            showAlert('Schedule generated successfully with all rules applied! ✅', 'success');
+            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2);
+            showAlert('Schedule generated successfully with all rules applied!', 'success');
         }
 
-        function displaySchedule(schedule, nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount) {
+        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2) {
             const container = document.getElementById('generatedSchedule');
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - startDate.getDay());
@@ -647,9 +646,9 @@
 
             // Shift rows with hours
             const shifts = [
-                { name: 'Morning<br><small>07:00-15:00</small>', key: 'morning', class: 'shift-morning' },
-                { name: 'Evening<br><small>15:00-23:00</small>', key: 'evening', class: 'shift-evening' },
-                { name: 'Night<br><small>23:00-07:00</small>', key: 'night', class: 'shift-night' }
+                { name: 'Morning (07-15)', key: 'morning', class: 'shift-morning' },
+                { name: 'Evening (15-23)', key: 'evening', class: 'shift-evening' },
+                { name: 'Night (23-07)', key: 'night', class: 'shift-night' }
             ];
 
             shifts.forEach(shift => {
@@ -665,11 +664,11 @@
 
             container.innerHTML = html;
 
-            // Show statistics with weekly night shift breakdown
-            displayScheduleStats(nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount, schedule);
+            // Show statistics
+            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2);
         }
 
-        function displayScheduleStats(nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount, schedule) {
+        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2) {
             const statsContainer = document.getElementById('scheduleStats');
             const statsContent = document.getElementById('statsContent');
             
@@ -690,15 +689,26 @@
             });
             html += '</div>';
             
-            // Night shift distribution by week (VERY IMPORTANT!)
-            html += '<div class="stat-item" style="border: 2px solid #dc3545;"><h5>🌙 Night Shifts per Week (Max 2!)</h5>';
-            Object.keys(nightShiftCountWeek1).forEach(worker => {
-                const week1 = nightShiftCountWeek1[worker];
-                const week2 = nightShiftCountWeek2[worker];
-                const total = week1 + week2;
-                const week1Status = week1 <= 2 ? '✅' : '❌';
-                const week2Status = week2 <= 2 ? '✅' : '❌';
-                html += `<div>${worker}: W1: ${week1} ${week1Status} | W2: ${week2} ${week2Status} | Total: ${total}</div>`;
+            // Night shift distribution - Total
+            html += '<div class="stat-item"><h5>Total Night Shifts (2 weeks)</h5>';
+            Object.entries(nightShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} nights</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 1
+            html += '<div class="stat-item"><h5>Night Shifts - Week 1 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 2
+            html += '<div class="stat-item"><h5>Night Shifts - Week 2 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
             });
             html += '</div>';
 
@@ -716,15 +726,25 @@
             html += `<div>Unassigned: ${unassignedShifts}</div>`;
             html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
             
-            // Check if night shift rule is violated
-            const violations = Object.keys(nightShiftCountWeek1).filter(worker => 
-                nightShiftCountWeek1[worker] > 2 || nightShiftCountWeek2[worker] > 2
-            );
-            if (violations.length > 0) {
-                html += `<div style="color: #dc3545; font-weight: bold;">⚠️ Night shift violations: ${violations.length}</div>`;
+            // Rule compliance check
+            const ruleViolations = [];
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 1`);
+            });
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 2`);
+            });
+            
+            if (ruleViolations.length > 0) {
+                html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
+                ruleViolations.forEach(violation => {
+                    html += `<div>${violation}</div>`;
+                });
+                html += `</div>`;
             } else {
-                html += `<div style="color: #28a745; font-weight: bold;">✅ All night shift limits respected</div>`;
+                html += `<div style="color: green; margin-top: 10px;"><strong>✅ All rules complied</strong></div>`;
             }
+            
             html += '</div>';
 
             statsContent.innerHTML = html;
