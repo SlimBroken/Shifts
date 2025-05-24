@@ -187,19 +187,18 @@
             width: 100%;
             margin: 10px 0;
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .excel-table th,
         .excel-table td {
             border: 1px solid #dee2e6;
-            padding: 8px;
+            padding: 6px 4px;
             text-align: center;
+            min-width: 60px;
         }
 
         .excel-table th {
-            background: #007bff;
-            color: white;
             font-weight: bold;
         }
 
@@ -455,6 +454,7 @@
                 html += `
                     <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
+                        <p><strong>Email:</strong> ${submission.email}</p>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
                         <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
@@ -766,38 +766,61 @@
             html += '<div id="excelTable" style="border: 2px solid #007bff; border-radius: 8px; overflow: hidden; margin: 10px 0;">';
             html += '<table class="excel-table">';
             
-            // Excel table header
+            // Excel table header - dates
             html += '<thead>';
             html += '<tr>';
-            html += '<th>Date</th>';
-            html += '<th>Day</th>';
-            html += '<th>Morning (07-15)</th>';
-            html += '<th>Evening (15-23)</th>';
-            html += '<th>Night (23-07)</th>';
-            html += '<th>Premium</th>';
-            html += '</tr>';
-            html += '</thead>';
-            
-            // Excel table body
-            html += '<tbody>';
+            html += '<th style="background: #343a40;"></th>'; // Empty corner cell
             for (let day = 0; day < 14; day++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
-                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
-                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                const dateStr = currentDate.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
                 const isPremium = schedule[day].isWeekendPremium;
-                
-                const rowClass = isPremium ? 'premium-row' : '';
-                
-                html += `<tr class="${rowClass}">`;
-                html += `<td>${dateStr}</td>`;
-                html += `<td>${dayName}</td>`;
-                html += `<td>${schedule[day].morning || ''}</td>`;
-                html += `<td>${schedule[day].evening || ''}</td>`;
-                html += `<td>${schedule[day].night || ''}</td>`;
-                html += `<td>${isPremium ? 'Yes' : 'No'}</td>`;
-                html += '</tr>';
+                const cellStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                html += `<th style="${cellStyle}">${dateStr}</th>`;
             }
+            html += '</tr>';
+            
+            // Day names row
+            html += '<tr>';
+            html += '<th style="background: #343a40;"></th>'; // Empty corner cell
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const isPremium = schedule[day].isWeekendPremium;
+                const cellStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                html += `<th style="${cellStyle}">${dayName}</th>`;
+            }
+            html += '</tr>';
+            html += '</thead>';
+            
+            // Excel table body - shifts as rows
+            html += '<tbody>';
+            
+            const shifts = [
+                { name: 'Morning', key: 'morning', style: 'background: #ffebee; color: #000;' },
+                { name: 'Evening', key: 'evening', style: 'background: #e8f5e8; color: #000;' },
+                { name: 'Night', key: 'night', style: 'background: #e3f2fd; color: #000;' }
+            ];
+
+            shifts.forEach(shift => {
+                html += '<tr>';
+                html += `<th style="background: #343a40; color: white;">${shift.name}</th>`;
+                
+                for (let day = 0; day < 14; day++) {
+                    const worker = schedule[day][shift.key];
+                    const isPremium = schedule[day].isWeekendPremium;
+                    let cellStyle = shift.style;
+                    
+                    if (isPremium) {
+                        cellStyle = 'background: #fff3cd; color: #000; font-weight: bold;';
+                    }
+                    
+                    html += `<td style="${cellStyle}">${worker || ''}</td>`;
+                }
+                html += '</tr>';
+            });
+            
             html += '</tbody>';
             html += '</table>';
             html += '</div>';
@@ -806,10 +829,10 @@
             html += '<strong>💡 Excel Tips:</strong><br>';
             html += '• Click "Copy to Clipboard" button above for instant copy<br>';
             html += '• Or select the entire table and copy (Ctrl+C)<br>';
-            html += '• In Excel, paste (Ctrl+V) - it will automatically format as a table<br>';
-            html += '• Premium shifts are highlighted in yellow<br>';
+            html += '• In Excel, paste (Ctrl+V) - maintains all formatting and colors<br>';
+            html += '• Premium shifts (yellow) are Friday evening → Saturday evening<br>';
             html += '• Empty cells indicate unassigned shifts<br>';
-            html += '• You can then format, add borders, or modify as needed in Excel';
+            html += '• Each shift type has its own color for easy identification';
             html += '</div>';
             
             html += '</div>';
@@ -973,26 +996,47 @@
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - startDate.getDay());
 
-            // Create tab-separated text for Excel
-            let excelText = 'Date\tDay\tMorning (07-15)\tEvening (15-23)\tNight (23-07)\tPremium\n';
+            // Create tab-separated text for Excel in horizontal format
+            let excelText = '\t'; // Empty corner cell
 
+            // Header row 1 - Dates
             for (let day = 0; day < 14; day++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
-                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
-                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
-                const isPremium = generatedScheduleData[day].isWeekendPremium;
-
-                excelText += `${dateStr}\t${dayName}\t`;
-                excelText += `${generatedScheduleData[day].morning || ''}\t`;
-                excelText += `${generatedScheduleData[day].evening || ''}\t`;
-                excelText += `${generatedScheduleData[day].night || ''}\t`;
-                excelText += `${isPremium ? 'Yes' : 'No'}\n`;
+                const dateStr = currentDate.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                excelText += dateStr + '\t';
             }
+            excelText += '\n\t'; // New line and empty corner cell for row 2
+
+            // Header row 2 - Day names
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                excelText += dayName + '\t';
+            }
+            excelText += '\n';
+
+            // Data rows - each shift type as a row
+            const shifts = [
+                { name: 'Morning', key: 'morning' },
+                { name: 'Evening', key: 'evening' },
+                { name: 'Night', key: 'night' }
+            ];
+
+            shifts.forEach(shift => {
+                excelText += shift.name + '\t'; // Shift name as row header
+                
+                for (let day = 0; day < 14; day++) {
+                    const worker = generatedScheduleData[day][shift.key];
+                    excelText += (worker || '') + '\t';
+                }
+                excelText += '\n';
+            });
 
             // Copy to clipboard
             navigator.clipboard.writeText(excelText).then(() => {
-                showAlert('Schedule copied to clipboard! You can now paste it directly into Excel (Ctrl+V)', 'success');
+                showAlert('Horizontal schedule format copied to clipboard! Paste into Excel (Ctrl+V) - days as columns, shifts as rows', 'success');
             }).catch(err => {
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
@@ -1001,7 +1045,7 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showAlert('Schedule copied to clipboard! You can now paste it directly into Excel (Ctrl+V)', 'success');
+                showAlert('Horizontal schedule format copied to clipboard! Paste into Excel (Ctrl+V) - days as columns, shifts as rows', 'success');
             });
         }
 
