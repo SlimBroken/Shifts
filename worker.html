@@ -220,10 +220,7 @@
                 <input type="text" id="workerName" placeholder="Enter your full name" required>
             </div>
 
-            <div class="form-group">
-                <label for="workerEmail">Email Address:</label>
-                <input type="email" id="workerEmail" placeholder="your.email@company.com" required>
-            </div>
+
 
             <h3>Select your available shifts:</h3>
             
@@ -277,17 +274,22 @@
                         <div class="day-label">${dayName}<br>${dateStr}</div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="morning_${day}">
+                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})">
+                            <label for="all_${day}"><strong>All</strong></label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})">
                             <label for="morning_${day}">M</label>
                         </div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="evening_${day}">
+                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})">
                             <label for="evening_${day}">E</label>
                         </div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="night_${day}">
+                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})">
                             <label for="night_${day}">N</label>
                         </div>
                         
@@ -301,11 +303,10 @@
 
         function submitPreferences() {
             const name = document.getElementById('workerName').value.trim();
-            const email = document.getElementById('workerEmail').value.trim();
             const notes = document.getElementById('workerNotes').value.trim();
 
-            if (!name || !email) {
-                showStatus('Please fill in your name and email.', 'error');
+            if (!name) {
+                showStatus('Please fill in your name.', 'error');
                 return;
             }
 
@@ -332,7 +333,6 @@
             const submission = {
                 id: Date.now(),
                 name,
-                email,
                 preferences,
                 notes,
                 submittedAt: new Date().toISOString(),
@@ -349,8 +349,8 @@
             
             let submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
             
-            // Remove any existing submission from this email
-            submissions = submissions.filter(s => s.email !== submission.email);
+            // Remove any existing submission from this name
+            submissions = submissions.filter(s => s.name !== submission.name);
             
             // Add new submission
             submissions.push(submission);
@@ -369,15 +369,14 @@
 
         function loadExistingPreferences() {
             // Auto-fill if user has previously submitted
-            const email = localStorage.getItem('userEmail');
-            if (email) {
-                document.getElementById('workerEmail').value = email;
+            const name = localStorage.getItem('userName');
+            if (name) {
+                document.getElementById('workerName').value = name;
                 
                 const submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
-                const existingSubmission = submissions.find(s => s.email === email);
+                const existingSubmission = submissions.find(s => s.name === name);
                 
                 if (existingSubmission) {
-                    document.getElementById('workerName').value = existingSubmission.name;
                     document.getElementById('workerNotes').value = existingSubmission.notes || '';
                     
                     // Load preferences
@@ -386,6 +385,7 @@
                             document.getElementById(`morning_${day}`).checked = existingSubmission.preferences[day].morning || false;
                             document.getElementById(`evening_${day}`).checked = existingSubmission.preferences[day].evening || false;
                             document.getElementById(`night_${day}`).checked = existingSubmission.preferences[day].night || false;
+                            updateAllShiftCheckbox(day);
                         }
                     }
                     
@@ -396,11 +396,11 @@
 
         function clearForm() {
             document.getElementById('workerName').value = '';
-            document.getElementById('workerEmail').value = '';
             document.getElementById('workerNotes').value = '';
             
             // Clear checkboxes
             for (let day = 0; day < 14; day++) {
+                document.getElementById(`all_${day}`).checked = false;
                 document.getElementById(`morning_${day}`).checked = false;
                 document.getElementById(`evening_${day}`).checked = false;
                 document.getElementById(`night_${day}`).checked = false;
@@ -424,12 +424,44 @@
             }
         }
 
-        // Save email for next time
-        document.getElementById('workerEmail').addEventListener('blur', function() {
+        // Save name for next time
+        document.getElementById('workerName').addEventListener('blur', function() {
             if (this.value) {
-                localStorage.setItem('userEmail', this.value);
+                localStorage.setItem('userName', this.value);
             }
         });
+
+        // Functions for "All Shifts" functionality
+        function toggleAllShifts(day) {
+            const allCheckbox = document.getElementById(`all_${day}`);
+            const morningCheckbox = document.getElementById(`morning_${day}`);
+            const eveningCheckbox = document.getElementById(`evening_${day}`);
+            const nightCheckbox = document.getElementById(`night_${day}`);
+            
+            if (allCheckbox.checked) {
+                morningCheckbox.checked = true;
+                eveningCheckbox.checked = true;
+                nightCheckbox.checked = true;
+            } else {
+                morningCheckbox.checked = false;
+                eveningCheckbox.checked = false;
+                nightCheckbox.checked = false;
+            }
+        }
+
+        function updateAllShiftCheckbox(day) {
+            const allCheckbox = document.getElementById(`all_${day}`);
+            const morningCheckbox = document.getElementById(`morning_${day}`);
+            const eveningCheckbox = document.getElementById(`evening_${day}`);
+            const nightCheckbox = document.getElementById(`night_${day}`);
+            
+            // If all three shifts are checked, check the "All" box
+            if (morningCheckbox.checked && eveningCheckbox.checked && nightCheckbox.checked) {
+                allCheckbox.checked = true;
+            } else {
+                allCheckbox.checked = false;
+            }
+        }
     </script>
 </body>
 </html>
