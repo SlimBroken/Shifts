@@ -61,6 +61,10 @@
             transform: translateY(-2px);
         }
 
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        }
+
         .btn-success {
             background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
         }
@@ -69,37 +73,67 @@
             background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(14, 1fr);
+            gap: 2px;
+            margin: 20px 0;
+            font-size: 12px;
+            overflow-x: auto;
         }
 
-        .password-section {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+        .grid-header {
+            background: #343a40;
+            color: white;
+            padding: 10px 5px;
             text-align: center;
+            font-weight: bold;
         }
 
-        .password-input {
+        .grid-cell {
+            background: #f8f9fa;
+            padding: 8px 4px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            min-height: 40px;
             display: flex;
-            gap: 10px;
             align-items: center;
             justify-content: center;
-            margin-top: 15px;
         }
 
-        .password-input input {
-            padding: 10px 15px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 16px;
-            width: 200px;
+        .shift-morning { background: #fff3cd; }
+        .shift-evening { background: #d4edda; }
+        .shift-night { background: #d1ecf1; }
+        .weekend-premium { background: #ffeeba; border: 2px solid #ffc107; }
+
+        .workers-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
         }
 
-        .hidden {
-            display: none !important;
+        .worker-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            transition: transform 0.2s ease;
+        }
+
+        .worker-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .worker-card h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .worker-card.approved {
+            border-color: #28a745;
+            background: #f8fff9;
         }
 
         .alert {
@@ -127,12 +161,25 @@
             border: 1px solid #ffeaa7;
         }
 
-        .worker-card {
-            background: #f8f9fa;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
             padding: 20px;
             border-radius: 10px;
-            border: 1px solid #dee2e6;
-            margin: 15px 0;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
         .excel-table {
@@ -154,6 +201,101 @@
         .excel-table th {
             font-weight: bold;
         }
+
+        .excel-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .excel-table .premium-row {
+            background: #fff3cd !important;
+        }
+
+        .copy-instructions {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
+        .schedule-stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .preferences-summary {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .admin-actions {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .password-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .password-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .password-input input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1200px) {
+            .schedule-grid {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .schedule-grid {
+                grid-template-columns: 80px repeat(14, 60px);
+                font-size: 9px;
+            }
+            
+            .grid-cell {
+                padding: 4px 2px;
+                min-height: 30px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -164,7 +306,7 @@
         </div>
 
         <div class="content">
-            <!-- Password Section -->
+            <!-- Simple Password Protection -->
             <div id="passwordSection" class="password-section">
                 <h3>🔒 Admin Access Required</h3>
                 <p>Enter the admin password to access the dashboard:</p>
@@ -172,126 +314,115 @@
                     <input type="password" id="adminPassword" placeholder="Enter admin password">
                     <button class="btn" onclick="checkPassword()">Access Dashboard</button>
                 </div>
-                <div style="margin-top: 10px;">
-                    <button class="btn btn-success" onclick="skipPassword()">Skip Password (Test)</button>
-                </div>
-                <small>Default password: admin123</small>
+                <small>Default password: admin123 (change this in production!)</small>
             </div>
 
-            <!-- Admin Content (Hidden by default) -->
             <div id="adminContent" class="hidden">
-                <div class="alert alert-success">
-                    Welcome to Admin Dashboard! 🎉
+                <!-- Statistics -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubmissions">0</div>
+                        <div>Total Submissions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pendingApprovals">0</div>
+                        <div>Pending Approvals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="approvedWorkers">0</div>
+                        <div>Approved Workers</div>
+                    </div>
                 </div>
 
-                <div style="margin: 20px 0;">
-                    <button class="btn btn-success" onclick="generateSchedule()">🔄 Generate Schedule</button>
-                    <button class="btn btn-secondary" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
+                <!-- Admin Actions -->
+                <div class="admin-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="btn btn-success" onclick="generateSchedule()">🔄 Generate Optimized Schedule</button>
+                    <button class="btn btn-secondary" onclick="exportSchedule()">📊 Export Schedule (CSV)</button>
+                    <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
-                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear Data</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
                 </div>
 
+                <!-- Worker Submissions -->
                 <h3>Worker Submissions</h3>
-                <div id="workerSubmissions">
-                    <div class="alert alert-info">Loading worker submissions...</div>
+                <div id="workerSubmissions" class="workers-list">
+                    <!-- Will be populated by JavaScript -->
                 </div>
 
+                <!-- Generated Schedule -->
                 <h3>Generated Schedule</h3>
                 <div id="generatedSchedule">
-                    <div class="alert alert-info">No schedule generated yet. Click "Generate Schedule" to create one.</div>
+                    <div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>
+                </div>
+
+                <!-- Schedule Statistics -->
+                <div id="scheduleStats" class="schedule-stats hidden">
+                    <h4>Schedule Statistics</h4>
+                    <div id="statsContent" class="stat-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Simple test to see if JavaScript is working
-        console.log("JavaScript is working!");
-
-        // Global variables
         let workerSubmissions = [];
         let generatedScheduleData = null;
+        const ADMIN_PASSWORD = 'admin123'; // Change this in production!
 
-        // Initialize when page loads
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Page loaded, initializing...");
             loadSubmissions();
-            
-            // Add enter key support
-            const passwordInput = document.getElementById('adminPassword');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        checkPassword();
-                    }
-                });
-                console.log("Enter key listener added");
-            }
+            document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
         });
 
         function checkPassword() {
-            console.log("checkPassword called");
-            
-            const passwordInput = document.getElementById('adminPassword');
-            const password = passwordInput ? passwordInput.value : '';
-            
-            console.log("Password length:", password.length);
-            
-            if (password === 'admin123') {
-                showAdminContent();
-            } else {
-                alert('Incorrect password. Try: admin123');
-                if (passwordInput) {
-                    passwordInput.value = '';
-                }
-            }
-        }
-
-        function skipPassword() {
-            console.log("skipPassword called");
-            showAdminContent();
-        }
-
-        function showAdminContent() {
-            console.log("showAdminContent called");
-            
-            const passwordSection = document.getElementById('passwordSection');
-            const adminContent = document.getElementById('adminContent');
-            
-            if (passwordSection && adminContent) {
-                passwordSection.style.display = 'none';
-                adminContent.style.display = 'block';
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('passwordSection').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
                 updateAdminDashboard();
-                console.log("Admin content should now be visible");
             } else {
-                console.error("Elements not found:", {
-                    passwordSection: !!passwordSection,
-                    adminContent: !!adminContent
-                });
-                alert("Error: Could not find page elements");
+                alert('Incorrect password. Please try again.');
+                document.getElementById('adminPassword').value = '';
             }
         }
 
         function loadSubmissions() {
-            try {
-                const stored = localStorage.getItem('shiftSubmissions');
-                workerSubmissions = stored ? JSON.parse(stored) : [];
-                console.log("Loaded submissions:", workerSubmissions.length);
-            } catch (error) {
-                console.error("Error loading submissions:", error);
-                workerSubmissions = [];
-            }
+            // Load from localStorage (in production, this would be from GitHub or a database)
+            const stored = localStorage.getItem('shiftSubmissions');
+            workerSubmissions = stored ? JSON.parse(stored) : [];
+        }
+
+        function saveSubmissions() {
+            localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+        }
+
+        function refreshData() {
+            loadSubmissions();
+            updateAdminDashboard();
+            showAlert('Data refreshed successfully!', 'success');
         }
 
         function updateAdminDashboard() {
-            console.log("updateAdminDashboard called");
+            document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
+            document.getElementById('pendingApprovals').textContent = 
+                workerSubmissions.filter(s => !s.approved).length;
+            document.getElementById('approvedWorkers').textContent = 
+                workerSubmissions.filter(s => s.approved).length;
+
             displayWorkerSubmissions();
         }
 
         function displayWorkerSubmissions() {
             const container = document.getElementById('workerSubmissions');
-            if (!container) return;
-
+            
             if (workerSubmissions.length === 0) {
                 container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
                 return;
@@ -299,15 +430,48 @@
 
             let html = '';
             workerSubmissions.forEach(submission => {
-                const availableShifts = Object.values(submission.preferences || {})
+                const availableShifts = Object.values(submission.preferences)
                     .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
 
+                const weekendShifts = [5, 6, 12, 13].reduce((count, day) => {
+                    const dayPrefs = submission.preferences[day];
+                    if (!dayPrefs) return count;
+                    
+                    // Only count premium shifts: Friday evening to Saturday evening
+                    if (day === 5) {
+                        // Friday - only evening is premium
+                        return count + (dayPrefs.evening ? 1 : 0);
+                    } else if (day === 6 || day === 13) {
+                        // Saturday - all shifts are premium
+                        return count + (dayPrefs.morning ? 1 : 0) + (dayPrefs.evening ? 1 : 0) + (dayPrefs.night ? 1 : 0);
+                    } else if (day === 12) {
+                        // Friday week 2 - only evening is premium
+                        return count + (dayPrefs.evening ? 1 : 0);
+                    }
+                    return count;
+                }, 0);
+
                 html += `
-                    <div class="worker-card">
+                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
+                        <p><strong>Email:</strong> ${submission.email}</p>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
+                        <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
                         ${submission.notes ? `<p><strong>Notes:</strong> ${submission.notes}</p>` : ''}
+                        
+                        <div class="preferences-summary">
+                            ${generatePreferencesSummary(submission.preferences)}
+                        </div>
+                        
+                        <div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">
+                            <strong>Scheduling Rules Applied:</strong><br>
+                            • Max 1 shift per day<br>
+                            • Max 2 night shifts per week<br>
+                            • No consecutive night shifts<br>
+                            • No morning after night shift<br>
+                            • Premium: Fri evening → Sat evening only
+                        </div>
                         
                         <div style="margin-top: 15px;">
                             <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
@@ -323,51 +487,582 @@
             container.innerHTML = html;
         }
 
+        function generatePreferencesSummary(preferences) {
+            let summary = 'Preferred shifts: ';
+            const shifts = [];
+            
+            Object.entries(preferences).forEach(([day, prefs]) => {
+                const dayNum = parseInt(day);
+                const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayNum % 7];
+                const week = dayNum < 7 ? 'W1' : 'W2';
+                
+                if (prefs.morning) shifts.push(`${dayName}${week}-M`);
+                if (prefs.evening) shifts.push(`${dayName}${week}-E`);
+                if (prefs.night) shifts.push(`${dayName}${week}-N`);
+            });
+            
+            return summary + (shifts.length > 8 ? shifts.slice(0, 8).join(', ') + `... (+${shifts.length - 8} more)` : shifts.join(', '));
+        }
+
         function toggleApproval(submissionId) {
             const submission = workerSubmissions.find(s => s.id === submissionId);
             if (submission) {
                 submission.approved = !submission.approved;
-                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                saveSubmissions();
                 updateAdminDashboard();
-                alert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`);
+                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
             }
         }
 
         function removeSubmission(submissionId) {
             const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission && confirm(`Remove ${submission.name}'s submission?`)) {
+            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
                 workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
-                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                saveSubmissions();
                 updateAdminDashboard();
-                alert('Submission removed successfully!');
+                showAlert('Submission removed successfully!', 'success');
             }
         }
 
         function generateSchedule() {
-            alert('Schedule generation feature will be added back shortly. For now, this tests that buttons are working!');
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved worker submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            if (approvedSubmissions.length < 3) {
+                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
+            }
+
+            // Initialize schedule structure
+            const schedule = {};
+            const workers = approvedSubmissions.map(s => s.name);
+            
+            // Track shifts per worker
+            const nightShiftCount = {};
+            const weekendShiftCount = {};
+            const totalShiftCount = {};
+            const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
+            const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
+            const assignedWorkers = {}; // Track who is assigned to which shifts
+            
+            workers.forEach(worker => {
+                nightShiftCount[worker] = 0;
+                weekendShiftCount[worker] = 0;
+                totalShiftCount[worker] = 0;
+                nightShiftsWeek1[worker] = 0;
+                nightShiftsWeek2[worker] = 0;
+            });
+
+            // Generate schedule for 14 days
+            for (let day = 0; day < 14; day++) {
+                schedule[day] = {
+                    morning: null,
+                    evening: null,
+                    night: null,
+                    isWeekendPremium: false
+                };
+                
+                assignedWorkers[day] = new Set(); // Track workers assigned on this day
+
+                // Randomize shift processing order for more variety
+                const shifts = ['morning', 'evening', 'night'];
+                shuffleArray(shifts);
+                
+                shifts.forEach(shift => {
+                    // Check if this is a premium shift (Friday evening to Saturday evening)
+                    const isPremiumShift = (day === 5 && shift === 'evening') || // Friday evening
+                                          (day === 6) ||                        // Saturday all day
+                                          (day === 12 && shift === 'evening') || // Friday evening week 2
+                                          (day === 13);                         // Saturday all day week 2
+                    
+                    if (isPremiumShift) {
+                        schedule[day].isWeekendPremium = true;
+                    }
+
+                    // Get available workers for this shift
+                    let availableWorkers = approvedSubmissions
+                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
+                        .map(submission => submission.name);
+
+                    // Rule 1: Worker can only work once per day
+                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
+
+                    // Rule 2: If worker worked night shift previous day, cannot work morning shift today
+                    if (shift === 'morning' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    // Rule 3: Maximum 2 night shifts per week
+                    if (shift === 'night') {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            if (day <= 6) {
+                                return nightShiftsWeek1[worker] < 2;
+                            } else {
+                                return nightShiftsWeek2[worker] < 2;
+                            }
+                        });
+                    }
+
+                    // Rule 4: No consecutive night shifts for the same worker
+                    if (shift === 'night' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    if (availableWorkers.length === 0) {
+                        return; // No one available for this shift
+                    }
+
+                    let selectedWorker;
+
+                    if (shift === 'night') {
+                        // For night shifts: Find workers with minimum night shifts, then randomize selection
+                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
+                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
+                        const minTotalNights = Math.min(...availableWorkers.map(w => nightShiftCount[w]));
+                        
+                        // First filter: workers with minimum nights this week
+                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
+                        
+                        // If multiple candidates, filter by total night shifts
+                        if (candidateWorkers.length > 1) {
+                            const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
+                            candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
+                        }
+                        
+                        // Randomly select from the best candidates
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        
+                        nightShiftCount[selectedWorker]++;
+                        if (day <= 6) {
+                            nightShiftsWeek1[selectedWorker]++;
+                        } else {
+                            nightShiftsWeek2[selectedWorker]++;
+                        }
+                    } else if (isPremiumShift) {
+                        // For premium shifts: Find workers with minimum weekend shifts, then randomize
+                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
+                        const candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        weekendShiftCount[selectedWorker]++;
+                    } else {
+                        // For regular shifts: Weighted random selection favoring workers with fewer total shifts
+                        selectedWorker = selectWorkerWeightedRandom(availableWorkers, totalShiftCount);
+                    }
+
+                    schedule[day][shift] = selectedWorker;
+                    totalShiftCount[selectedWorker]++;
+                    assignedWorkers[day].add(selectedWorker);
+                });
+            }
+
+            generatedScheduleData = schedule;
+            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2);
+            showAlert('Randomized schedule generated with no consecutive night shifts rule!', 'success');
         }
 
-        function copyExcelFormat() {
-            alert('Excel format feature will be added back shortly. Buttons are working!');
-        }
-
-        function refreshData() {
-            loadSubmissions();
-            updateAdminDashboard();
-            alert('Data refreshed successfully!');
-        }
-
-        function clearAllData() {
-            if (confirm('Clear all data?')) {
-                localStorage.removeItem('shiftSubmissions');
-                workerSubmissions = [];
-                updateAdminDashboard();
-                alert('All data cleared!');
+        // Helper function to shuffle array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
-        // Test function to verify JavaScript is working
-        console.log("All functions loaded successfully!");
+        // Helper function to get random element from array
+        function getRandomFromArray(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // Helper function for weighted random selection (favors workers with fewer shifts)
+        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
+            if (availableWorkers.length === 1) {
+                return availableWorkers[0];
+            }
+
+            // Find the range of shift counts
+            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
+            const minShifts = Math.min(...shiftCounts);
+            const maxShifts = Math.max(...shiftCounts);
+            
+            // If all workers have the same number of shifts, pick randomly
+            if (minShifts === maxShifts) {
+                return getRandomFromArray(availableWorkers);
+            }
+
+            // Create weighted selection - workers with fewer shifts get higher weights
+            const weights = availableWorkers.map(worker => {
+                const shifts = totalShiftCount[worker];
+                // Invert the weight: fewer shifts = higher weight
+                return (maxShifts - shifts) + 1;
+            });
+
+            // Weighted random selection
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (let i = 0; i < availableWorkers.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return availableWorkers[i];
+                }
+            }
+            
+            // Fallback (shouldn't reach here)
+            return availableWorkers[0];
+        }
+
+        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2) {
+            const container = document.getElementById('generatedSchedule');
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            let html = '<div class="schedule-grid">';
+            
+            // Header row
+            html += '<div class="grid-header">Shift</div>';
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr = currentDate.getDate();
+                const isPremium = schedule[day].isWeekendPremium;
+                const weekLabel = day < 7 ? 'W1' : 'W2';
+                html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}<br><small>${weekLabel}</small>${isPremium ? '<br>💰' : ''}</div>`;
+            }
+
+            // Shift rows with hours
+            const shifts = [
+                { name: 'Morning (07-15)', key: 'morning', class: 'shift-morning' },
+                { name: 'Evening (15-23)', key: 'evening', class: 'shift-evening' },
+                { name: 'Night (23-07)', key: 'night', class: 'shift-night' }
+            ];
+
+            shifts.forEach(shift => {
+                html += `<div class="grid-header">${shift.name}</div>`;
+                for (let day = 0; day < 14; day++) {
+                    const worker = schedule[day][shift.key];
+                    const cellClass = `grid-cell ${shift.class} ${schedule[day].isWeekendPremium ? 'weekend-premium' : ''}`;
+                    html += `<div class="${cellClass}">${worker || 'Unassigned'}</div>`;
+                }
+            });
+
+            html += '</div>';
+
+            // Add Excel-ready table format
+            html += '<div style="margin-top: 30px;">';
+            html += '<h4>📋 Excel-Ready Format <button class="btn" onclick="copyExcelFormat()" style="margin-left: 10px; padding: 5px 15px; font-size: 12px;">Copy to Clipboard</button></h4>';
+            html += '<p style="color: #6c757d; font-size: 14px;">Select the table below and copy (Ctrl+C), then paste into Excel:</p>';
+            
+            html += '<div id="excelTable" style="border: 2px solid #007bff; border-radius: 8px; overflow: hidden; margin: 10px 0;">';
+            html += '<table class="excel-table">';
+            
+            // Excel table header - dates
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th style="background: #343a40;"></th>'; // Empty corner cell
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                const isPremium = schedule[day].isWeekendPremium;
+                const cellStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                html += `<th style="${cellStyle}">${dateStr}</th>`;
+            }
+            html += '</tr>';
+            
+            // Day names row
+            html += '<tr>';
+            html += '<th style="background: #343a40;"></th>'; // Empty corner cell
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const isPremium = schedule[day].isWeekendPremium;
+                const cellStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                html += `<th style="${cellStyle}">${dayName}</th>`;
+            }
+            html += '</tr>';
+            html += '</thead>';
+            
+            // Excel table body - shifts as rows
+            html += '<tbody>';
+            
+            const shifts = [
+                { name: 'Morning', key: 'morning', style: 'background: #ffebee; color: #000;' },
+                { name: 'Evening', key: 'evening', style: 'background: #e8f5e8; color: #000;' },
+                { name: 'Night', key: 'night', style: 'background: #e3f2fd; color: #000;' }
+            ];
+
+            shifts.forEach(shift => {
+                html += '<tr>';
+                html += `<th style="background: #343a40; color: white;">${shift.name}</th>`;
+                
+                for (let day = 0; day < 14; day++) {
+                    const worker = schedule[day][shift.key];
+                    const isPremium = schedule[day].isWeekendPremium;
+                    let cellStyle = shift.style;
+                    
+                    if (isPremium) {
+                        cellStyle = 'background: #fff3cd; color: #000; font-weight: bold;';
+                    }
+                    
+                    html += `<td style="${cellStyle}">${worker || ''}</td>`;
+                }
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            
+            html += '<div class="copy-instructions">';
+            html += '<strong>💡 Excel Tips:</strong><br>';
+            html += '• Click "Copy to Clipboard" button above for instant copy<br>';
+            html += '• Or select the entire table and copy (Ctrl+C)<br>';
+            html += '• In Excel, paste (Ctrl+V) - maintains all formatting and colors<br>';
+            html += '• Premium shifts (yellow) are Friday evening → Saturday evening<br>';
+            html += '• Empty cells indicate unassigned shifts<br>';
+            html += '• Each shift type has its own color for easy identification';
+            html += '</div>';
+            
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Show statistics
+            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2);
+        }
+
+        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2) {
+            const statsContainer = document.getElementById('scheduleStats');
+            const statsContent = document.getElementById('statsContent');
+            
+            // Calculate unassigned shifts
+            let unassignedShifts = 0;
+            for (let day = 0; day < 14; day++) {
+                if (!schedule[day].morning) unassignedShifts++;
+                if (!schedule[day].evening) unassignedShifts++;
+                if (!schedule[day].night) unassignedShifts++;
+            }
+
+            let html = '';
+            
+            // Total shifts distribution
+            html += '<div class="stat-item"><h5>Total Shifts per Worker</h5>';
+            Object.entries(totalShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} shifts</div>`;
+            });
+            html += '</div>';
+            
+            // Night shift distribution - Total
+            html += '<div class="stat-item"><h5>Total Night Shifts (2 weeks)</h5>';
+            Object.entries(nightShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} nights</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 1
+            html += '<div class="stat-item"><h5>Night Shifts - Week 1 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 2
+            html += '<div class="stat-item"><h5>Night Shifts - Week 2 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            // Weekend shift distribution
+            html += '<div class="stat-item"><h5>Weekend Premium Shifts</h5>';
+            Object.entries(weekendShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} weekend shifts</div>`;
+            });
+            html += '</div>';
+
+            // Summary statistics
+            html += '<div class="stat-item"><h5>Schedule Summary</h5>';
+            html += `<div>Total Shifts: 42</div>`;
+            html += `<div>Assigned: ${42 - unassignedShifts}</div>`;
+            html += `<div>Unassigned: ${unassignedShifts}</div>`;
+            html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
+            
+            // Rule compliance check
+            const ruleViolations = [];
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 1`);
+            });
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 2`);
+            });
+            
+            // Check for consecutive night shifts
+            for (let day = 1; day < 14; day++) {
+                const currentNight = schedule[day].night;
+                const previousNight = schedule[day - 1].night;
+                if (currentNight && previousNight && currentNight === previousNight) {
+                    ruleViolations.push(`${currentNight}: consecutive nights on days ${day} and ${day + 1}`);
+                }
+            }
+            
+            if (ruleViolations.length > 0) {
+                html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
+                ruleViolations.forEach(violation => {
+                    html += `<div>${violation}</div>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="color: green; margin-top: 10px;"><strong>✅ All rules complied</strong></div>`;
+            }
+            
+            html += '</div>';
+
+            statsContent.innerHTML = html;
+            statsContainer.classList.remove('hidden');
+        }
+
+        function exportSchedule() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            let csvContent = 'Date,Day,Morning,Evening,Night,Weekend Premium,Notes\n';
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString();
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                csvContent += `"${dateStr}","${dayName}",`;
+                csvContent += `"${generatedScheduleData[day].morning || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].evening || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].night || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Yes' : 'No'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Premium pay rate applies' : ''}"\n`;
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Schedule exported successfully!', 'success');
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions and generated schedules. This action cannot be undone.')) {
+                if (confirm('This is your final warning. All data will be permanently deleted. Continue?')) {
+                    workerSubmissions = [];
+                    generatedScheduleData = null;
+                    saveSubmissions();
+                    updateAdminDashboard();
+                    
+                    document.getElementById('generatedSchedule').innerHTML = 
+                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
+                    document.getElementById('scheduleStats').classList.add('hidden');
+                    
+                    showAlert('All data has been cleared.', 'success');
+                }
+            }
+        }
+
+        function copyExcelFormat() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            // Create tab-separated text for Excel in horizontal format
+            let excelText = '\t'; // Empty corner cell
+
+            // Header row 1 - Dates
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                excelText += dateStr + '\t';
+            }
+            excelText += '\n\t'; // New line and empty corner cell for row 2
+
+            // Header row 2 - Day names
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                excelText += dayName + '\t';
+            }
+            excelText += '\n';
+
+            // Data rows - each shift type as a row
+            const shifts = [
+                { name: 'Morning', key: 'morning' },
+                { name: 'Evening', key: 'evening' },
+                { name: 'Night', key: 'night' }
+            ];
+
+            shifts.forEach(shift => {
+                excelText += shift.name + '\t'; // Shift name as row header
+                
+                for (let day = 0; day < 14; day++) {
+                    const worker = generatedScheduleData[day][shift.key];
+                    excelText += (worker || '') + '\t';
+                }
+                excelText += '\n';
+            });
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(excelText).then(() => {
+                showAlert('Horizontal schedule format copied to clipboard! Paste into Excel (Ctrl+V) - days as columns, shifts as rows', 'success');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = excelText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('Horizontal schedule format copied to clipboard! Paste into Excel (Ctrl+V) - days as columns, shifts as rows', 'success');
+            });
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertClass = `alert-${type}`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.innerHTML = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
     </script>
 </body>
 </html>
