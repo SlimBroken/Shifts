@@ -416,7 +416,6 @@
                 html += `
                     <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
-                        <p><strong>Email:</strong> ${submission.email}</p>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
                         <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
