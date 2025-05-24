@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Your Shift Preferences</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .worker-preferences {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .preferences-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .day-column {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .day-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .shift-option {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .shift-checkbox {
+            transform: scale(1.2);
+        }
+
+        .weekend-premium {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            border: 2px solid #ffc107 !important;
+        }
+
+        .weekend-premium .day-label {
+            color: #d63031;
+            font-weight: bold;
+        }
+
+        .premium-badge {
+            color: #ffc107;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .instructions h3 {
+            color: #004085;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            color: #004085;
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .preferences-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 5px;
+            }
+            
+            .day-column {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕐 Shift Preferences</h1>
+            <p>Submit your availability for the next 2 weeks</p>
+        </div>
+
+        <div class="content">
+            <div class="instructions">
+                <h3>Instructions:</h3>
+                <ul>
+                    <li>Check the boxes for shifts you're available to work</li>
+                    <li><strong>Weekend shifts (Friday evening - Saturday evening) pay premium rates 💰</strong></li>
+                    <li>M = Morning shift, E = Evening shift, N = Night shift</li>
+                    <li>You can update your preferences anytime before the schedule is finalized</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label for="workerName">Your Full Name:</label>
+                <input type="text" id="workerName" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="workerEmail">Email Address:</label>
+                <input type="email" id="workerEmail" placeholder="your.email@company.com" required>
+            </div>
+
+            <h3>Select your available shifts:</h3>
+            
+            <div class="worker-preferences">
+                <div id="preferencesGrid" class="preferences-grid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="workerNotes">Additional Notes (optional):</label>
+                <input type="text" id="workerNotes" placeholder="Any special requests, constraints, or preferred shifts...">
+            </div>
+
+            <button class="btn" onclick="submitPreferences()">Submit My Preferences</button>
+            <button class="btn" onclick="clearForm()" style="background: #6c757d;">Clear Form</button>
+
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // GitHub Pages API configuration
+        const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO_NAME';
+        const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN'; // You'll need to set this up
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            createPreferencesGrid();
+            loadExistingPreferences();
+        });
+
+        function createPreferencesGrid() {
+            const grid = document.getElementById('preferencesGrid');
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from Sunday
+            
+            let gridHTML = '';
+
+            // Create grid for 14 days
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+                const isWeekendPremium = (day === 5 || day === 6 || day === 12 || day === 13); // Friday/Saturday of both weeks
+                
+                gridHTML += `
+                    <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
+                        <div class="day-label">${dayName}<br>${dateStr}</div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="morning_${day}">
+                            <label for="morning_${day}">M</label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="evening_${day}">
+                            <label for="evening_${day}">E</label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="night_${day}">
+                            <label for="night_${day}">N</label>
+                        </div>
+                        
+                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium</div>' : ''}
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = gridHTML;
+        }
+
+        function submitPreferences() {
+            const name = document.getElementById('workerName').value.trim();
+            const email = document.getElementById('workerEmail').value.trim();
+            const notes = document.getElementById('workerNotes').value.trim();
+
+            if (!name || !email) {
+                showStatus('Please fill in your name and email.', 'error');
+                return;
+            }
+
+            // Collect preferences
+            const preferences = {};
+            for (let day = 0; day < 14; day++) {
+                preferences[day] = {
+                    morning: document.getElementById(`morning_${day}`).checked,
+                    evening: document.getElementById(`evening_${day}`).checked,
+                    night: document.getElementById(`night_${day}`).checked
+                };
+            }
+
+            // Check if any preferences selected
+            const hasPreferences = Object.values(preferences).some(day => 
+                day.morning || day.evening || day.night
+            );
+
+            if (!hasPreferences) {
+                showStatus('Please select at least one shift preference.', 'error');
+                return;
+            }
+
+            const submission = {
+                id: Date.now(),
+                name,
+                email,
+                preferences,
+                notes,
+                submittedAt: new Date().toISOString(),
+                approved: false
+            };
+
+            // Save to GitHub (or fallback to localStorage for demo)
+            saveSubmission(submission);
+        }
+
+        function saveSubmission(submission) {
+            // For demo purposes, we'll use localStorage
+            // In production, you'd save to GitHub via API or a backend service
+            
+            let submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+            
+            // Remove any existing submission from this email
+            submissions = submissions.filter(s => s.email !== submission.email);
+            
+            // Add new submission
+            submissions.push(submission);
+            
+            localStorage.setItem('shiftSubmissions', JSON.stringify(submissions));
+            
+            showStatus('Your preferences have been submitted successfully! ✅', 'success');
+            
+            // Optional: Clear form after successful submission
+            setTimeout(() => {
+                if (confirm('Would you like to clear the form?')) {
+                    clearForm();
+                }
+            }, 2000);
+        }
+
+        function loadExistingPreferences() {
+            // Auto-fill if user has previously submitted
+            const email = localStorage.getItem('userEmail');
+            if (email) {
+                document.getElementById('workerEmail').value = email;
+                
+                const submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+                const existingSubmission = submissions.find(s => s.email === email);
+                
+                if (existingSubmission) {
+                    document.getElementById('workerName').value = existingSubmission.name;
+                    document.getElementById('workerNotes').value = existingSubmission.notes || '';
+                    
+                    // Load preferences
+                    for (let day = 0; day < 14; day++) {
+                        if (existingSubmission.preferences[day]) {
+                            document.getElementById(`morning_${day}`).checked = existingSubmission.preferences[day].morning || false;
+                            document.getElementById(`evening_${day}`).checked = existingSubmission.preferences[day].evening || false;
+                            document.getElementById(`night_${day}`).checked = existingSubmission.preferences[day].night || false;
+                        }
+                    }
+                    
+                    showStatus('Your previous preferences have been loaded. You can update them and resubmit.', 'info');
+                }
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('workerName').value = '';
+            document.getElementById('workerEmail').value = '';
+            document.getElementById('workerNotes').value = '';
+            
+            // Clear checkboxes
+            for (let day = 0; day < 14; day++) {
+                document.getElementById(`morning_${day}`).checked = false;
+                document.getElementById(`evening_${day}`).checked = false;
+                document.getElementById(`night_${day}`).checked = false;
+            }
+            
+            showStatus('Form cleared.', 'info');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            const className = type === 'success' ? 'alert-success' : 
+                             type === 'error' ? 'alert-danger' : 'alert-info';
+            
+            statusDiv.innerHTML = `<div class="alert ${className}">${message}</div>`;
+            
+            // Auto-hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Save email for next time
+        document.getElementById('workerEmail').addEventListener('blur', function() {
+            if (this.value) {
+                localStorage.setItem('userEmail', this.value);
+            }
+        });
+    </script>
+</body>
+</html>
