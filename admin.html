@@ -430,6 +430,7 @@
                             <strong>Scheduling Rules Applied:</strong><br>
                             • Max 1 shift per day<br>
                             • Max 2 night shifts per week<br>
+                            • No consecutive night shifts<br>
                             • No morning after night shift<br>
                             • Premium: Fri evening → Sat evening only
                         </div>
@@ -570,6 +571,14 @@
                         });
                     }
 
+                    // Rule 4: No consecutive night shifts for the same worker
+                    if (shift === 'night' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
                     if (availableWorkers.length === 0) {
                         return; // No one available for this shift
                     }
@@ -620,7 +629,7 @@
 
             generatedScheduleData = schedule;
             displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2);
-            showAlert('Randomized schedule generated successfully with all rules applied!', 'success');
+            showAlert('Randomized schedule generated with no consecutive night shifts rule!', 'success');
         }
 
         // Helper function to shuffle array (Fisher-Yates algorithm)
@@ -783,6 +792,15 @@
             Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
                 if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 2`);
             });
+            
+            // Check for consecutive night shifts
+            for (let day = 1; day < 14; day++) {
+                const currentNight = schedule[day].night;
+                const previousNight = schedule[day - 1].night;
+                if (currentNight && previousNight && currentNight === previousNight) {
+                    ruleViolations.push(`${currentNight}: consecutive nights on days ${day} and ${day + 1}`);
+                }
+            }
             
             if (ruleViolations.length > 0) {
                 html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
