@@ -397,7 +397,20 @@
 
                 const weekendShifts = [5, 6, 12, 13].reduce((count, day) => {
                     const dayPrefs = submission.preferences[day];
-                    return count + (dayPrefs ? (dayPrefs.morning ? 1 : 0) + (dayPrefs.evening ? 1 : 0) + (dayPrefs.night ? 1 : 0) : 0);
+                    if (!dayPrefs) return count;
+                    
+                    // Only count premium shifts: Friday evening to Saturday evening
+                    if (day === 5) {
+                        // Friday - only evening is premium
+                        return count + (dayPrefs.evening ? 1 : 0);
+                    } else if (day === 6 || day === 13) {
+                        // Saturday - all shifts are premium
+                        return count + (dayPrefs.morning ? 1 : 0) + (dayPrefs.evening ? 1 : 0) + (dayPrefs.night ? 1 : 0);
+                    } else if (day === 12) {
+                        // Friday week 2 - only evening is premium
+                        return count + (dayPrefs.evening ? 1 : 0);
+                    }
+                    return count;
                 }, 0);
 
                 html += `
@@ -411,6 +424,13 @@
                         
                         <div class="preferences-summary">
                             ${generatePreferencesSummary(submission.preferences)}
+                        </div>
+                        
+                        <div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">
+                            <strong>New Rules Applied:</strong><br>
+                            • Max 1 shift per day<br>
+                            • No morning after night shift<br>
+                            • Premium: Fri evening → Sat evening only
                         </div>
                         
                         <div style="margin-top: 15px;">
@@ -484,6 +504,7 @@
             const nightShiftCount = {};
             const weekendShiftCount = {};
             const totalShiftCount = {};
+            const assignedWorkers = {}; // Track who is assigned to which shifts
             
             workers.forEach(worker => {
                 nightShiftCount[worker] = 0;
@@ -497,16 +518,44 @@
                     morning: null,
                     evening: null,
                     night: null,
-                    isWeekendPremium: day === 5 || day === 6 || day === 12 || day === 13
+                    // Premium shifts: Friday evening (day 5) to Saturday evening (day 6 and day 12, 13)
+                    isWeekendPremium: (day === 5 && false) || // Friday morning - not premium
+                                     (day === 5 && false) || // Will be set for evening
+                                     (day === 6) ||          // Saturday all day
+                                     (day === 12 && false) || // Friday morning - not premium  
+                                     (day === 13)             // Saturday all day
                 };
+                
+                assignedWorkers[day] = new Set(); // Track workers assigned on this day
 
                 const shifts = ['morning', 'evening', 'night'];
                 
                 shifts.forEach(shift => {
+                    // Check if this is a premium shift (Friday evening to Saturday evening)
+                    const isPremiumShift = (day === 5 && shift === 'evening') || // Friday evening
+                                          (day === 6) ||                        // Saturday all day
+                                          (day === 12 && shift === 'evening') || // Friday evening week 2
+                                          (day === 13);                         // Saturday all day week 2
+                    
+                    if (isPremiumShift) {
+                        schedule[day].isWeekendPremium = true;
+                    }
+
                     // Get available workers for this shift
-                    const availableWorkers = approvedSubmissions
+                    let availableWorkers = approvedSubmissions
                         .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
                         .map(submission => submission.name);
+
+                    // Rule 1: Worker can only work once per day
+                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
+
+                    // Rule 2: If worker worked night shift previous day, cannot work morning shift today
+                    if (shift === 'morning' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
 
                     if (availableWorkers.length === 0) {
                         return; // No one available for this shift
@@ -520,7 +569,7 @@
                             nightShiftCount[current] < nightShiftCount[best] ? current : best
                         );
                         nightShiftCount[selectedWorker]++;
-                    } else if (schedule[day].isWeekendPremium) {
+                    } else if (isPremiumShift) {
                         // For weekend premium shifts, prioritize workers with fewer weekend shifts
                         selectedWorker = availableWorkers.reduce((best, current) => 
                             weekendShiftCount[current] < weekendShiftCount[best] ? current : best
@@ -535,12 +584,13 @@
 
                     schedule[day][shift] = selectedWorker;
                     totalShiftCount[selectedWorker]++;
+                    assignedWorkers[day].add(selectedWorker); // Mark worker as assigned for this day
                 });
             }
 
             generatedScheduleData = schedule;
             displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount);
-            showAlert('Schedule generated successfully!', 'success');
+            showAlert('Schedule generated successfully with new rules applied!', 'success');
         }
 
         function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount) {
