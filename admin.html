@@ -416,6 +416,7 @@
                 html += `
                     <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
+                        <p><strong>Email:</strong> ${submission.email}</p>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
                         <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
@@ -426,8 +427,9 @@
                         </div>
                         
                         <div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">
-                            <strong>New Rules Applied:</strong><br>
+                            <strong>Scheduling Rules Applied:</strong><br>
                             • Max 1 shift per day<br>
+                            • <strong>Max 2 night shifts per week ⭐</strong><br>
                             • No morning after night shift<br>
                             • Premium: Fri evening → Sat evening only
                         </div>
@@ -499,14 +501,16 @@
             const schedule = {};
             const workers = approvedSubmissions.map(s => s.name);
             
-            // Track night shifts and weekend shifts per worker
-            const nightShiftCount = {};
+            // Track night shifts per worker per week (very important rule!)
+            const nightShiftCountWeek1 = {};
+            const nightShiftCountWeek2 = {};
             const weekendShiftCount = {};
             const totalShiftCount = {};
             const assignedWorkers = {}; // Track who is assigned to which shifts
             
             workers.forEach(worker => {
-                nightShiftCount[worker] = 0;
+                nightShiftCountWeek1[worker] = 0;
+                nightShiftCountWeek2[worker] = 0;
                 weekendShiftCount[worker] = 0;
                 totalShiftCount[worker] = 0;
             });
@@ -556,6 +560,19 @@
                         }
                     }
 
+                    // Rule 3: VERY IMPORTANT - Maximum 2 night shifts per week!
+                    if (shift === 'night') {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            if (day < 7) {
+                                // Week 1 (days 0-6)
+                                return nightShiftCountWeek1[worker] < 2;
+                            } else {
+                                // Week 2 (days 7-13)
+                                return nightShiftCountWeek2[worker] < 2;
+                            }
+                        });
+                    }
+
                     if (availableWorkers.length === 0) {
                         return; // No one available for this shift
                     }
@@ -563,11 +580,28 @@
                     let selectedWorker;
 
                     if (shift === 'night') {
-                        // For night shifts, prioritize workers with fewer night shifts
-                        selectedWorker = availableWorkers.reduce((best, current) => 
-                            nightShiftCount[current] < nightShiftCount[best] ? current : best
-                        );
-                        nightShiftCount[selectedWorker]++;
+                        // For night shifts, prioritize workers with fewer night shifts in current week
+                        selectedWorker = availableWorkers.reduce((best, current) => {
+                            const currentWeekNights = day < 7 ? nightShiftCountWeek1[current] : nightShiftCountWeek2[current];
+                            const bestWeekNights = day < 7 ? nightShiftCountWeek1[best] : nightShiftCountWeek2[best];
+                            
+                            if (currentWeekNights < bestWeekNights) {
+                                return current;
+                            } else if (currentWeekNights === bestWeekNights) {
+                                // If same week nights, prioritize by total nights across both weeks
+                                const currentTotalNights = nightShiftCountWeek1[current] + nightShiftCountWeek2[current];
+                                const bestTotalNights = nightShiftCountWeek1[best] + nightShiftCountWeek2[best];
+                                return currentTotalNights < bestTotalNights ? current : best;
+                            }
+                            return best;
+                        });
+                        
+                        // Update night shift count for appropriate week
+                        if (day < 7) {
+                            nightShiftCountWeek1[selectedWorker]++;
+                        } else {
+                            nightShiftCountWeek2[selectedWorker]++;
+                        }
                     } else if (isPremiumShift) {
                         // For weekend premium shifts, prioritize workers with fewer weekend shifts
                         selectedWorker = availableWorkers.reduce((best, current) => 
@@ -588,11 +622,11 @@
             }
 
             generatedScheduleData = schedule;
-            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount);
-            showAlert('Schedule generated successfully with new rules applied!', 'success');
+            displaySchedule(schedule, nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount);
+            showAlert('Schedule generated successfully with all rules applied! ✅', 'success');
         }
 
-        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount) {
+        function displaySchedule(schedule, nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount) {
             const container = document.getElementById('generatedSchedule');
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - startDate.getDay());
@@ -607,14 +641,15 @@
                 const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
                 const dateStr = currentDate.getDate();
                 const isPremium = schedule[day].isWeekendPremium;
-                html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}${isPremium ? '<br>💰' : ''}</div>`;
+                const weekLabel = day < 7 ? 'W1' : 'W2';
+                html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}<br><small>${weekLabel}</small>${isPremium ? '<br>💰' : ''}</div>`;
             }
 
-            // Shift rows
+            // Shift rows with hours
             const shifts = [
-                { name: 'Morning', key: 'morning', class: 'shift-morning' },
-                { name: 'Evening', key: 'evening', class: 'shift-evening' },
-                { name: 'Night', key: 'night', class: 'shift-night' }
+                { name: 'Morning<br><small>07:00-15:00</small>', key: 'morning', class: 'shift-morning' },
+                { name: 'Evening<br><small>15:00-23:00</small>', key: 'evening', class: 'shift-evening' },
+                { name: 'Night<br><small>23:00-07:00</small>', key: 'night', class: 'shift-night' }
             ];
 
             shifts.forEach(shift => {
@@ -630,11 +665,11 @@
 
             container.innerHTML = html;
 
-            // Show statistics
-            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule);
+            // Show statistics with weekly night shift breakdown
+            displayScheduleStats(nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount, schedule);
         }
 
-        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule) {
+        function displayScheduleStats(nightShiftCountWeek1, nightShiftCountWeek2, weekendShiftCount, totalShiftCount, schedule) {
             const statsContainer = document.getElementById('scheduleStats');
             const statsContent = document.getElementById('statsContent');
             
@@ -655,10 +690,15 @@
             });
             html += '</div>';
             
-            // Night shift distribution
-            html += '<div class="stat-item"><h5>Night Shifts Distribution</h5>';
-            Object.entries(nightShiftCount).forEach(([worker, count]) => {
-                html += `<div>${worker}: ${count} nights</div>`;
+            // Night shift distribution by week (VERY IMPORTANT!)
+            html += '<div class="stat-item" style="border: 2px solid #dc3545;"><h5>🌙 Night Shifts per Week (Max 2!)</h5>';
+            Object.keys(nightShiftCountWeek1).forEach(worker => {
+                const week1 = nightShiftCountWeek1[worker];
+                const week2 = nightShiftCountWeek2[worker];
+                const total = week1 + week2;
+                const week1Status = week1 <= 2 ? '✅' : '❌';
+                const week2Status = week2 <= 2 ? '✅' : '❌';
+                html += `<div>${worker}: W1: ${week1} ${week1Status} | W2: ${week2} ${week2Status} | Total: ${total}</div>`;
             });
             html += '</div>';
 
@@ -675,6 +715,16 @@
             html += `<div>Assigned: ${42 - unassignedShifts}</div>`;
             html += `<div>Unassigned: ${unassignedShifts}</div>`;
             html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
+            
+            // Check if night shift rule is violated
+            const violations = Object.keys(nightShiftCountWeek1).filter(worker => 
+                nightShiftCountWeek1[worker] > 2 || nightShiftCountWeek2[worker] > 2
+            );
+            if (violations.length > 0) {
+                html += `<div style="color: #dc3545; font-weight: bold;">⚠️ Night shift violations: ${violations.length}</div>`;
+            } else {
+                html += `<div style="color: #28a745; font-weight: bold;">✅ All night shift limits respected</div>`;
+            }
             html += '</div>';
 
             statsContent.innerHTML = html;
