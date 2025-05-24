@@ -523,17 +523,14 @@
                     morning: null,
                     evening: null,
                     night: null,
-                    // Premium shifts: Friday evening (day 5) to Saturday evening (day 6 and day 12, 13)
-                    isWeekendPremium: (day === 5 && false) || // Friday morning - not premium
-                                     (day === 5 && false) || // Will be set for evening
-                                     (day === 6) ||          // Saturday all day
-                                     (day === 12 && false) || // Friday morning - not premium  
-                                     (day === 13)             // Saturday all day
+                    isWeekendPremium: false
                 };
                 
                 assignedWorkers[day] = new Set(); // Track workers assigned on this day
 
+                // Randomize shift processing order for more variety
                 const shifts = ['morning', 'evening', 'night'];
+                shuffleArray(shifts);
                 
                 shifts.forEach(shift => {
                     // Check if this is a premium shift (Friday evening to Saturday evening)
@@ -566,10 +563,8 @@
                     if (shift === 'night') {
                         availableWorkers = availableWorkers.filter(worker => {
                             if (day <= 6) {
-                                // Week 1 (days 0-6)
                                 return nightShiftsWeek1[worker] < 2;
                             } else {
-                                // Week 2 (days 7-13)
                                 return nightShiftsWeek2[worker] < 2;
                             }
                         });
@@ -582,18 +577,22 @@
                     let selectedWorker;
 
                     if (shift === 'night') {
-                        // For night shifts, prioritize workers with fewer night shifts (considering both weeks)
-                        selectedWorker = availableWorkers.reduce((best, current) => {
-                            const currentWeekNights = day <= 6 ? nightShiftsWeek1[current] : nightShiftsWeek2[current];
-                            const bestWeekNights = day <= 6 ? nightShiftsWeek1[best] : nightShiftsWeek2[best];
-                            
-                            // First priority: fewer nights this week
-                            if (currentWeekNights !== bestWeekNights) {
-                                return currentWeekNights < bestWeekNights ? current : best;
-                            }
-                            // Second priority: fewer total nights overall
-                            return nightShiftCount[current] < nightShiftCount[best] ? current : best;
-                        });
+                        // For night shifts: Find workers with minimum night shifts, then randomize selection
+                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
+                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
+                        const minTotalNights = Math.min(...availableWorkers.map(w => nightShiftCount[w]));
+                        
+                        // First filter: workers with minimum nights this week
+                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
+                        
+                        // If multiple candidates, filter by total night shifts
+                        if (candidateWorkers.length > 1) {
+                            const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
+                            candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
+                        }
+                        
+                        // Randomly select from the best candidates
+                        selectedWorker = getRandomFromArray(candidateWorkers);
                         
                         nightShiftCount[selectedWorker]++;
                         if (day <= 6) {
@@ -602,27 +601,77 @@
                             nightShiftsWeek2[selectedWorker]++;
                         }
                     } else if (isPremiumShift) {
-                        // For weekend premium shifts, prioritize workers with fewer weekend shifts
-                        selectedWorker = availableWorkers.reduce((best, current) => 
-                            weekendShiftCount[current] < weekendShiftCount[best] ? current : best
-                        );
+                        // For premium shifts: Find workers with minimum weekend shifts, then randomize
+                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
+                        const candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
                         weekendShiftCount[selectedWorker]++;
                     } else {
-                        // For regular shifts, try to balance total workload
-                        selectedWorker = availableWorkers.reduce((best, current) => 
-                            totalShiftCount[current] < totalShiftCount[best] ? current : best
-                        );
+                        // For regular shifts: Weighted random selection favoring workers with fewer total shifts
+                        selectedWorker = selectWorkerWeightedRandom(availableWorkers, totalShiftCount);
                     }
 
                     schedule[day][shift] = selectedWorker;
                     totalShiftCount[selectedWorker]++;
-                    assignedWorkers[day].add(selectedWorker); // Mark worker as assigned for this day
+                    assignedWorkers[day].add(selectedWorker);
                 });
             }
 
             generatedScheduleData = schedule;
             displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2);
-            showAlert('Schedule generated successfully with all rules applied!', 'success');
+            showAlert('Randomized schedule generated successfully with all rules applied!', 'success');
+        }
+
+        // Helper function to shuffle array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Helper function to get random element from array
+        function getRandomFromArray(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // Helper function for weighted random selection (favors workers with fewer shifts)
+        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
+            if (availableWorkers.length === 1) {
+                return availableWorkers[0];
+            }
+
+            // Find the range of shift counts
+            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
+            const minShifts = Math.min(...shiftCounts);
+            const maxShifts = Math.max(...shiftCounts);
+            
+            // If all workers have the same number of shifts, pick randomly
+            if (minShifts === maxShifts) {
+                return getRandomFromArray(availableWorkers);
+            }
+
+            // Create weighted selection - workers with fewer shifts get higher weights
+            const weights = availableWorkers.map(worker => {
+                const shifts = totalShiftCount[worker];
+                // Invert the weight: fewer shifts = higher weight
+                return (maxShifts - shifts) + 1;
+            });
+
+            // Weighted random selection
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (let i = 0; i < availableWorkers.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return availableWorkers[i];
+                }
+            }
+            
+            // Fallback (shouldn't reach here)
+            return availableWorkers[0];
         }
 
         function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2) {
