@@ -276,7 +276,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         @media (max-width: 1200px) {
@@ -311,10 +311,13 @@
                 <h3>🔒 Admin Access Required</h3>
                 <p>Enter the admin password to access the dashboard:</p>
                 <div class="password-input">
-                    <input type="password" id="adminPassword" placeholder="Enter admin password">
-                    <button class="btn" onclick="checkPassword()">Access Dashboard</button>
+                    <input type="password" id="adminPassword" placeholder="Enter admin password" value="">
+                    <button class="btn" onclick="checkPassword()" type="button">Access Dashboard</button>
                 </div>
                 <small>Default password: admin123 (change this in production!)</small>
+                <div style="margin-top: 10px;">
+                    <button class="btn" onclick="testLogin()" style="background: #28a745;">Test Login Function</button>
+                </div>
             </div>
 
             <div id="adminContent" class="hidden">
