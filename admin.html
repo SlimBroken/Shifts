@@ -182,6 +182,44 @@
             margin-bottom: 5px;
         }
 
+        .excel-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        .excel-table th,
+        .excel-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .excel-table th {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .excel-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .excel-table .premium-row {
+            background: #fff3cd !important;
+        }
+
+        .copy-instructions {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
         .schedule-stats {
             background: #f8f9fa;
             padding: 20px;
@@ -302,6 +340,7 @@
                     <h3>Quick Actions</h3>
                     <button class="btn btn-success" onclick="generateSchedule()">🔄 Generate Optimized Schedule</button>
                     <button class="btn btn-secondary" onclick="exportSchedule()">📊 Export Schedule (CSV)</button>
+                    <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
                 </div>
@@ -416,7 +455,6 @@
                 html += `
                     <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
-                        <p><strong>Email:</strong> ${submission.email}</p>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
                         <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
@@ -720,6 +758,62 @@
 
             html += '</div>';
 
+            // Add Excel-ready table format
+            html += '<div style="margin-top: 30px;">';
+            html += '<h4>📋 Excel-Ready Format <button class="btn" onclick="copyExcelFormat()" style="margin-left: 10px; padding: 5px 15px; font-size: 12px;">Copy to Clipboard</button></h4>';
+            html += '<p style="color: #6c757d; font-size: 14px;">Select the table below and copy (Ctrl+C), then paste into Excel:</p>';
+            
+            html += '<div id="excelTable" style="border: 2px solid #007bff; border-radius: 8px; overflow: hidden; margin: 10px 0;">';
+            html += '<table class="excel-table">';
+            
+            // Excel table header
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th>Date</th>';
+            html += '<th>Day</th>';
+            html += '<th>Morning (07-15)</th>';
+            html += '<th>Evening (15-23)</th>';
+            html += '<th>Night (23-07)</th>';
+            html += '<th>Premium</th>';
+            html += '</tr>';
+            html += '</thead>';
+            
+            // Excel table body
+            html += '<tbody>';
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                const isPremium = schedule[day].isWeekendPremium;
+                
+                const rowClass = isPremium ? 'premium-row' : '';
+                
+                html += `<tr class="${rowClass}">`;
+                html += `<td>${dateStr}</td>`;
+                html += `<td>${dayName}</td>`;
+                html += `<td>${schedule[day].morning || ''}</td>`;
+                html += `<td>${schedule[day].evening || ''}</td>`;
+                html += `<td>${schedule[day].night || ''}</td>`;
+                html += `<td>${isPremium ? 'Yes' : 'No'}</td>`;
+                html += '</tr>';
+            }
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            
+            html += '<div class="copy-instructions">';
+            html += '<strong>💡 Excel Tips:</strong><br>';
+            html += '• Click "Copy to Clipboard" button above for instant copy<br>';
+            html += '• Or select the entire table and copy (Ctrl+C)<br>';
+            html += '• In Excel, paste (Ctrl+V) - it will automatically format as a table<br>';
+            html += '• Premium shifts are highlighted in yellow<br>';
+            html += '• Empty cells indicate unassigned shifts<br>';
+            html += '• You can then format, add borders, or modify as needed in Excel';
+            html += '</div>';
+            
+            html += '</div>';
+
             container.innerHTML = html;
 
             // Show statistics
@@ -868,6 +962,47 @@
                     showAlert('All data has been cleared.', 'success');
                 }
             }
+        }
+
+        function copyExcelFormat() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            // Create tab-separated text for Excel
+            let excelText = 'Date\tDay\tMorning (07-15)\tEvening (15-23)\tNight (23-07)\tPremium\n';
+
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                const isPremium = generatedScheduleData[day].isWeekendPremium;
+
+                excelText += `${dateStr}\t${dayName}\t`;
+                excelText += `${generatedScheduleData[day].morning || ''}\t`;
+                excelText += `${generatedScheduleData[day].evening || ''}\t`;
+                excelText += `${generatedScheduleData[day].night || ''}\t`;
+                excelText += `${isPremium ? 'Yes' : 'No'}\n`;
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(excelText).then(() => {
+                showAlert('Schedule copied to clipboard! You can now paste it directly into Excel (Ctrl+V)', 'success');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = excelText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('Schedule copied to clipboard! You can now paste it directly into Excel (Ctrl+V)', 'success');
+            });
         }
 
         function showAlert(message, type = 'info') {
