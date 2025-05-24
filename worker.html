@@ -1,11 +1,4 @@
-.day-column {
-            text-align: center;
-            padding: 12px 8px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            min-height: 200px;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -123,26 +116,23 @@
         }
 
         .shift-option {
-            margin: 3px 0;
+            margin: 8px 0;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            gap: 8px;
-            padding: 2px 4px;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
+            justify-content: center;
+            gap: 5px;
+            flex-direction: column;
         }
 
-        .shift-option:hover {
-            background-color: rgba(0, 123, 255, 0.1);
+        .shift-option label {
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.2;
         }
 
-        .shift-label {
-            font-size: 11px;
+        .shift-option small {
+            font-size: 10px;
             color: #6c757d;
-            font-weight: 500;
-            min-width: 70px;
-            text-align: left;
         }
 
         .shift-checkbox {
@@ -239,10 +229,10 @@
                             <li>N = Night (23:00-07:00)</li>
                         </ul>
                     </li>
-                    <li><strong>Important Rules:</strong>
+                    <li><strong>Scheduling Rules:</strong>
                         <ul>
-                            <li>You can only work 1 shift per day (even if you select all 3)</li>
-                            <li><strong>Maximum 2 night shifts per week!</strong></li>
+                            <li>Maximum 1 shift per day (even if you select all 3)</li>
+                            <li>Maximum 2 night shifts per week</li>
                             <li>No morning shift the day after working night shift</li>
                             <li>Premium pay applies Friday evening through Saturday evening only</li>
                         </ul>
@@ -311,22 +301,22 @@
                         
                         <div class="shift-option">
                             <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})">
-                            <label for="all_${day}" class="shift-label"><strong>All Shifts</strong></label>
+                            <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
                         </div>
                         
                         <div class="shift-option">
                             <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})">
-                            <label for="morning_${day}" class="shift-label">Morning<br>07:00-15:00</label>
+                            <label for="morning_${day}">M<br><small>07-15</small></label>
                         </div>
                         
                         <div class="shift-option">
                             <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})">
-                            <label for="evening_${day}" class="shift-label">Evening ${(day === 5 || day === 12) ? '💰' : ''}<br>15:00-23:00</label>
+                            <label for="evening_${day}">E<br><small>15-23</small>${(day === 5 || day === 12) ? '<br>💰' : ''}</label>
                         </div>
                         
                         <div class="shift-option">
                             <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})">
-                            <label for="night_${day}" class="shift-label">Night<br>23:00-07:00</label>
+                            <label for="night_${day}">N<br><small>23-07</small></label>
                         </div>
                         
                         ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
