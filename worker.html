@@ -366,16 +366,6 @@
         function checkAccess() {
             console.log('Checking worker access...');
             
-            // First check if system is locked
-            const systemLocked = localStorage.getItem('systemLocked') === 'true';
-            if (systemLocked) {
-                console.log('System is locked by admin');
-                document.getElementById('systemLockedSection').classList.remove('hidden');
-                document.getElementById('mainWorkerInterface').classList.add('hidden');
-                document.getElementById('accessDeniedSection').classList.add('hidden');
-                return;
-            }
-            
             // Check if user came from proper verification
             const verifiedWorker = localStorage.getItem('verifiedWorker');
             const verificationTime = localStorage.getItem('verificationTime');
@@ -403,8 +393,6 @@
                     verifiedWorkerName = verifiedWorker;
                     document.getElementById('workerDisplayName').textContent = verifiedWorkerName;
                     document.getElementById('mainWorkerInterface').classList.remove('hidden');
-                    document.getElementById('accessDeniedSection').classList.add('hidden');
-                    document.getElementById('systemLockedSection').classList.add('hidden');
                     createPreferencesGrid();
                     loadExistingPreferences();
                     console.log('Access granted to:', verifiedWorkerName);
@@ -443,11 +431,6 @@
             localStorage.removeItem('verifiedWorker');
             localStorage.removeItem('verificationTime');
             checkAccess();
-        }
-
-        function checkSystemStatus() {
-            console.log('Checking system lock status...');
-            checkAccess(); // Re-run full access check
         }
 
         function logout() {
@@ -511,16 +494,6 @@
         }
 
         function submitPreferences() {
-            // Check if system is locked before submission
-            const systemLocked = localStorage.getItem('systemLocked') === 'true';
-            if (systemLocked) {
-                showStatus('❌ Cannot submit preferences: System is currently locked by administrator.', 'error');
-                setTimeout(() => {
-                    checkAccess(); // This will show the locked screen
-                }, 2000);
-                return;
-            }
-
             if (!verifiedWorkerName) {
                 showStatus('Error: No verified worker found. Please logout and verify access again.', 'error');
                 return;
