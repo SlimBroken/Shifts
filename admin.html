@@ -77,14 +77,6 @@
             background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
         }
 
-        .btn-lock {
-            background: linear-gradient(135deg, #fd7900 0%, #ff7675 100%);
-        }
-
-        .btn-unlock {
-            background: linear-gradient(135deg, #00b894 0%, #55a3ff 100%);
-        }
-
         .schedule-grid {
             display: grid;
             grid-template-columns: 120px repeat(14, 1fr);
@@ -173,12 +165,6 @@
             border: 1px solid #ffeaa7;
         }
 
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -200,37 +186,95 @@
             margin-bottom: 5px;
         }
 
-        .system-lock-control {
+        .excel-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            min-width: 800px;
+        }
+
+        .excel-table th,
+        .excel-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 4px;
+            text-align: center;
+            min-width: 60px;
+            white-space: nowrap;
+        }
+
+        .excel-table th {
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .excel-table tr:nth-child(even) {
             background: #f8f9fa;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
+        }
+
+        .excel-table .premium-row {
+            background: #fff3cd !important;
+        }
+
+        .excel-table[dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+
+        .excel-table[dir="rtl"] th,
+        .excel-table[dir="rtl"] td {
             text-align: center;
         }
 
-        .system-lock-control.locked {
-            background: #fff3cd;
-            border-color: #ffc107;
+        .copy-instructions {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
         }
 
-        .system-lock-control.unlocked {
-            background: #d4edda;
-            border-color: #28a745;
+        #excelTable {
+            overflow-x: auto;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            margin: 10px 0;
         }
 
-        .lock-status {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 15px;
+        .schedule-stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
         }
 
-        .lock-status.locked {
-            color: #856404;
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
         }
 
-        .lock-status.unlocked {
-            color: #155724;
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .preferences-summary {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .admin-actions {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
         }
 
         .password-section {
@@ -255,15 +299,35 @@
             font-size: 14px;
         }
 
-        .hidden {
-            display: none;
+        .lock-control {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
         }
 
-        .admin-actions {
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
+        .lock-status {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .lock-status.locked {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .lock-status.unlocked {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .hidden {
+            display: none;
         }
 
         @media (max-width: 1200px) {
@@ -305,22 +369,6 @@
             </div>
 
             <div id="adminContent" class="hidden">
-                <!-- System Lock Control -->
-                <div id="systemLockControl" class="system-lock-control">
-                    <div id="lockStatus" class="lock-status">🔓 System is UNLOCKED</div>
-                    <p id="lockDescription">Workers can currently submit and modify their shift preferences.</p>
-                    
-                    <div style="margin: 20px 0;">
-                        <button class="btn btn-lock" id="lockBtn" onclick="toggleSystemLock()">
-                            🔒 Lock System (Prevent Worker Changes)
-                        </button>
-                    </div>
-                    
-                    <div style="font-size: 14px; color: #6c757d;">
-                        <strong>Use Case:</strong> Lock the system when generating schedules to prevent workers from changing preferences during the process.
-                    </div>
-                </div>
-
                 <!-- Statistics -->
                 <div class="stats">
                     <div class="stat-card">
@@ -334,6 +382,25 @@
                     <div class="stat-card">
                         <div class="stat-number" id="approvedWorkers">0</div>
                         <div>Approved Workers</div>
+                    </div>
+                </div>
+
+                <!-- Preference Lock Control -->
+                <div class="lock-control">
+                    <h3>🔒 Preference Submission Control</h3>
+                    <p>Lock worker preferences during schedule generation to prevent changes.</p>
+                    
+                    <div id="lockStatus" class="lock-status">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <button class="btn" id="toggleLockBtn" onclick="togglePreferenceLock()">
+                            <!-- Text will be set by JavaScript -->
+                        </button>
+                        <small style="display: block; margin-top: 10px; color: #856404;">
+                            <strong>Tip:</strong> Lock preferences before generating schedules to ensure data consistency.
+                        </small>
                     </div>
                 </div>
 
@@ -412,18 +479,6 @@
                     checkPassword();
                 }
             });
-            
-            // Add event listener for new worker input after a brief delay to ensure element exists
-            setTimeout(() => {
-                const newWorkerInput = document.getElementById('newWorkerName');
-                if (newWorkerInput) {
-                    newWorkerInput.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            addWorker();
-                        }
-                    });
-                }
-            }, 100);
         });
 
         function checkPassword() {
@@ -432,331 +487,10 @@
                 document.getElementById('passwordSection').classList.add('hidden');
                 document.getElementById('adminContent').classList.remove('hidden');
                 updateAdminDashboard();
-                updateSystemLockDisplay();
             } else {
                 alert('Incorrect password. Please try again.');
                 document.getElementById('adminPassword').value = '';
             }
-        }
-
-        function updateSystemLockDisplay() {
-            const isLocked = localStorage.getItem('systemLocked') === 'true';
-            const lockControl = document.getElementById('systemLockControl');
-            const lockStatus = document.getElementById('lockStatus');
-            const lockDescription = document.getElementById('lockDescription');
-            const lockBtn = document.getElementById('lockBtn');
-
-            if (isLocked) {
-                lockControl.className = 'system-lock-control locked';
-                lockStatus.className = 'lock-status locked';
-                lockStatus.textContent = '🔒 System is LOCKED';
-                lockDescription.textContent = 'Workers cannot submit or modify shift preferences. System is locked for schedule generation.';
-                lockBtn.className = 'btn btn-unlock';
-                lockBtn.innerHTML = '🔓 Unlock System (Allow Worker Changes)';
-            } else {
-                lockControl.className = 'system-lock-control unlocked';
-                lockStatus.className = 'lock-status unlocked';
-                lockStatus.textContent = '🔓 System is UNLOCKED';
-                lockDescription.textContent = 'Workers can currently submit and modify their shift preferences.';
-                lockBtn.className = 'btn btn-lock';
-                lockBtn.innerHTML = '🔒 Lock System (Prevent Worker Changes)';
-            }
-        }
-
-        function toggleSystemLock() {
-            const isCurrentlyLocked = localStorage.getItem('systemLocked') === 'true';
-            
-            if (isCurrentlyLocked) {
-                // Unlock the system
-                if (confirm('Are you sure you want to UNLOCK the system? Workers will be able to submit and modify their shift preferences again.')) {
-                    localStorage.setItem('systemLocked', 'false');
-                    updateSystemLockDisplay();
-                    showAlert('✅ System UNLOCKED! Workers can now submit and modify preferences.', 'success');
-                }
-            } else {
-                // Lock the system
-                if (confirm('Are you sure you want to LOCK the system? This will prevent all workers from submitting or modifying their shift preferences. Use this when generating schedules.')) {
-                    localStorage.setItem('systemLocked', 'true');
-                    updateSystemLockDisplay();
-                    showAlert('🔒 System LOCKED! Workers can no longer submit or modify preferences.', 'warning');
-                }
-            }
-        }
-
-        function generateSchedule() {
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('No approved worker submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
-
-            if (approvedSubmissions.length < 3) {
-                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
-            }
-
-            // Recommend locking the system during schedule generation
-            const isLocked = localStorage.getItem('systemLocked') === 'true';
-            if (!isLocked) {
-                if (confirm('🔒 RECOMMENDATION: Lock the system before generating schedules to prevent workers from changing preferences during the process.\n\nWould you like to lock the system now and then generate the schedule?')) {
-                    localStorage.setItem('systemLocked', 'true');
-                    updateSystemLockDisplay();
-                    showAlert('🔒 System locked for schedule generation.', 'info');
-                }
-            }
-
-            // Initialize schedule structure
-            const schedule = {};
-            const workers = approvedSubmissions.map(s => s.name);
-            
-            // Track shifts per worker
-            const nightShiftCount = {};
-            const weekendShiftCount = {};
-            const totalShiftCount = {};
-            const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
-            const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
-            const shiftsWeek1 = {}; // Track ALL shifts per week (days 0-6)
-            const shiftsWeek2 = {}; // Track ALL shifts per week (days 7-13)
-            const assignedWorkers = {}; // Track who is assigned to which shifts
-            
-            workers.forEach(worker => {
-                nightShiftCount[worker] = 0;
-                weekendShiftCount[worker] = 0;
-                totalShiftCount[worker] = 0;
-                nightShiftsWeek1[worker] = 0;
-                nightShiftsWeek2[worker] = 0;
-                shiftsWeek1[worker] = 0;
-                shiftsWeek2[worker] = 0;
-            });
-
-            // Generate schedule for 14 days
-            for (let day = 0; day < 14; day++) {
-                schedule[day] = {
-                    morning: null,
-                    evening: null,
-                    night: null,
-                    isWeekendPremium: false
-                };
-                
-                assignedWorkers[day] = new Set(); // Track workers assigned on this day
-
-                // Randomize shift processing order for more variety
-                const shiftOrder = ['morning', 'evening', 'night'];
-                shuffleArray(shiftOrder);
-                
-                shiftOrder.forEach(shift => {
-                    // Check if this is a premium shift (Friday evening to Saturday evening)
-                    const isPremiumShift = (day === 5 && shift === 'evening') || // Friday evening
-                                          (day === 6) ||                        // Saturday all day
-                                          (day === 12 && shift === 'evening') || // Friday evening week 2
-                                          (day === 13);                         // Saturday all day week 2
-                    
-                    if (isPremiumShift) {
-                        schedule[day].isWeekendPremium = true;
-                    }
-
-                    // Get available workers for this shift
-                    let availableWorkers = approvedSubmissions
-                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
-                        .map(submission => submission.name);
-
-                    // Rule 1: Worker can only work once per day
-                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
-
-                    // Rule 2: If worker worked night shift previous day, cannot work morning shift today
-                    if (shift === 'morning' && day > 0) {
-                        const previousNightWorker = schedule[day - 1].night;
-                        if (previousNightWorker) {
-                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                        }
-                    }
-
-                    // Rule 3: Maximum 2 night shifts per week
-                    if (shift === 'night') {
-                        availableWorkers = availableWorkers.filter(worker => {
-                            if (day <= 6) {
-                                return nightShiftsWeek1[worker] < 2;
-                            } else {
-                                return nightShiftsWeek2[worker] < 2;
-                            }
-                        });
-                    }
-
-                    // Rule 4: No consecutive night shifts for the same worker
-                    if (shift === 'night' && day > 0) {
-                        const previousNightWorker = schedule[day - 1].night;
-                        if (previousNightWorker) {
-                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                        }
-                    }
-
-                    if (availableWorkers.length === 0) {
-                        return; // No one available for this shift
-                    }
-
-                    let selectedWorker;
-
-                    // Rule 5: Ensure everyone gets at least 5 shifts PER WEEK
-                    const currentWeekShifts = day <= 6 ? shiftsWeek1 : shiftsWeek2;
-                    const minWeeklyShifts = Math.min(...availableWorkers.map(w => currentWeekShifts[w]));
-                    const maxWeeklyShifts = Math.max(...availableWorkers.map(w => currentWeekShifts[w]));
-                    
-                    // Find workers who need more shifts this week (priority for those with < 5 shifts)
-                    const workersNeedingShifts = availableWorkers.filter(w => currentWeekShifts[w] < 5);
-                    const workersWithMinWeeklyShifts = availableWorkers.filter(w => currentWeekShifts[w] === minWeeklyShifts);
-                    
-                    // Determine if we need to prioritize weekly fairness
-                    const needsWeeklyPriority = workersNeedingShifts.length > 0 && (maxWeeklyShifts - minWeeklyShifts) >= 1;
-
-                    if (shift === 'night') {
-                        // For night shifts: Balance night limits with weekly fairness
-                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
-                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
-                        
-                        // First filter: workers with minimum nights this week
-                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
-                        
-                        // If multiple candidates and we need weekly fairness
-                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
-                            // Prioritize candidates who need more shifts this week
-                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
-                            if (candidatesNeedingShifts.length > 0) {
-                                candidateWorkers = candidatesNeedingShifts;
-                            } else {
-                                // Among candidates, pick those with minimum weekly shifts
-                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
-                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
-                            }
-                        } else if (candidateWorkers.length > 1) {
-                            // Standard night shift distribution by total nights
-                            const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
-                            candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
-                        }
-                        
-                        selectedWorker = getRandomFromArray(candidateWorkers);
-                        
-                        nightShiftCount[selectedWorker]++;
-                        if (day <= 6) {
-                            nightShiftsWeek1[selectedWorker]++;
-                        } else {
-                            nightShiftsWeek2[selectedWorker]++;
-                        }
-                    } else if (isPremiumShift) {
-                        // For premium shifts: Balance weekend distribution with weekly fairness
-                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
-                        let candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
-                        
-                        // If multiple candidates and we need weekly fairness
-                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
-                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
-                            if (candidatesNeedingShifts.length > 0) {
-                                candidateWorkers = candidatesNeedingShifts;
-                            } else {
-                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
-                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
-                            }
-                        }
-                        
-                        selectedWorker = getRandomFromArray(candidateWorkers);
-                        weekendShiftCount[selectedWorker]++;
-                    } else {
-                        // For regular shifts: STRONGLY prioritize weekly fairness
-                        if (workersNeedingShifts.length > 0) {
-                            // First priority: workers who have < 5 shifts this week
-                            const workersWithMinShiftsAmongNeedy = workersNeedingShifts.filter(w => 
-                                currentWeekShifts[w] === Math.min(...workersNeedingShifts.map(worker => currentWeekShifts[worker]))
-                            );
-                            selectedWorker = getRandomFromArray(workersWithMinShiftsAmongNeedy);
-                        } else {
-                            // Everyone has 5+ shifts this week, use balanced selection
-                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, currentWeekShifts);
-                        }
-                    }
-
-                    schedule[day][shift] = selectedWorker;
-                    totalShiftCount[selectedWorker]++;
-                    
-                    // Update weekly shift counts
-                    if (day <= 6) {
-                        shiftsWeek1[selectedWorker]++;
-                    } else {
-                        shiftsWeek2[selectedWorker]++;
-                    }
-                    
-                    assignedWorkers[day].add(selectedWorker);
-                });
-            }
-
-            generatedScheduleData = schedule;
-            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2);
-            
-            // Check weekly fairness achievement
-            const minWeek1Shifts = Math.min(...Object.values(shiftsWeek1));
-            const minWeek2Shifts = Math.min(...Object.values(shiftsWeek2));
-            const overallMinWeekly = Math.min(minWeek1Shifts, minWeek2Shifts);
-            
-            let fairnessMessage = 'Schedule generated with weekly fairness focus!';
-            
-            if (overallMinWeekly >= 5) {
-                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts per week!';
-            } else if (overallMinWeekly >= 4) {
-                fairnessMessage = '⚠️ Some workers got 4 shifts in a week (minimum possible for constraints).';
-            } else {
-                fairnessMessage = '❌ Warning: Some workers got less than 4 shifts per week. Consider adding more workers.';
-            }
-            
-            showAlert(fairnessMessage + (isLocked ? ' (System remains locked)' : ''), overallMinWeekly >= 5 ? 'success' : 'warning');
-        }
-
-        // Helper function to shuffle array (Fisher-Yates algorithm)
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        // Helper function to get random element from array
-        function getRandomFromArray(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
-
-        // Helper function for weighted random selection (favors workers with fewer shifts)
-        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
-            if (availableWorkers.length === 1) {
-                return availableWorkers[0];
-            }
-
-            // Find the range of shift counts
-            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
-            const minShifts = Math.min(...shiftCounts);
-            const maxShifts = Math.max(...shiftCounts);
-            
-            // If all workers have the same number of shifts, pick randomly
-            if (minShifts === maxShifts) {
-                return getRandomFromArray(availableWorkers);
-            }
-
-            // Create weighted selection - workers with fewer shifts get higher weights
-            const weights = availableWorkers.map(worker => {
-                const currentShifts = totalShiftCount[worker];
-                // Invert the weight: fewer shifts = higher weight
-                return (maxShifts - currentShifts) + 1;
-            });
-
-            // Weighted random selection
-            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-            let random = Math.random() * totalWeight;
-            
-            for (let i = 0; i < availableWorkers.length; i++) {
-                random -= weights[i];
-                if (random <= 0) {
-                    return availableWorkers[i];
-                }
-            }
-            
-            // Fallback (shouldn't reach here)
-            return availableWorkers[0];
         }
 
         function loadSubmissions() {
@@ -784,6 +518,51 @@
 
             displayWorkerSubmissions();
             displayApprovedWorkers();
+            updateLockStatus();
+        }
+
+        function togglePreferenceLock() {
+            const isCurrentlyLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const newLockState = !isCurrentlyLocked;
+            
+            localStorage.setItem('preferencesLocked', newLockState.toString());
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            localStorage.setItem('lockSetBy', 'admin');
+            
+            updateLockStatus();
+            
+            if (newLockState) {
+                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
+            } else {
+                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
+            }
+        }
+
+        function updateLockStatus() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const lockTimestamp = localStorage.getItem('lockTimestamp');
+            const lockStatusDiv = document.getElementById('lockStatus');
+            const toggleBtn = document.getElementById('toggleLockBtn');
+            
+            if (isLocked) {
+                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
+                lockStatusDiv.className = 'lock-status locked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔒 PREFERENCES LOCKED</strong><br>
+                    <small>Locked since: ${lockTime}</small><br>
+                    <small>Workers cannot submit or modify preferences while locked.</small>
+                `;
+                toggleBtn.textContent = '🔓 Unlock Preferences';
+                toggleBtn.className = 'btn btn-success';
+            } else {
+                lockStatusDiv.className = 'lock-status unlocked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
+                    <small>Workers can submit and modify their preferences.</small>
+                `;
+                toggleBtn.textContent = '🔒 Lock Preferences';
+                toggleBtn.className = 'btn btn-warning';
+            }
         }
 
         function displayApprovedWorkers() {
@@ -997,6 +776,272 @@
             }
         }
 
+        function generateSchedule() {
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved worker submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            if (approvedSubmissions.length < 3) {
+                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
+            }
+
+            // Initialize schedule structure
+            const schedule = {};
+            const workers = approvedSubmissions.map(s => s.name);
+            
+            // Track shifts per worker
+            const nightShiftCount = {};
+            const weekendShiftCount = {};
+            const totalShiftCount = {};
+            const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
+            const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
+            const shiftsWeek1 = {}; // Track ALL shifts per week (days 0-6)
+            const shiftsWeek2 = {}; // Track ALL shifts per week (days 7-13)
+            const assignedWorkers = {}; // Track who is assigned to which shifts
+            
+            workers.forEach(worker => {
+                nightShiftCount[worker] = 0;
+                weekendShiftCount[worker] = 0;
+                totalShiftCount[worker] = 0;
+                nightShiftsWeek1[worker] = 0;
+                nightShiftsWeek2[worker] = 0;
+                shiftsWeek1[worker] = 0;
+                shiftsWeek2[worker] = 0;
+            });
+
+            // Generate schedule for 14 days
+            for (let day = 0; day < 14; day++) {
+                schedule[day] = {
+                    morning: null,
+                    evening: null,
+                    night: null,
+                    isWeekendPremium: false
+                };
+                
+                assignedWorkers[day] = new Set(); // Track workers assigned on this day
+
+                // Randomize shift processing order for more variety
+                const shiftOrder = ['morning', 'evening', 'night'];
+                shuffleArray(shiftOrder);
+                
+                shiftOrder.forEach(shift => {
+                    // Check if this is a premium shift (Friday evening to Saturday evening)
+                    const isPremiumShift = (day === 5 && shift === 'evening') || // Friday evening
+                                          (day === 6) ||                        // Saturday all day
+                                          (day === 12 && shift === 'evening') || // Friday evening week 2
+                                          (day === 13);                         // Saturday all day week 2
+                    
+                    if (isPremiumShift) {
+                        schedule[day].isWeekendPremium = true;
+                    }
+
+                    // Get available workers for this shift
+                    let availableWorkers = approvedSubmissions
+                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
+                        .map(submission => submission.name);
+
+                    // Rule 1: Worker can only work once per day
+                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
+
+                    // Rule 2: If worker worked night shift previous day, cannot work morning shift today
+                    if (shift === 'morning' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    // Rule 3: Maximum 2 night shifts per week
+                    if (shift === 'night') {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            if (day <= 6) {
+                                return nightShiftsWeek1[worker] < 2;
+                            } else {
+                                return nightShiftsWeek2[worker] < 2;
+                            }
+                        });
+                    }
+
+                    // Rule 4: No consecutive night shifts for the same worker
+                    if (shift === 'night' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    if (availableWorkers.length === 0) {
+                        return; // No one available for this shift
+                    }
+
+                    let selectedWorker;
+
+                    // Rule 5: Ensure everyone gets at least 5 shifts PER WEEK
+                    const currentWeekShifts = day <= 6 ? shiftsWeek1 : shiftsWeek2;
+                    const minWeeklyShifts = Math.min(...availableWorkers.map(w => currentWeekShifts[w]));
+                    const maxWeeklyShifts = Math.max(...availableWorkers.map(w => currentWeekShifts[w]));
+                    
+                    // Find workers who need more shifts this week (priority for those with < 5 shifts)
+                    const workersNeedingShifts = availableWorkers.filter(w => currentWeekShifts[w] < 5);
+                    const workersWithMinWeeklyShifts = availableWorkers.filter(w => currentWeekShifts[w] === minWeeklyShifts);
+                    
+                    // Determine if we need to prioritize weekly fairness
+                    const needsWeeklyPriority = workersNeedingShifts.length > 0 && (maxWeeklyShifts - minWeeklyShifts) >= 1;
+
+                    if (shift === 'night') {
+                        // For night shifts: Balance night limits with weekly fairness
+                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
+                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
+                        
+                        // First filter: workers with minimum nights this week
+                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
+                        
+                        // If multiple candidates and we need weekly fairness
+                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
+                            // Prioritize candidates who need more shifts this week
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
+                            } else {
+                                // Among candidates, pick those with minimum weekly shifts
+                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
+                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
+                            }
+                        } else if (candidateWorkers.length > 1) {
+                            // Standard night shift distribution by total nights
+                            const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
+                            candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
+                        }
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        
+                        nightShiftCount[selectedWorker]++;
+                        if (day <= 6) {
+                            nightShiftsWeek1[selectedWorker]++;
+                        } else {
+                            nightShiftsWeek2[selectedWorker]++;
+                        }
+                    } else if (isPremiumShift) {
+                        // For premium shifts: Balance weekend distribution with weekly fairness
+                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
+                        let candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
+                        
+                        // If multiple candidates and we need weekly fairness
+                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
+                            } else {
+                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
+                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
+                            }
+                        }
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        weekendShiftCount[selectedWorker]++;
+                    } else {
+                        // For regular shifts: STRONGLY prioritize weekly fairness
+                        if (workersNeedingShifts.length > 0) {
+                            // First priority: workers who have < 5 shifts this week
+                            const workersWithMinShiftsAmongNeedy = workersNeedingShifts.filter(w => 
+                                currentWeekShifts[w] === Math.min(...workersNeedingShifts.map(worker => currentWeekShifts[worker]))
+                            );
+                            selectedWorker = getRandomFromArray(workersWithMinShiftsAmongNeedy);
+                        } else {
+                            // Everyone has 5+ shifts this week, use balanced selection
+                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, currentWeekShifts);
+                        }
+                    }
+
+                    schedule[day][shift] = selectedWorker;
+                    totalShiftCount[selectedWorker]++;
+                    
+                    // Update weekly shift counts
+                    if (day <= 6) {
+                        shiftsWeek1[selectedWorker]++;
+                    } else {
+                        shiftsWeek2[selectedWorker]++;
+                    }
+                    
+                    assignedWorkers[day].add(selectedWorker);
+                });
+            }
+
+            generatedScheduleData = schedule;
+            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2);
+            
+            // Check weekly fairness achievement
+            const minWeek1Shifts = Math.min(...Object.values(shiftsWeek1));
+            const minWeek2Shifts = Math.min(...Object.values(shiftsWeek2));
+            const overallMinWeekly = Math.min(minWeek1Shifts, minWeek2Shifts);
+            
+            let fairnessMessage = 'Schedule generated with weekly fairness focus!';
+            
+            if (overallMinWeekly >= 5) {
+                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts per week!';
+            } else if (overallMinWeekly >= 4) {
+                fairnessMessage = '⚠️ Some workers got 4 shifts in a week (minimum possible for constraints).';
+            } else {
+                fairnessMessage = '❌ Warning: Some workers got less than 4 shifts per week. Consider adding more workers.';
+            }
+            
+            showAlert(fairnessMessage, overallMinWeekly >= 5 ? 'success' : 'warning');
+        }
+
+        // Helper function to shuffle array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Helper function to get random element from array
+        function getRandomFromArray(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // Helper function for weighted random selection (favors workers with fewer shifts)
+        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
+            if (availableWorkers.length === 1) {
+                return availableWorkers[0];
+            }
+
+            // Find the range of shift counts
+            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
+            const minShifts = Math.min(...shiftCounts);
+            const maxShifts = Math.max(...shiftCounts);
+            
+            // If all workers have the same number of shifts, pick randomly
+            if (minShifts === maxShifts) {
+                return getRandomFromArray(availableWorkers);
+            }
+
+            // Create weighted selection - workers with fewer shifts get higher weights
+            const weights = availableWorkers.map(worker => {
+                const currentShifts = totalShiftCount[worker];
+                // Invert the weight: fewer shifts = higher weight
+                return (maxShifts - currentShifts) + 1;
+            });
+
+            // Weighted random selection
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (let i = 0; i < availableWorkers.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return availableWorkers[i];
+                }
+            }
+            
+            // Fallback (shouldn't reach here)
+            return availableWorkers[0];
+        }
+
         function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2) {
             const container = document.getElementById('generatedSchedule');
             const startDate = new Date();
@@ -1080,4 +1125,372 @@
                 const dateStr = currentDate.toLocaleDateString('en-GB', { 
                     day: '2-digit', 
                     month: '2-digit', 
-                    year: '2-digit
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                const isPremium = schedule[day].isWeekendPremium;
+                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                html += `<th style="${headerStyle}">${dateStr}</th>`;
+            }
+            html += '<th style="background: #343a40; color: white;"></th>'; // Empty top-right corner
+            html += '</tr>';
+            
+            // Day names row (Hebrew)
+            html += '<tr>';
+            const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayIndex = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const hebrewDay = hebrewDays[dayIndex];
+                const isPremium = schedule[day].isWeekendPremium;
+                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #6c757d; color: white;';
+                html += `<th style="${headerStyle}">${hebrewDay}</th>`;
+            }
+            html += '<th style="background: #343a40; color: white;"></th>'; // Empty cell
+            html += '</tr>';
+            html += '</thead>';
+            
+            // Excel table body - Shifts as rows (Hebrew) with worker colors
+            html += '<tbody>';
+            const hebrewShifts = [
+                { name: 'בוקר', key: 'morning', style: 'background: #ffebee;' },
+                { name: 'צהריים', key: 'evening', style: 'background: #e8f5e8;' },
+                { name: 'לילה', key: 'night', style: 'background: #e3f2fd;' }
+            ];
+            
+            hebrewShifts.forEach(hebrewShift => {
+                html += '<tr>';
+                for (let day = 0; day < 14; day++) {
+                    const worker = schedule[day][hebrewShift.key];
+                    const isPremium = schedule[day].isWeekendPremium;
+                    const workerColor = worker ? workerColors[worker] : '';
+                    
+                    let cellStyle = hebrewShift.style;
+                    if (worker && workerColor) {
+                        cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
+                    } else if (isPremium) {
+                        cellStyle = 'background: #fff9e6;';
+                    }
+                    
+                    html += `<td style="${cellStyle}">${worker || ''}</td>`;
+                }
+                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            
+            html += '<div class="copy-instructions">';
+            html += '<strong>💡 Excel Tips (Hebrew Format with Colors):</strong><br>';
+            html += '• Click "Copy to Clipboard" button above for instant copy<br>';
+            html += '• Or select the entire table and copy (Ctrl+C)<br>';
+            html += '• In Excel, paste (Ctrl+V) - Hebrew format ready<br>';
+            html += '• Each worker has a unique color for easy tracking<br>';
+            html += '• Premium shifts (weekend) have gold headers<br>';
+            html += '• Format: DD.MM.YY with Hebrew day names<br>';
+            html += '• Shifts: בוקר (Morning), צהריים (Evening), לילה (Night)';
+            html += '</div>';
+            
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Show statistics
+            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2);
+        }
+
+        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2) {
+            const statsContainer = document.getElementById('scheduleStats');
+            const statsContent = document.getElementById('statsContent');
+            
+            // Calculate unassigned shifts
+            let unassignedShifts = 0;
+            for (let day = 0; day < 14; day++) {
+                if (!schedule[day].morning) unassignedShifts++;
+                if (!schedule[day].evening) unassignedShifts++;
+                if (!schedule[day].night) unassignedShifts++;
+            }
+
+            let html = '';
+            
+            // Weekly shifts distribution - Week 1
+            html += '<div class="stat-item"><h5>Week 1 Shifts (Min: 5 per worker)</h5>';
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                const color = count < 5 ? (count < 4 ? 'color: red; font-weight: bold;' : 'color: orange; font-weight: bold;') : 'color: green;';
+                const status = count >= 5 ? '✅' : (count >= 4 ? '⚠️' : '❌');
+                html += `<div style="${color}">${worker}: ${count}/5 shifts ${status}</div>`;
+            });
+            html += '</div>';
+
+            // Weekly shifts distribution - Week 2  
+            html += '<div class="stat-item"><h5>Week 2 Shifts (Min: 5 per worker)</h5>';
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                const color = count < 5 ? (count < 4 ? 'color: red; font-weight: bold;' : 'color: orange; font-weight: bold;') : 'color: green;';
+                const status = count >= 5 ? '✅' : (count >= 4 ? '⚠️' : '❌');
+                html += `<div style="${color}">${worker}: ${count}/5 shifts ${status}</div>`;
+            });
+            html += '</div>';
+            
+            // Total shifts distribution (2 weeks combined)
+            html += '<div class="stat-item"><h5>Total Shifts (2 weeks)</h5>';
+            Object.entries(totalShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} shifts</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 1
+            html += '<div class="stat-item"><h5>Night Shifts - Week 1 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            // Night shift distribution - Week 2
+            html += '<div class="stat-item"><h5>Night Shifts - Week 2 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            // Weekend shift distribution
+            html += '<div class="stat-item"><h5>Weekend Premium Shifts</h5>';
+            Object.entries(weekendShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} weekend shifts</div>`;
+            });
+            html += '</div>';
+
+            // Summary statistics
+            html += '<div class="stat-item"><h5>Schedule Summary</h5>';
+            html += `<div>Total Shifts: 42</div>`;
+            html += `<div>Assigned: ${42 - unassignedShifts}</div>`;
+            html += `<div>Unassigned: ${unassignedShifts}</div>`;
+            html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
+            
+            // Weekly fairness check
+            const week1Counts = Object.values(shiftsWeek1);
+            const week2Counts = Object.values(shiftsWeek2);
+            const minWeek1 = week1Counts.length > 0 ? Math.min(...week1Counts) : 0;
+            const minWeek2 = week2Counts.length > 0 ? Math.min(...week2Counts) : 0;
+            const overallMinWeekly = Math.min(minWeek1, minWeek2);
+            
+            if (overallMinWeekly >= 5) {
+                html += `<div style="color: green; font-weight: bold;">✅ Weekly Goal: ${overallMinWeekly} min shifts/week</div>`;
+            } else if (overallMinWeekly >= 4) {
+                html += `<div style="color: orange; font-weight: bold;">⚠️ Weekly: ${overallMinWeekly} min shifts/week (target: 5)</div>`;
+            } else {
+                html += `<div style="color: red; font-weight: bold;">❌ Weekly Issue: ${overallMinWeekly} min shifts/week</div>`;
+            }
+            
+            html += `<div>Week 1 Range: ${minWeek1}-${Math.max(...week1Counts)}</div>`;
+            html += `<div>Week 2 Range: ${minWeek2}-${Math.max(...week2Counts)}</div>`;
+            
+            // Rule compliance check
+            const ruleViolations = [];
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 1`);
+            });
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 2`);
+            });
+            
+            // Check for consecutive night shifts
+            for (let day = 1; day < 14; day++) {
+                const currentNight = schedule[day].night;
+                const previousNight = schedule[day - 1].night;
+                if (currentNight && previousNight && currentNight === previousNight) {
+                    ruleViolations.push(`${currentNight}: consecutive nights on days ${day} and ${day + 1}`);
+                }
+            }
+            
+            // Check weekly fairness violations
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 1 (target: 5 minimum)`);
+                }
+            });
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 2 (target: 5 minimum)`);
+                }
+            });
+            
+            if (ruleViolations.length > 0) {
+                html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
+                ruleViolations.forEach(violation => {
+                    html += `<div>${violation}</div>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="color: green; margin-top: 10px;"><strong>✅ All rules complied</strong></div>`;
+            }
+            
+            html += '</div>';
+
+            statsContent.innerHTML = html;
+            statsContainer.classList.remove('hidden');
+        }
+
+        function exportSchedule() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            let csvContent = 'Date,Day,Morning,Evening,Night,Weekend Premium,Notes\n';
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString();
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                csvContent += `"${dateStr}","${dayName}",`;
+                csvContent += `"${generatedScheduleData[day].morning || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].evening || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].night || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Yes' : 'No'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Premium pay rate applies' : ''}"\n`;
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Schedule exported successfully!', 'success');
+        }
+
+        function copyExcelFormat() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+
+            // Create tab-separated text for Excel in Hebrew horizontal format (like the image)
+            let excelText = '';
+            
+            // Header row 1: Dates (DD.MM.YY format)
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                excelText += dateStr + '\t';
+            }
+            excelText += '\n';
+            
+            // Header row 2: Hebrew day names
+            const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayIndex = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const hebrewDay = hebrewDays[dayIndex];
+                excelText += hebrewDay + '\t';
+            }
+            excelText += '\n';
+
+            // Data rows: Each shift type as a row (Hebrew names)
+            const hebrewCopyShifts = [
+                { name: 'בוקר', key: 'morning' },
+                { name: 'צהריים', key: 'evening' },
+                { name: 'לילה', key: 'night' }
+            ];
+
+            hebrewCopyShifts.forEach(hebrewCopyShift => {
+                for (let day = 0; day < 14; day++) {
+                    const worker = generatedScheduleData[day][hebrewCopyShift.key];
+                    excelText += (worker || '') + '\t';
+                }
+                excelText += hebrewCopyShift.name + '\n';
+            });
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(excelText).then(() => {
+                showAlert('Hebrew schedule format copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = excelText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('Hebrew schedule format copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+            });
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
+                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
+                    workerSubmissions = [];
+                    generatedScheduleData = null;
+                    saveSubmissions();
+                    
+                    // Also clear approved workers list
+                    localStorage.removeItem('approvedWorkers');
+                    
+                    updateAdminDashboard();
+                    
+                    document.getElementById('generatedSchedule').innerHTML = 
+                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
+                    document.getElementById('scheduleStats').classList.add('hidden');
+                    
+                    showAlert('All data has been cleared, including approved worker names.', 'success');
+                }
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertClass = `alert-${type}`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.innerHTML = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize the application with Enter key support for new worker input
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubmissions();
+            document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+            
+            // Add event listener for new worker input after a brief delay to ensure element exists
+            setTimeout(() => {
+                const newWorkerInput = document.getElementById('newWorkerName');
+                if (newWorkerInput) {
+                    newWorkerInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            addWorker();
+                        }
+                    });
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
