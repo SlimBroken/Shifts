@@ -815,6 +815,23 @@
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - startDate.getDay());
 
+            // Create color palette for workers
+            const workerColors = {};
+            const colorPalette = [
+                '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', 
+                '#C9BAFF', '#FFBAE1', '#FFD4BA', '#BAF2FF', '#E1BAFF',
+                '#BAFFE1', '#FFC9BA', '#BAFFFF', '#F2BAFF', '#BAFF9A',
+                '#FF9ABA', '#9ABAFF', '#BA9AFF', '#FFBA9A', '#9AFFBA'
+            ];
+            
+            const workers = [...new Set(Object.values(schedule).flatMap(day => 
+                [day.morning, day.evening, day.night].filter(worker => worker)
+            ))];
+            
+            workers.forEach((worker, index) => {
+                workerColors[worker] = colorPalette[index % colorPalette.length];
+            });
+
             let html = '<div class="schedule-grid">';
             
             // Header row
@@ -829,7 +846,7 @@
                 html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}<br><small>${weekLabel}</small>${isPremium ? '<br>💰' : ''}</div>`;
             }
 
-            // Shift rows with hours
+            // Shift rows with hours and worker colors
             const shiftTypes = [
                 { name: 'Morning (07-15)', key: 'morning', class: 'shift-morning' },
                 { name: 'Evening (15-23)', key: 'evening', class: 'shift-evening' },
@@ -841,13 +858,25 @@
                 for (let day = 0; day < 14; day++) {
                     const worker = schedule[day][shiftType.key];
                     const cellClass = `grid-cell ${shiftType.class} ${schedule[day].isWeekendPremium ? 'weekend-premium' : ''}`;
-                    html += `<div class="${cellClass}">${worker || 'Unassigned'}</div>`;
+                    const workerColor = worker ? workerColors[worker] : '';
+                    const colorStyle = worker ? `background-color: ${workerColor}; border: 2px solid #333;` : '';
+                    html += `<div class="${cellClass}" style="${colorStyle}">${worker || 'Unassigned'}</div>`;
                 }
             });
 
             html += '</div>';
 
-            // Add Excel-ready table format (Hebrew horizontal layout like the image)
+            // Add worker color legend
+            html += '<div style="margin-top: 20px;">';
+            html += '<h4>👥 Worker Color Legend</h4>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">';
+            Object.entries(workerColors).forEach(([worker, color]) => {
+                html += `<div style="background-color: ${color}; padding: 8px 15px; border-radius: 5px; border: 2px solid #333; font-weight: bold;">${worker}</div>`;
+            });
+            html += '</div>';
+            html += '</div>';
+
+            // Add Excel-ready table format (Hebrew horizontal layout with worker colors)
             html += '<div style="margin-top: 30px;">';
             html += '<h4>📋 Excel-Ready Format (Hebrew) <button class="btn" onclick="copyExcelFormat()" style="margin-left: 10px; padding: 5px 15px; font-size: 12px;">Copy to Clipboard</button></h4>';
             html += '<p style="color: #6c757d; font-size: 14px;">Select the table below and copy (Ctrl+C), then paste into Excel:</p>';
@@ -889,7 +918,7 @@
             html += '</tr>';
             html += '</thead>';
             
-            // Excel table body - Shifts as rows (Hebrew)
+            // Excel table body - Shifts as rows (Hebrew) with worker colors
             html += '<tbody>';
             const hebrewShifts = [
                 { name: 'בוקר', key: 'morning', style: 'background: #ffebee;' },
@@ -902,12 +931,15 @@
                 for (let day = 0; day < 14; day++) {
                     const worker = schedule[day][hebrewShift.key];
                     const isPremium = schedule[day].isWeekendPremium;
+                    const workerColor = worker ? workerColors[worker] : '';
+                    
                     let cellStyle = hebrewShift.style;
-                    if (isPremium && worker) {
-                        cellStyle = 'background: #fff3cd; border: 2px solid #ffc107;';
+                    if (worker && workerColor) {
+                        cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
                     } else if (isPremium) {
                         cellStyle = 'background: #fff9e6;';
                     }
+                    
                     html += `<td style="${cellStyle}">${worker || ''}</td>`;
                 }
                 html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
@@ -918,10 +950,11 @@
             html += '</div>';
             
             html += '<div class="copy-instructions">';
-            html += '<strong>💡 Excel Tips (Hebrew Format):</strong><br>';
+            html += '<strong>💡 Excel Tips (Hebrew Format with Colors):</strong><br>';
             html += '• Click "Copy to Clipboard" button above for instant copy<br>';
             html += '• Or select the entire table and copy (Ctrl+C)<br>';
             html += '• In Excel, paste (Ctrl+V) - Hebrew format ready<br>';
+            html += '• Each worker has a unique color for easy tracking<br>';
             html += '• Premium shifts (weekend) have gold headers<br>';
             html += '• Format: DD.MM.YY with Hebrew day names<br>';
             html += '• Shifts: בוקר (Morning), צהריים (Evening), לילה (Night)';
