@@ -288,6 +288,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             createPreferencesGrid();
             
+            // Show only verification screen initially - hide main interface
+            document.getElementById('nameVerificationSection').classList.remove('hidden');
+            document.getElementById('mainWorkerInterface').classList.add('hidden');
+            
             // Add enter key support for name verification
             document.getElementById('verifyWorkerName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -326,7 +330,8 @@
                 document.getElementById('welcomeWorkerName').textContent = exactName;
                 
                 // Hide verification section and show main interface
-                document.getElementById('nameVerificationSection').classList.add('hidden');
+                document.getElementById('nameVerificationSection').style.display = 'none';
+                document.getElementById('mainWorkerInterface').style.display = 'block';
                 document.getElementById('mainWorkerInterface').classList.remove('hidden');
                 
                 // Load existing preferences if any
@@ -349,8 +354,9 @@
             clearForm();
             
             // Hide main interface and show verification section
+            document.getElementById('mainWorkerInterface').style.display = 'none';
             document.getElementById('mainWorkerInterface').classList.add('hidden');
-            document.getElementById('nameVerificationSection').classList.remove('hidden');
+            document.getElementById('nameVerificationSection').style.display = 'block';
             
             // Focus on name input
             document.getElementById('verifyWorkerName').focus();
