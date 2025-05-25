@@ -489,7 +489,7 @@
                             • Max 2 night shifts per week<br>
                             • No consecutive night shifts<br>
                             • No morning after night shift<br>
-                            • Everyone gets minimum 5 shifts<br>
+                            • Everyone gets minimum 5 shifts per week<br>
                             • Premium: Fri evening → Sat evening only
                         </div>
                         
@@ -566,6 +566,8 @@
             const totalShiftCount = {};
             const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
             const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
+            const shiftsWeek1 = {}; // Track ALL shifts per week (days 0-6)
+            const shiftsWeek2 = {}; // Track ALL shifts per week (days 7-13)
             const assignedWorkers = {}; // Track who is assigned to which shifts
             
             workers.forEach(worker => {
@@ -574,6 +576,8 @@
                 totalShiftCount[worker] = 0;
                 nightShiftsWeek1[worker] = 0;
                 nightShiftsWeek2[worker] = 0;
+                shiftsWeek1[worker] = 0;
+                shiftsWeek2[worker] = 0;
             });
 
             // Generate schedule for 14 days
@@ -643,38 +647,43 @@
 
                     let selectedWorker;
 
-                    // Rule 5: Ensure everyone gets at least 5 shifts - prioritize workers with fewer shifts
-                    const minShifts = Math.min(...availableWorkers.map(w => totalShiftCount[w]));
-                    const maxShifts = Math.max(...availableWorkers.map(w => totalShiftCount[w]));
+                    // Rule 5: Ensure everyone gets at least 5 shifts PER WEEK
+                    const currentWeekShifts = day <= 6 ? shiftsWeek1 : shiftsWeek2;
+                    const minWeeklyShifts = Math.min(...availableWorkers.map(w => currentWeekShifts[w]));
+                    const maxWeeklyShifts = Math.max(...availableWorkers.map(w => currentWeekShifts[w]));
                     
-                    // If there's a significant gap (someone has much fewer shifts), prioritize them
-                    const workersWithMinShifts = availableWorkers.filter(w => totalShiftCount[w] === minShifts);
-                    const needsPriorityShifts = minShifts < 5 && (maxShifts - minShifts) >= 2;
+                    // Find workers who need more shifts this week (priority for those with < 5 shifts)
+                    const workersNeedingShifts = availableWorkers.filter(w => currentWeekShifts[w] < 5);
+                    const workersWithMinWeeklyShifts = availableWorkers.filter(w => currentWeekShifts[w] === minWeeklyShifts);
+                    
+                    // Determine if we need to prioritize weekly fairness
+                    const needsWeeklyPriority = workersNeedingShifts.length > 0 && (maxWeeklyShifts - minWeeklyShifts) >= 1;
 
                     if (shift === 'night') {
-                        // For night shifts: Find workers with minimum night shifts, then randomize selection
+                        // For night shifts: Balance night limits with weekly fairness
                         const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
                         const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
                         
                         // First filter: workers with minimum nights this week
                         let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
                         
-                        // If multiple candidates and we need to balance total shifts, consider both factors
-                        if (candidateWorkers.length > 1) {
-                            if (needsPriorityShifts) {
-                                // Prioritize workers with fewer total shifts among night shift candidates
-                                const candidatesWithMinShifts = candidateWorkers.filter(w => workersWithMinShifts.includes(w));
-                                if (candidatesWithMinShifts.length > 0) {
-                                    candidateWorkers = candidatesWithMinShifts;
-                                }
+                        // If multiple candidates and we need weekly fairness
+                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
+                            // Prioritize candidates who need more shifts this week
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
                             } else {
-                                // Standard night shift distribution
-                                const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
-                                candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
+                                // Among candidates, pick those with minimum weekly shifts
+                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
+                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
                             }
+                        } else if (candidateWorkers.length > 1) {
+                            // Standard night shift distribution by total nights
+                            const minTotalNightsAmongCandidates = Math.min(...candidateWorkers.map(w => nightShiftCount[w]));
+                            candidateWorkers = candidateWorkers.filter(w => nightShiftCount[w] === minTotalNightsAmongCandidates);
                         }
                         
-                        // Randomly select from the best candidates
                         selectedWorker = getRandomFromArray(candidateWorkers);
                         
                         nightShiftCount[selectedWorker]++;
@@ -684,54 +693,70 @@
                             nightShiftsWeek2[selectedWorker]++;
                         }
                     } else if (isPremiumShift) {
-                        // For premium shifts: Balance weekend distribution and total shifts
+                        // For premium shifts: Balance weekend distribution with weekly fairness
                         const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
                         let candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
                         
-                        // If multiple candidates and we need to balance total shifts
-                        if (candidateWorkers.length > 1 && needsPriorityShifts) {
-                            const candidatesWithMinShifts = candidateWorkers.filter(w => workersWithMinShifts.includes(w));
-                            if (candidatesWithMinShifts.length > 0) {
-                                candidateWorkers = candidatesWithMinShifts;
+                        // If multiple candidates and we need weekly fairness
+                        if (candidateWorkers.length > 1 && needsWeeklyPriority) {
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
+                            } else {
+                                const minWeeklyAmongCandidates = Math.min(...candidateWorkers.map(w => currentWeekShifts[w]));
+                                candidateWorkers = candidateWorkers.filter(w => currentWeekShifts[w] === minWeeklyAmongCandidates);
                             }
                         }
                         
                         selectedWorker = getRandomFromArray(candidateWorkers);
                         weekendShiftCount[selectedWorker]++;
                     } else {
-                        // For regular shifts: Strongly prioritize workers with fewer total shifts
-                        if (needsPriorityShifts) {
-                            // Strongly prioritize workers with minimum shifts
-                            selectedWorker = getRandomFromArray(workersWithMinShifts);
+                        // For regular shifts: STRONGLY prioritize weekly fairness
+                        if (workersNeedingShifts.length > 0) {
+                            // First priority: workers who have < 5 shifts this week
+                            const workersWithMinShiftsAmongNeedy = workersNeedingShifts.filter(w => 
+                                currentWeekShifts[w] === Math.min(...workersNeedingShifts.map(worker => currentWeekShifts[worker]))
+                            );
+                            selectedWorker = getRandomFromArray(workersWithMinShiftsAmongNeedy);
                         } else {
-                            // Use weighted random selection favoring workers with fewer total shifts
-                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, totalShiftCount);
+                            // Everyone has 5+ shifts this week, use balanced selection
+                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, currentWeekShifts);
                         }
                     }
 
                     schedule[day][shift] = selectedWorker;
                     totalShiftCount[selectedWorker]++;
+                    
+                    // Update weekly shift counts
+                    if (day <= 6) {
+                        shiftsWeek1[selectedWorker]++;
+                    } else {
+                        shiftsWeek2[selectedWorker]++;
+                    }
+                    
                     assignedWorkers[day].add(selectedWorker);
                 });
             }
 
             generatedScheduleData = schedule;
-            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2);
+            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2);
             
-            // Check if fairness rule was achieved
-            const minTotalShifts = Math.min(...Object.values(totalShiftCount));
-            const maxTotalShifts = Math.max(...Object.values(totalShiftCount));
-            let fairnessMessage = 'Randomized schedule generated with all rules applied!';
+            // Check weekly fairness achievement
+            const minWeek1Shifts = Math.min(...Object.values(shiftsWeek1));
+            const minWeek2Shifts = Math.min(...Object.values(shiftsWeek2));
+            const overallMinWeekly = Math.min(minWeek1Shifts, minWeek2Shifts);
             
-            if (minTotalShifts >= 5) {
-                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts. Schedule generated successfully!';
-            } else if (minTotalShifts >= 4) {
-                fairnessMessage = '⚠️ Some workers got 4 shifts (minimum possible). Schedule generated with best effort fairness.';
+            let fairnessMessage = 'Schedule generated with weekly fairness focus!';
+            
+            if (overallMinWeekly >= 5) {
+                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts per week!';
+            } else if (overallMinWeekly >= 4) {
+                fairnessMessage = '⚠️ Some workers got 4 shifts in a week (minimum possible for constraints).';
             } else {
-                fairnessMessage = '❌ Warning: Some workers got less than 4 shifts. Consider adding more workers or adjusting preferences.';
+                fairnessMessage = '❌ Warning: Some workers got less than 4 shifts per week. Consider adding more workers.';
             }
             
-            showAlert(fairnessMessage, minTotalShifts >= 5 ? 'success' : 'warning');
+            showAlert(fairnessMessage, overallMinWeekly >= 5 ? 'success' : 'warning');
         }
 
         // Helper function to shuffle array (Fisher-Yates algorithm)
@@ -785,7 +810,7 @@
             return availableWorkers[0];
         }
 
-        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2) {
+        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2) {
             const container = document.getElementById('generatedSchedule');
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - startDate.getDay());
@@ -907,10 +932,10 @@
             container.innerHTML = html;
 
             // Show statistics
-            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2);
+            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2);
         }
 
-        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2) {
+        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2) {
             const statsContainer = document.getElementById('scheduleStats');
             const statsContent = document.getElementById('statsContent');
             
@@ -924,17 +949,28 @@
 
             let html = '';
             
-            // Total shifts distribution
-            html += '<div class="stat-item"><h5>Total Shifts per Worker</h5>';
-            Object.entries(totalShiftCount).forEach(([worker, count]) => {
-                html += `<div>${worker}: ${count} shifts</div>`;
+            // Weekly shifts distribution - Week 1
+            html += '<div class="stat-item"><h5>Week 1 Shifts (Min: 5 per worker)</h5>';
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                const color = count < 5 ? (count < 4 ? 'color: red; font-weight: bold;' : 'color: orange; font-weight: bold;') : 'color: green;';
+                const status = count >= 5 ? '✅' : (count >= 4 ? '⚠️' : '❌');
+                html += `<div style="${color}">${worker}: ${count}/5 shifts ${status}</div>`;
+            });
+            html += '</div>';
+
+            // Weekly shifts distribution - Week 2  
+            html += '<div class="stat-item"><h5>Week 2 Shifts (Min: 5 per worker)</h5>';
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                const color = count < 5 ? (count < 4 ? 'color: red; font-weight: bold;' : 'color: orange; font-weight: bold;') : 'color: green;';
+                const status = count >= 5 ? '✅' : (count >= 4 ? '⚠️' : '❌');
+                html += `<div style="${color}">${worker}: ${count}/5 shifts ${status}</div>`;
             });
             html += '</div>';
             
-            // Night shift distribution - Total
-            html += '<div class="stat-item"><h5>Total Night Shifts (2 weeks)</h5>';
-            Object.entries(nightShiftCount).forEach(([worker, count]) => {
-                html += `<div>${worker}: ${count} nights</div>`;
+            // Total shifts distribution (2 weeks combined)
+            html += '<div class="stat-item"><h5>Total Shifts (2 weeks)</h5>';
+            Object.entries(totalShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} shifts</div>`;
             });
             html += '</div>';
 
@@ -968,20 +1004,23 @@
             html += `<div>Unassigned: ${unassignedShifts}</div>`;
             html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
             
-            // Fairness check - minimum shifts per worker
-            const allShiftCounts = Object.values(totalShiftCount);
-            const minShiftsAssigned = allShiftCounts.length > 0 ? Math.min(...allShiftCounts) : 0;
-            const maxShiftsAssigned = allShiftCounts.length > 0 ? Math.max(...allShiftCounts) : 0;
+            // Weekly fairness check
+            const week1Counts = Object.values(shiftsWeek1);
+            const week2Counts = Object.values(shiftsWeek2);
+            const minWeek1 = week1Counts.length > 0 ? Math.min(...week1Counts) : 0;
+            const minWeek2 = week2Counts.length > 0 ? Math.min(...week2Counts) : 0;
+            const overallMinWeekly = Math.min(minWeek1, minWeek2);
             
-            if (minShiftsAssigned >= 5) {
-                html += `<div style="color: green; font-weight: bold;">✅ Fairness Goal: ${minShiftsAssigned} min shifts</div>`;
-            } else if (minShiftsAssigned >= 4) {
-                html += `<div style="color: orange; font-weight: bold;">⚠️ Fairness: ${minShiftsAssigned} min shifts (target: 5)</div>`;
+            if (overallMinWeekly >= 5) {
+                html += `<div style="color: green; font-weight: bold;">✅ Weekly Goal: ${overallMinWeekly} min shifts/week</div>`;
+            } else if (overallMinWeekly >= 4) {
+                html += `<div style="color: orange; font-weight: bold;">⚠️ Weekly: ${overallMinWeekly} min shifts/week (target: 5)</div>`;
             } else {
-                html += `<div style="color: red; font-weight: bold;">❌ Fairness Issue: ${minShiftsAssigned} min shifts</div>`;
+                html += `<div style="color: red; font-weight: bold;">❌ Weekly Issue: ${overallMinWeekly} min shifts/week</div>`;
             }
             
-            html += `<div>Shift Range: ${minShiftsAssigned}-${maxShiftsAssigned}</div>`;
+            html += `<div>Week 1 Range: ${minWeek1}-${Math.max(...week1Counts)}</div>`;
+            html += `<div>Week 2 Range: ${minWeek2}-${Math.max(...week2Counts)}</div>`;
             
             // Rule compliance check
             const ruleViolations = [];
@@ -1001,14 +1040,17 @@
                 }
             }
             
-            // Check fairness violations
-            if (minShiftsAssigned < 4) {
-                Object.entries(totalShiftCount).forEach(([worker, count]) => {
-                    if (count < 4) {
-                        ruleViolations.push(`${worker}: only ${count} shifts (target: 5 minimum)`);
-                    }
-                });
-            }
+            // Check weekly fairness violations
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 1 (target: 5 minimum)`);
+                }
+            });
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 2 (target: 5 minimum)`);
+                }
+            });
             
             if (ruleViolations.length > 0) {
                 html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
