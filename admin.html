@@ -364,6 +364,23 @@
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
                 </div>
 
+                <!-- Worker Access Management -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3>👥 Worker Access Management</h3>
+                    <p>Manage which workers can access the shift preference system.</p>
+                    
+                    <div style="margin: 15px 0;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="newWorkerName" placeholder="Enter worker name" style="flex: 1; padding: 8px;">
+                            <button class="btn btn-success" onclick="addWorker()">Add Worker</button>
+                        </div>
+                    </div>
+
+                    <div id="approvedWorkersList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
                 <!-- Worker Submissions -->
                 <h3>Worker Submissions</h3>
                 <div id="workerSubmissions" class="workers-list">
@@ -438,7 +455,110 @@
                 workerSubmissions.filter(s => s.approved).length;
 
             displayWorkerSubmissions();
+            displayApprovedWorkers();
         }
+
+        function displayApprovedWorkers() {
+            const container = document.getElementById('approvedWorkersList');
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            if (approvedWorkers.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No approved workers yet. Add worker names to allow access to the system.</div>';
+                return;
+            }
+
+            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
+            
+            approvedWorkers.forEach(workerName => {
+                html += `
+                    <div style="background: white; padding: 10px 15px; border-radius: 5px; border: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight: 500;">${workerName}</span>
+                        <button onclick="removeWorker('${workerName.replace(/'/g, "\\'")}')" 
+                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                            ✕
+                        </button>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            html += '<div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">';
+            html += '<strong>💡 Tip:</strong> Workers must enter their exact name (case-insensitive) to access the system.';
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function addWorker() {
+            const newWorkerName = document.getElementById('newWorkerName').value.trim();
+            
+            if (!newWorkerName) {
+                showAlert('Please enter a worker name.', 'warning');
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            // Check if worker already exists (case-insensitive)
+            const existsAlready = approvedWorkers.some(name => 
+                name.toLowerCase() === newWorkerName.toLowerCase()
+            );
+
+            if (existsAlready) {
+                showAlert('Worker name already exists in the approved list.', 'warning');
+                return;
+            }
+
+            // Add the new worker
+            approvedWorkers.push(newWorkerName);
+            localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+            
+            // Clear input
+            document.getElementById('newWorkerName').value = '';
+            
+            // Refresh display
+            displayApprovedWorkers();
+            
+            showAlert(`Worker "${newWorkerName}" added successfully!`, 'success');
+        }
+
+        function removeWorker(workerName) {
+            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
+                let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+                
+                // Remove the worker (case-sensitive match for exact removal)
+                approvedWorkers = approvedWorkers.filter(name => name !== workerName);
+                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+                
+                // Refresh display
+                displayApprovedWorkers();
+                
+                showAlert(`Worker "${workerName}" removed successfully!`, 'success');
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubmissions();
+            document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+            
+            // Add event listener for new worker input after a brief delay to ensure element exists
+            setTimeout(() => {
+                const newWorkerInput = document.getElementById('newWorkerName');
+                if (newWorkerInput) {
+                    newWorkerInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            addWorker();
+                        }
+                    });
+                }
+            }, 100);
+        });
 
         function displayWorkerSubmissions() {
             const container = document.getElementById('workerSubmissions');
@@ -1203,18 +1323,22 @@
         }
 
         function clearAllData() {
-            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions and generated schedules. This action cannot be undone.')) {
-                if (confirm('This is your final warning. All data will be permanently deleted. Continue?')) {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
+                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
                     workerSubmissions = [];
                     generatedScheduleData = null;
                     saveSubmissions();
+                    
+                    // Also clear approved workers list
+                    localStorage.removeItem('approvedWorkers');
+                    
                     updateAdminDashboard();
                     
                     document.getElementById('generatedSchedule').innerHTML = 
                         '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
                     document.getElementById('scheduleStats').classList.add('hidden');
                     
-                    showAlert('All data has been cleared.', 'success');
+                    showAlert('All data has been cleared, including approved worker names.', 'success');
                 }
             }
         }
