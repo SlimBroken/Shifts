@@ -382,6 +382,15 @@
                     <div id="approvedWorkersList">
                         <!-- Will be populated by JavaScript -->
                     </div>
+
+                    <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;">
+                        <h5>🔍 Test Access Control:</h5>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                            <input type="text" id="testWorkerName" placeholder="Enter name to test" style="flex: 1; padding: 6px;">
+                            <button class="btn" onclick="testWorkerAccess()" style="padding: 6px 12px; font-size: 14px;">Test Access</button>
+                        </div>
+                        <div id="testResult" style="margin-top: 10px;"></div>
+                    </div>
                 </div>
 
                 <!-- Worker Submissions -->
@@ -511,7 +520,7 @@
             
             // Check if worker already exists (case-insensitive)
             const existsAlready = approvedWorkers.some(name => 
-                name.toLowerCase() === newWorkerName.toLowerCase()
+                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
             );
 
             if (existsAlready) {
@@ -523,13 +532,17 @@
             approvedWorkers.push(newWorkerName);
             localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
             
+            // Debug - verify it was saved
+            console.log('Added worker:', newWorkerName);
+            console.log('Updated approved workers:', JSON.parse(localStorage.getItem('approvedWorkers')));
+            
             // Clear input
             document.getElementById('newWorkerName').value = '';
             
             // Refresh display
             displayApprovedWorkers();
             
-            showAlert(`Worker "${newWorkerName}" added successfully!`, 'success');
+            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
         }
 
         function removeWorker(workerName) {
@@ -540,11 +553,41 @@
                 approvedWorkers = approvedWorkers.filter(name => name !== workerName);
                 localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
                 
+                // Debug - verify it was removed
+                console.log('Removed worker:', workerName);
+                console.log('Updated approved workers:', JSON.parse(localStorage.getItem('approvedWorkers')));
+                
                 // Refresh display
                 displayApprovedWorkers();
                 
-                showAlert(`Worker "${workerName}" removed successfully!`, 'success');
+                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
             }
+        }
+
+        function testWorkerAccess() {
+            const testName = document.getElementById('testWorkerName').value.trim();
+            const resultDiv = document.getElementById('testResult');
+            
+            if (!testName) {
+                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            const isApproved = approvedWorkers.some(name => 
+                name.toLowerCase().trim() === testName.toLowerCase().trim()
+            );
+
+            if (isApproved) {
+                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
+            } else {
+                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
+            }
+
+            // Show debug info
+            console.log('Testing access for:', testName);
+            console.log('Approved workers:', approvedWorkers);
+            console.log('Access granted:', isApproved);
         }
 
         // Initialize the application
