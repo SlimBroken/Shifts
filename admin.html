@@ -368,6 +368,9 @@
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
                     <h3>👥 Worker Access Management</h3>
                     <p>Manage which workers can access the shift preference system.</p>
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 14px;">
+                        <strong>⚠️ Important:</strong> Only workers added to this list can submit shift preferences. Workers not on this list will be denied access.
+                    </div>
                     
                     <div style="margin: 15px 0;">
                         <div style="display: flex; gap: 10px; align-items: center;">
@@ -463,7 +466,13 @@
             const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
             
             if (approvedWorkers.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">No approved workers yet. Add worker names to allow access to the system.</div>';
+                container.innerHTML = `
+                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+                        <strong>⚠️ No approved workers!</strong><br>
+                        Workers cannot access the system until you add their names to the approved list.<br>
+                        <small>Add worker names above to allow them to submit shift preferences.</small>
+                    </div>
+                `;
                 return;
             }
 
@@ -483,8 +492,8 @@
             });
             
             html += '</div>';
-            html += '<div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">';
-            html += '<strong>💡 Tip:</strong> Workers must enter their exact name (case-insensitive) to access the system.';
+            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
+            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
             html += '</div>';
 
             container.innerHTML = html;
