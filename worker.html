@@ -198,13 +198,30 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         .alert-danger {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+
+        /* Ensure main worker interface is hidden by default */
+        #mainWorkerInterface {
+            display: none;
+        }
+
+        /* Name verification section styling */
+        #nameVerificationSection {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #verifyWorkerName {
+            max-width: 300px;
+            margin: 0 auto;
         }
 
         @media (max-width: 768px) {
@@ -286,11 +303,11 @@
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            createPreferencesGrid();
+            // Ensure only verification section is shown on page load
+            document.getElementById('nameVerificationSection').style.display = 'block';
+            document.getElementById('mainWorkerInterface').style.display = 'none';
             
-            // Show only verification screen initially - hide main interface
-            document.getElementById('nameVerificationSection').classList.remove('hidden');
-            document.getElementById('mainWorkerInterface').classList.add('hidden');
+            createPreferencesGrid();
             
             // Add enter key support for name verification
             document.getElementById('verifyWorkerName').addEventListener('keypress', function(e) {
@@ -298,6 +315,9 @@
                     verifyWorkerName();
                 }
             });
+            
+            // Focus on name input
+            document.getElementById('verifyWorkerName').focus();
         });
 
         function verifyWorkerName() {
@@ -332,7 +352,6 @@
                 // Hide verification section and show main interface
                 document.getElementById('nameVerificationSection').style.display = 'none';
                 document.getElementById('mainWorkerInterface').style.display = 'block';
-                document.getElementById('mainWorkerInterface').classList.remove('hidden');
                 
                 // Load existing preferences if any
                 loadExistingPreferences();
@@ -355,7 +374,6 @@
             
             // Hide main interface and show verification section
             document.getElementById('mainWorkerInterface').style.display = 'none';
-            document.getElementById('mainWorkerInterface').classList.add('hidden');
             document.getElementById('nameVerificationSection').style.display = 'block';
             
             // Focus on name input
