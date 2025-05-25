@@ -123,6 +123,12 @@
             border: 1px solid #bee5eb;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
         .instructions {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -156,6 +162,35 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .security-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .admin-contact {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .failed-attempts {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -166,9 +201,19 @@
         </div>
 
         <div class="content">
+            <div class="security-notice">
+                <strong>🔒 Secure Access</strong><br>
+                Only authorized workers can access the shift preference system. Enter your exact name as registered by the administrator.
+            </div>
+
             <div class="instructions">
                 <h3>Access Verification</h3>
                 <p>Enter your name to verify access to the shift preference system. Only workers approved by the administrator can proceed.</p>
+                <ul style="margin-top: 10px; font-size: 14px;">
+                    <li>Use your full name as registered</li>
+                    <li>Name matching is case-insensitive</li>
+                    <li>Contact admin if you believe you should have access</li>
+                </ul>
             </div>
 
             <div class="form-group">
@@ -186,10 +231,29 @@
             </div>
 
             <div id="statusMessage"></div>
+
+            <!-- Admin Contact Info (only shown on access denial) -->
+            <div id="adminContact" class="admin-contact" style="display: none;">
+                <h4>Need Access?</h4>
+                <p>If you believe you should have access to this system:</p>
+                <ul>
+                    <li>Contact your administrator or supervisor</li>
+                    <li>Request to be added to the approved workers list</li>
+                    <li>Ensure they use your exact full name when adding you</li>
+                    <li>Try again once you've been added to the system</li>
+                </ul>
+            </div>
+
+            <!-- Failed attempts tracking (for security) -->
+            <div id="failedAttempts" style="display: none;"></div>
         </div>
     </div>
 
     <script>
+        let failedAttemptCount = 0;
+        const maxFailedAttempts = 5;
+        const lockoutDuration = 15 * 60 * 1000; // 15 minutes
+        
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Add enter key support
@@ -199,9 +263,36 @@
                 }
             });
 
+            // Check if user is locked out
+            checkLockoutStatus();
         });
 
+        function checkLockoutStatus() {
+            const lockoutEnd = localStorage.getItem('accessLockoutEnd');
+            if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
+                const remainingTime = Math.ceil((parseInt(lockoutEnd) - Date.now()) / 60000);
+                showLockout(remainingTime);
+                return true;
+            }
+            
+            // Clear expired lockout
+            if (lockoutEnd) {
+                localStorage.removeItem('accessLockoutEnd');
+                localStorage.removeItem('failedAccessAttempts');
+            }
+            
+            // Load failed attempts count
+            failedAttemptCount = parseInt(localStorage.getItem('failedAccessAttempts') || '0');
+            updateFailedAttemptsDisplay();
+            
+            return false;
+        }
+
         function verifyAccess() {
+            if (checkLockoutStatus()) {
+                return; // User is locked out
+            }
+
             const enteredName = document.getElementById('workerName').value.trim();
             const verifyBtn = document.getElementById('verifyBtn');
             const loading = document.getElementById('loading');
@@ -228,10 +319,8 @@
             // Get approved workers list from localStorage
             const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
             
-            console.log('Verification attempt:');
-            console.log('Entered name:', enteredName);
-            console.log('Approved workers:', approvedWorkers);
-            console.log('List length:', approvedWorkers.length);
+            console.log('Verification attempt for:', enteredName);
+            console.log('Approved workers count:', approvedWorkers.length);
 
             // Hide loading
             loading.style.display = 'none';
@@ -239,7 +328,9 @@
 
             // Check if any approved workers exist
             if (approvedWorkers.length === 0) {
-                showStatus('❌ No approved workers found. The administrator must first add worker names to the system. Please contact your administrator.', 'danger');
+                recordFailedAttempt();
+                showStatus('❌ Access system not configured. Contact your administrator to set up worker access.', 'danger');
+                showAdminContact();
                 return;
             }
 
@@ -259,6 +350,10 @@
                 console.log('Exact name found:', exactName);
                 console.log('Redirecting to worker page...');
 
+                // Clear failed attempts on successful login
+                failedAttemptCount = 0;
+                localStorage.removeItem('failedAccessAttempts');
+
                 showStatus('✅ Access granted! Redirecting to shift preference system...', 'success');
                 
                 // Store verified worker name
@@ -271,12 +366,75 @@
                 }, 1500);
 
             } else {
-                showStatus(`❌ Access Denied: "${enteredName}" is not on the approved workers list.<br><br>Contact your administrator to be added.<br><br>Current approved workers: ${approvedWorkers.join(', ')}`, 'danger');
+                recordFailedAttempt();
+                
+                // Generic denial message - NO worker names disclosed
+                showStatus('❌ Access Denied: Name not found in approved workers list.', 'danger');
+                showAdminContact();
                 
                 // Clear the input
                 document.getElementById('workerName').value = '';
                 document.getElementById('workerName').focus();
             }
+        }
+
+        function recordFailedAttempt() {
+            failedAttemptCount++;
+            localStorage.setItem('failedAccessAttempts', failedAttemptCount.toString());
+            
+            console.log('Failed attempt recorded:', failedAttemptCount);
+            
+            updateFailedAttemptsDisplay();
+            
+            // Lock out after max attempts
+            if (failedAttemptCount >= maxFailedAttempts) {
+                const lockoutEnd = Date.now() + lockoutDuration;
+                localStorage.setItem('accessLockoutEnd', lockoutEnd.toString());
+                showLockout(Math.ceil(lockoutDuration / 60000));
+            }
+        }
+
+        function updateFailedAttemptsDisplay() {
+            const failedDiv = document.getElementById('failedAttempts');
+            
+            if (failedAttemptCount > 0) {
+                const remaining = maxFailedAttempts - failedAttemptCount;
+                failedDiv.style.display = 'block';
+                failedDiv.innerHTML = `
+                    <div class="failed-attempts">
+                        <strong>⚠️ Failed Attempts:</strong> ${failedAttemptCount}/${maxFailedAttempts}<br>
+                        ${remaining > 0 ? `${remaining} attempts remaining before temporary lockout.` : ''}
+                    </div>
+                `;
+            } else {
+                failedDiv.style.display = 'none';
+            }
+        }
+
+        function showLockout(remainingMinutes) {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const nameInput = document.getElementById('workerName');
+            
+            verifyBtn.disabled = true;
+            nameInput.disabled = true;
+            
+            showStatus(`🔒 Too many failed attempts. Access locked for ${remainingMinutes} minutes.`, 'warning');
+            
+            // Update countdown every minute
+            const interval = setInterval(() => {
+                if (!checkLockoutStatus()) {
+                    clearInterval(interval);
+                    verifyBtn.disabled = false;
+                    nameInput.disabled = false;
+                    showStatus('🔓 Lockout expired. You can try again.', 'info');
+                    failedAttemptCount = 0;
+                    updateFailedAttemptsDisplay();
+                }
+            }, 60000);
+        }
+
+        function showAdminContact() {
+            document.getElementById('adminContact').style.display = 'block';
         }
 
         function showStatus(message, type) {
