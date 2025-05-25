@@ -404,6 +404,18 @@
             }
         }
 
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('passwordSection').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                updateAdminDashboard();
+            } else {
+                alert('Incorrect password. Please try again.');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
         function loadSubmissions() {
             // Load from localStorage (in production, this would be from GitHub or a database)
             const stored = localStorage.getItem('shiftSubmissions');
