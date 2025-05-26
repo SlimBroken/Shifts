@@ -518,7 +518,7 @@
                 currentDate.setDate(startDate.getDate() + day);
                 
                 const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = currentDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+                const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
                 // Premium shifts: Friday evening to Saturday evening (days 5-6 and 12-13)
                 const isWeekendPremium = (day === 5) || (day === 6) || (day === 12) || (day === 13);
                 
