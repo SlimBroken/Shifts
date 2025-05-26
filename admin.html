@@ -996,7 +996,508 @@
             });
             
             html += '</div>';
-            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
+            html += '<div style="margin-top: 20px;">';
+            html += '<h5>🗓️ שבוע ראשון (Week 1)</h5>';
+            html += '<div id="excelTableWeek1">';
+            html += '<table class="excel-table" dir="rtl" style="direction: rtl;">';
+            
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>';
+            for (let day = 0; day < 7; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                const headerStyle = 'background: #007bff; color: white;';
+                html += `<th style="${headerStyle}">${dateStr}</th>`;
+            }
+            html += '</tr>';
+            
+            html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>';
+            const hebrewDaysOrder = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+            for (let day = 0; day < 7; day++) {
+                const hebrewDay = hebrewDaysOrder[day];
+                const headerStyle = 'background: #6c757d; color: white;';
+                html += `<th style="${headerStyle}">${hebrewDay}</th>`;
+            }
+            html += '</tr>';
+            html += '</thead>';
+            
+            html += '<tbody>';
+            const hebrewShifts = [
+                { name: 'בוקר', key: 'morning', style: 'background: #ffebee;' },
+                { name: 'צהריים', key: 'evening', style: 'background: #e8f5e8;' },
+                { name: 'לילה', key: 'night', style: 'background: #e3f2fd;' }
+            ];
+            
+            hebrewShifts.forEach(hebrewShift => {
+                html += '<tr>';
+                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
+                for (let day = 0; day < 7; day++) {
+                    const worker = schedule[day][hebrewShift.key];
+                    const workerColor = worker ? workerColors[worker] : '';
+                    
+                    let cellStyle = hebrewShift.style;
+                    if (worker && workerColor) {
+                        cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
+                    }
+                    
+                    html += `<td style="${cellStyle}">${worker || ''}</td>`;
+                }
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            html += '</div>';
+
+            // Week 2 Table
+            html += '<div style="margin-top: 30px;">';
+            html += '<h5>🗓️ שבוע שני (Week 2)</h5>';
+            html += '<div id="excelTableWeek2">';
+            html += '<table class="excel-table" dir="rtl" style="direction: rtl;">';
+            
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>';
+            for (let day = 7; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                const headerStyle = 'background: #007bff; color: white;';
+                html += `<th style="${headerStyle}">${dateStr}</th>`;
+            }
+            html += '</tr>';
+            
+            html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>';
+            for (let day = 7; day < 14; day++) {
+                const dayIndex = day - 7;
+                const hebrewDay = hebrewDaysOrder[dayIndex];
+                const headerStyle = 'background: #6c757d; color: white;';
+                html += `<th style="${headerStyle}">${hebrewDay}</th>`;
+            }
+            html += '</tr>';
+            html += '</thead>';
+            
+            html += '<tbody>';
+            hebrewShifts.forEach(hebrewShift => {
+                html += '<tr>';
+                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
+                for (let day = 7; day < 14; day++) {
+                    const worker = schedule[day][hebrewShift.key];
+                    const workerColor = worker ? workerColors[worker] : '';
+                    
+                    let cellStyle = hebrewShift.style;
+                    if (worker && workerColor) {
+                        cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
+                    }
+                    
+                    html += `<td style="${cellStyle}">${worker || ''}</td>`;
+                }
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '<div class="copy-instructions">';
+            html += '<strong>💡 Excel Tips (Hebrew Format with Colors):</strong><br>';
+            html += '• Click "Copy to Clipboard" button above for instant copy<br>';
+            html += '• Or select the entire table and copy (Ctrl+C)<br>';
+            html += '• In Excel, paste (Ctrl+V) - Hebrew format ready<br>';
+            html += '• Each worker has a unique color for easy tracking<br>';
+            html += '• Premium shifts (weekend) have gold headers<br>';
+            html += '• Format: DD.MM.YY with Hebrew day names<br>';
+            html += '• Shifts: בוקר (Morning), צהריים (Evening), לילה (Night)';
+            html += '</div>';
+            
+            html += '</div>';
+
+            container.innerHTML = html;
+            displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
+        }
+
+        function displayScheduleStats(nightShiftCount, weekendShiftCount, totalShiftCount, schedule, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
+            const statsContainer = document.getElementById('scheduleStats');
+            const statsContent = document.getElementById('statsContent');
+            
+            let unassignedShifts = 0;
+            for (let day = 0; day < 14; day++) {
+                if (!schedule[day].morning) unassignedShifts++;
+                if (!schedule[day].evening) unassignedShifts++;
+                if (!schedule[day].night) unassignedShifts++;
+            }
+
+            let html = '';
+            
+            html += '<div class="stat-item"><h5>Week 1 Shifts (Min: 4 guaranteed, Target: 5+)</h5>';
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                let color, status;
+                if (count >= 5) {
+                    color = 'color: green;';
+                    status = '✅';
+                } else if (count >= 4) {
+                    color = 'color: orange; font-weight: bold;';
+                    status = '⚠️';
+                } else {
+                    color = 'color: red; font-weight: bold;';
+                    status = '❌';
+                }
+                html += `<div style="${color}">${worker}: ${count} shifts ${status}</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Week 2 Shifts (Min: 4 guaranteed, Target: 5+)</h5>';
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                let color, status;
+                if (count >= 5) {
+                    color = 'color: green;';
+                    status = '✅';
+                } else if (count >= 4) {
+                    color = 'color: orange; font-weight: bold;';
+                    status = '⚠️';
+                } else {
+                    color = 'color: red; font-weight: bold;';
+                    status = '❌';
+                }
+                html += `<div style="${color}">${worker}: ${count} shifts ${status}</div>`;
+            });
+            html += '</div>';
+            
+            html += '<div class="stat-item"><h5>Total Shifts (2 weeks)</h5>';
+            Object.entries(totalShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} shifts</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Morning Shifts - Week 1 (Min: 1 per worker)</h5>';
+            Object.entries(morningShiftsWeek1).forEach(([worker, count]) => {
+                const color = count === 0 ? 'color: red; font-weight: bold;' : 'color: green;';
+                const status = count >= 1 ? '✅' : '❌';
+                html += `<div style="${color}">${worker}: ${count}/1+ mornings ${status}</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Morning Shifts - Week 2 (Min: 1 per worker)</h5>';
+            Object.entries(morningShiftsWeek2).forEach(([worker, count]) => {
+                const color = count === 0 ? 'color: red; font-weight: bold;' : 'color: green;';
+                const status = count >= 1 ? '✅' : '❌';
+                html += `<div style="${color}">${worker}: ${count}/1+ mornings ${status}</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Night Shifts - Week 1 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Night Shifts - Week 2 (Max: 2)</h5>';
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                const color = count > 2 ? 'color: red; font-weight: bold;' : '';
+                html += `<div style="${color}">${worker}: ${count}/2 nights</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Weekend Premium Shifts</h5>';
+            Object.entries(weekendShiftCount).forEach(([worker, count]) => {
+                html += `<div>${worker}: ${count} weekend shifts</div>`;
+            });
+            html += '</div>';
+
+            html += '<div class="stat-item"><h5>Schedule Summary</h5>';
+            html += `<div>Total Shifts: 42</div>`;
+            html += `<div>Assigned: ${42 - unassignedShifts}</div>`;
+            html += `<div>Unassigned: ${unassignedShifts}</div>`;
+            html += `<div>Coverage: ${Math.round((42 - unassignedShifts) / 42 * 100)}%</div>`;
+            
+            const week1Counts = Object.values(shiftsWeek1);
+            const week2Counts = Object.values(shiftsWeek2);
+            const minWeek1 = week1Counts.length > 0 ? Math.min(...week1Counts) : 0;
+            const minWeek2 = week2Counts.length > 0 ? Math.min(...week2Counts) : 0;
+            const overallMinWeekly = Math.min(minWeek1, minWeek2);
+            
+            const week1MorningCounts = Object.values(morningShiftsWeek1);
+            const week2MorningCounts = Object.values(morningShiftsWeek2);
+            const minWeek1Mornings = week1MorningCounts.length > 0 ? Math.min(...week1MorningCounts) : 0;
+            const minWeek2Mornings = week2MorningCounts.length > 0 ? Math.min(...week2MorningCounts) : 0;
+            const overallMinMornings = Math.min(minWeek1Mornings, minWeek2Mornings);
+            
+            if (overallMinWeekly >= 5 && overallMinMornings >= 1) {
+                html += `<div style="color: green; font-weight: bold;">✅ All Goals Met: ${overallMinWeekly} min shifts/week & ${overallMinMornings} min mornings/week</div>`;
+            } else if (overallMinWeekly >= 4 && overallMinMornings >= 1) {
+                html += `<div style="color: orange; font-weight: bold;">⚠️ Minimum Met: ${overallMinWeekly} min shifts/week & ${overallMinMornings} min mornings/week (Target: 5+ shifts)</div>`;
+            } else if (overallMinWeekly >= 4) {
+                html += `<div style="color: orange; font-weight: bold;">⚠️ Shifts OK (${overallMinWeekly}/week) but mornings low (${overallMinMornings}/week)</div>`;
+            } else if (overallMinMornings >= 1) {
+                html += `<div style="color: red; font-weight: bold;">❌ Critical: Only ${overallMinWeekly} min shifts/week (Minimum: 4, Target: 5+)</div>`;
+            } else {
+                html += `<div style="color: red; font-weight: bold;">❌ Critical Issues: ${overallMinWeekly} min shifts/week & ${overallMinMornings} min mornings/week</div>`;
+            }
+            
+            html += `<div>Week 1 Range: ${minWeek1}-${Math.max(...week1Counts)} shifts</div>`;
+            html += `<div>Week 2 Range: ${minWeek2}-${Math.max(...week2Counts)} shifts</div>`;
+            html += `<div>Week 1 Mornings: ${minWeek1Mornings}-${Math.max(...week1MorningCounts)}</div>`;
+            html += `<div>Week 2 Mornings: ${minWeek2Mornings}-${Math.max(...week2MorningCounts)}</div>`;
+            
+            const ruleViolations = [];
+            Object.entries(nightShiftsWeek1).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 1`);
+            });
+            Object.entries(nightShiftsWeek2).forEach(([worker, count]) => {
+                if (count > 2) ruleViolations.push(`${worker}: ${count} nights in Week 2`);
+            });
+            
+            for (let day = 1; day < 14; day++) {
+                const currentNight = schedule[day].night;
+                const previousNight = schedule[day - 1].night;
+                if (currentNight && previousNight && currentNight === previousNight) {
+                    ruleViolations.push(`${currentNight}: consecutive nights on days ${day} and ${day + 1}`);
+                }
+            }
+            
+            Object.entries(shiftsWeek1).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 1 (CRITICAL: minimum 4 required)`);
+                }
+            });
+            Object.entries(shiftsWeek2).forEach(([worker, count]) => {
+                if (count < 4) {
+                    ruleViolations.push(`${worker}: only ${count} shifts in Week 2 (CRITICAL: minimum 4 required)`);
+                }
+            });
+            
+            Object.entries(morningShiftsWeek1).forEach(([worker, count]) => {
+                if (count === 0) {
+                    ruleViolations.push(`${worker}: no morning shifts in Week 1 (minimum: 1)`);
+                }
+            });
+            Object.entries(morningShiftsWeek2).forEach(([worker, count]) => {
+                if (count === 0) {
+                    ruleViolations.push(`${worker}: no morning shifts in Week 2 (minimum: 1)`);
+                }
+            });
+            
+            if (ruleViolations.length > 0) {
+                html += `<div style="color: red; margin-top: 10px;"><strong>⚠️ Rule Violations:</strong><br>`;
+                ruleViolations.forEach(violation => {
+                    html += `<div>${violation}</div>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="color: green; margin-top: 10px;"><strong>✅ All rules complied</strong></div>`;
+            }
+            
+            html += '</div>';
+
+            statsContent.innerHTML = html;
+            statsContainer.classList.remove('hidden');
+        }
+
+        function exportSchedule() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            let csvContent = 'Date,Day,Morning,Evening,Night,Weekend Premium,Notes\n';
+            const startDate = new Date(2025, 5, 1); // June 1st, 2025
+
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString();
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                csvContent += `"${dateStr}","${dayName}",`;
+                csvContent += `"${generatedScheduleData[day].morning || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].evening || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].night || 'Unassigned'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Yes' : 'No'}",`;
+                csvContent += `"${generatedScheduleData[day].isWeekendPremium ? 'Premium pay rate applies' : ''}"\n`;
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Schedule exported successfully!', 'success');
+        }
+
+        function copyExcelFormat() {
+            if (!generatedScheduleData) {
+                showAlert('Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const startDate = new Date(2025, 5, 1); // June 1st, 2025
+
+            let excelText = '';
+            
+            excelText += 'שבוע ראשון (Week 1)\n';
+            excelText += '\n';
+            
+            excelText += '\t';
+            for (let day = 0; day < 7; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                excelText += dateStr + '\t';
+            }
+            excelText += '\n';
+            
+            excelText += '\t';
+            const hebrewDaysOrder = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+            for (let i = 0; i < 7; i++) {
+                const hebrewDay = hebrewDaysOrder[i];
+                excelText += hebrewDay + '\t';
+            }
+            excelText += '\n';
+
+            const hebrewCopyShifts = [
+                { name: 'בוקר', key: 'morning' },
+                { name: 'צהריים', key: 'evening' },
+                { name: 'לילה', key: 'night' }
+            ];
+
+            hebrewCopyShifts.forEach(hebrewCopyShift => {
+                excelText += hebrewCopyShift.name + '\t';
+                for (let day = 0; day < 7; day++) {
+                    const worker = generatedScheduleData[day][hebrewCopyShift.key];
+                    excelText += (worker || '') + '\t';
+                }
+                excelText += '\n';
+            });
+
+            excelText += '\n\n';
+
+            excelText += 'שבוע שני (Week 2)\n';
+            excelText += '\n';
+            
+            excelText += '\t';
+            for (let day = 7; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dateStr = currentDate.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: '2-digit' 
+                }).replace(/\//g, '.');
+                excelText += dateStr + '\t';
+            }
+            excelText += '\n';
+            
+            excelText += '\t';
+            for (let i = 0; i < 7; i++) {
+                const hebrewDay = hebrewDaysOrder[i];
+                excelText += hebrewDay + '\t';
+            }
+            excelText += '\n';
+
+            hebrewCopyShifts.forEach(hebrewCopyShift => {
+                excelText += hebrewCopyShift.name + '\t';
+                for (let day = 7; day < 14; day++) {
+                    const worker = generatedScheduleData[day][hebrewCopyShift.key];
+                    excelText += (worker || '') + '\t';
+                }
+                excelText += '\n';
+            });
+
+            navigator.clipboard.writeText(excelText).then(() => {
+                showAlert('Hebrew RTL schedule format (2 weeks separated) copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+            }).catch(err => {
+                const textArea = document.createElement('textarea');
+                textArea.value = excelText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('Hebrew RTL schedule format (2 weeks separated) copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+            });
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
+                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
+                    workerSubmissions = [];
+                    generatedScheduleData = null;
+                    currentGeneration = 0;
+                    totalPossibleGenerations = 0;
+                    
+                    localStorage.removeItem('approvedWorkers');
+                    localStorage.removeItem('preferencesLocked');
+                    localStorage.removeItem('lockTimestamp');
+                    
+                    saveSubmissions();
+                    updateAdminDashboard();
+                    updateGenerationCounter();
+                    
+                    document.getElementById('generatedSchedule').innerHTML = 
+                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
+                    document.getElementById('scheduleStats').classList.add('hidden');
+                    
+                    showAlert('All data has been cleared, including approved worker names.', 'success');
+                }
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertClass = `alert-${type}`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.innerHTML = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize with Enter key support
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const newWorkerInput = document.getElementById('newWorkerName');
+                if (newWorkerInput) {
+                    newWorkerInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            addWorker();
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        // Cleanup interval on page unload
+        window.addEventListener('beforeunload', function() {
+            if (syncIntervalId) {
+                clearInterval(syncIntervalId);
+            }
+        });
+    </script>
+</body>
+</html> 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
             html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
             html += '</div>';
 
