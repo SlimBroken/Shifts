@@ -903,6 +903,22 @@
                         }
                     }
 
+                    // Rule 5: No "888" pattern - worker cannot work 3 shifts with only 1 day break between them
+                    // Pattern: Work Day X, Off Day X+1, Work Day X+2, Off Day X+3, Work Day X+4
+                    if (day >= 4) {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            // Check if this worker would create an 888 pattern
+                            const workedDay0 = schedule[day - 4] && (schedule[day - 4].morning === worker || schedule[day - 4].evening === worker || schedule[day - 4].night === worker);
+                            const workedDay2 = schedule[day - 2] && (schedule[day - 2].morning === worker || schedule[day - 2].evening === worker || schedule[day - 2].night === worker);
+                            
+                            // If worker worked on day-4 and day-2, they cannot work today (would create 888)
+                            if (workedDay0 && workedDay2) {
+                                return false; // This would create 888 pattern, exclude this worker
+                            }
+                            return true; // Safe to assign
+                        });
+                    }
+
                     if (availableWorkers.length === 0) {
                         return; // No one available for this shift
                     }
@@ -1486,6 +1502,26 @@
                 if (currentNight && previousNight && currentNight === previousNight) {
                     ruleViolations.push(`${currentNight}: consecutive nights on days ${day} and ${day + 1}`);
                 }
+            }
+            
+            // Check for 888 pattern violations (work-off-work-off-work)
+            for (let day = 4; day < 14; day++) {
+                const workers = [...new Set(Object.values(schedule).flatMap(d => [d.morning, d.evening, d.night]).filter(w => w))];
+                
+                workers.forEach(worker => {
+                    // Check if worker worked on day-4, day-2, and current day
+                    const workedDay0 = schedule[day - 4] && (schedule[day - 4].morning === worker || schedule[day - 4].evening === worker || schedule[day - 4].night === worker);
+                    const workedDay2 = schedule[day - 2] && (schedule[day - 2].morning === worker || schedule[day - 2].evening === worker || schedule[day - 2].night === worker);
+                    const workedToday = schedule[day] && (schedule[day].morning === worker || schedule[day].evening === worker || schedule[day].night === worker);
+                    
+                    // Check if days in between were off (day-3 and day-1)
+                    const offDay1 = schedule[day - 3] && !(schedule[day - 3].morning === worker || schedule[day - 3].evening === worker || schedule[day - 3].night === worker);
+                    const offDay3 = schedule[day - 1] && !(schedule[day - 1].morning === worker || schedule[day - 1].evening === worker || schedule[day - 1].night === worker);
+                    
+                    if (workedDay0 && offDay1 && workedDay2 && offDay3 && workedToday) {
+                        ruleViolations.push(`${worker}: 888 pattern detected on days ${day - 3}, ${day - 1}, ${day + 1} (work-off-work-off-work)`);
+                    }
+                });
             }
             
             // Check weekly fairness violations (updated with new 4-shift minimum rule)
