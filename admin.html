@@ -413,7 +413,12 @@
                     <button class="btn btn-secondary" onclick="exportSchedule()">📊 Export Schedule (CSV)</button>
                     <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
+                    <button class="btn" onclick="manualSync()" id="syncBtn">🔄 Sync Now</button>
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+                    
+                    <div id="syncStatus" style="margin-top: 10px; font-size: 12px;">
+                        <!-- Sync status will be shown here -->
+                    </div>
                 </div>
 
                 <!-- Worker Access Management -->
@@ -484,9 +489,15 @@
         let currentGeneration = 0;
         let totalPossibleGenerations = 0;
         const ADMIN_PASSWORD = 'admin123'; // Change this in production!
+        
+        // Shared storage configuration
+      //  const GITHUB_TOKEN = ''; 
+        //const GIST_ID = '';
+        let syncEnabled = false; // Will be enabled if GitHub config is provided
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            checkSyncConfig();
             loadSubmissions();
             document.getElementById('adminPassword').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -494,6 +505,97 @@
                 }
             });
         });
+
+        function checkSyncConfig() {
+            // Check if GitHub sync is configured
+            syncEnabled = GITHUB_TOKEN !== 'github_pat_11EXAMPLE_TOKEN_HERE' && GIST_ID !== 'your_gist_id_here';
+            
+            if (!syncEnabled) {
+                console.log('Sync disabled - using local storage only. Configure GITHUB_TOKEN and GIST_ID for shared data.');
+            } else {
+                console.log('Sync enabled - data will be shared between all admin users.');
+                // Auto-sync every 30 seconds when enabled
+                setInterval(syncFromGitHub, 30000);
+                // Initial sync on load
+                syncFromGitHub();
+            }
+        }
+
+        async function syncToGitHub() {
+            if (!syncEnabled) return;
+            
+            try {
+                const data = {
+                    shiftSubmissions: workerSubmissions,
+                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                    lockTimestamp: localStorage.getItem('lockTimestamp'),
+                    lastUpdate: Date.now()
+                };
+
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'shift_data.json': {
+                                content: JSON.stringify(data, null, 2)
+                            }
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('Data synced to GitHub successfully');
+                } else {
+                    console.error('Failed to sync to GitHub:', response.status);
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+            }
+        }
+
+        async function syncFromGitHub() {
+            if (!syncEnabled) return;
+            
+            try {
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                    }
+                });
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    const fileContent = gist.files['shift_data.json']?.content;
+                    
+                    if (fileContent) {
+                        const data = JSON.parse(fileContent);
+                        
+                        // Update local data if GitHub data is newer
+                        const localLastUpdate = parseInt(localStorage.getItem('lastUpdate') || '0');
+                        if (data.lastUpdate > localLastUpdate) {
+                            workerSubmissions = data.shiftSubmissions || [];
+                            localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                            localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                            localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                            localStorage.setItem('lastUpdate', data.lastUpdate.toString());
+                            
+                            // Update UI if admin panel is open
+                            if (!document.getElementById('adminContent').classList.contains('hidden')) {
+                                updateAdminDashboard();
+                                showAlert('Data synchronized from shared storage', 'info');
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync from GitHub:', error);
+            }
+        }
 
         function checkPassword() {
             const password = document.getElementById('adminPassword').value;
@@ -515,6 +617,12 @@
 
         function saveSubmissions() {
             localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+            localStorage.setItem('lastUpdate', Date.now().toString());
+            
+            // Sync to GitHub if enabled
+            if (syncEnabled) {
+                syncToGitHub();
+            }
         }
 
         function refreshData() {
@@ -546,6 +654,57 @@
             displayWorkerSubmissions();
             displayApprovedWorkers();
             updateLockStatus();
+            updateSyncStatus();
+        }
+
+        function updateSyncStatus() {
+            const syncStatusDiv = document.getElementById('syncStatus');
+            const syncBtn = document.getElementById('syncBtn');
+            
+            if (syncEnabled) {
+                const lastUpdate = localStorage.getItem('lastUpdate');
+                const lastUpdateTime = lastUpdate ? new Date(parseInt(lastUpdate)).toLocaleString() : 'Never';
+                
+                syncStatusDiv.innerHTML = `
+                    <div style="color: green;">
+                        ✅ Shared Storage: Active<br>
+                        <small>Last sync: ${lastUpdateTime} | Auto-sync every 30s</small>
+                    </div>
+                `;
+                syncBtn.style.display = 'inline-block';
+            } else {
+                syncStatusDiv.innerHTML = `
+                    <div style="color: orange;">
+                        ⚠️ Shared Storage: Disabled<br>
+                        <small>Each admin sees only their local data. Configure GitHub sync for shared data.</small>
+                    </div>
+                `;
+                syncBtn.style.display = 'none';
+            }
+        }
+
+        async function manualSync() {
+            if (!syncEnabled) {
+                showAlert('Sync is not configured. Please set up GitHub integration.', 'warning');
+                return;
+            }
+            
+            const syncBtn = document.getElementById('syncBtn');
+            syncBtn.textContent = '🔄 Syncing...';
+            syncBtn.disabled = true;
+            
+            try {
+                await syncFromGitHub();
+                await syncToGitHub();
+                updateSyncStatus();
+                showAlert('Manual sync completed successfully!', 'success');
+            } catch (error) {
+                showAlert('Sync failed. Check console for details.', 'danger');
+                console.error('Manual sync error:', error);
+            } finally {
+                syncBtn.textContent = '🔄 Sync Now';
+                syncBtn.disabled = false;
+            }
         }
 
         function togglePreferenceLock() {
@@ -555,8 +714,14 @@
             localStorage.setItem('preferencesLocked', newLockState.toString());
             localStorage.setItem('lockTimestamp', Date.now().toString());
             localStorage.setItem('lockSetBy', 'admin');
+            localStorage.setItem('lastUpdate', Date.now().toString());
             
             updateLockStatus();
+            
+            // Sync to GitHub if enabled
+            if (syncEnabled) {
+                syncToGitHub();
+            }
             
             if (newLockState) {
                 showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
