@@ -410,7 +410,6 @@
                 <!-- Admin Actions -->
                 <div class="admin-actions">
                     <h3>Quick Actions</h3>
-                    <button class="btn btn-success" onclick="generateSchedule()">🔄 Generate Optimized Schedule</button>
                     <button class="btn btn-secondary" onclick="exportSchedule()">📊 Export Schedule (CSV)</button>
                     <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
@@ -450,6 +449,13 @@
                 <h3>Worker Submissions</h3>
                 <div id="workerSubmissions" class="workers-list">
                     <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Schedule Generation -->
+                <div style="margin: 30px 0; text-align: center;">
+                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
+                        🔄 Generate Optimized Schedule
+                    </button>
                 </div>
 
                 <!-- Generated Schedule -->
