@@ -537,22 +537,22 @@
                         <div class="day-label">${dayName}<br>${dateStr}</div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})">
+                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
                             <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
                         </div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})">
+                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
                             <label for="morning_${day}">M<br><small>07-15</small></label>
                         </div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})">
+                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
                             <label for="evening_${day}">E<br><small>15-23</small>${(day === 5 || day === 12) ? '<br>💰' : ''}</label>
                         </div>
                         
                         <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})">
+                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
                             <label for="night_${day}">N<br><small>23-07</small></label>
                         </div>
                         
