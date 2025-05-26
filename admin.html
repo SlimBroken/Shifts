@@ -1191,7 +1191,7 @@
                     year: '2-digit' 
                 }).replace(/\//g, '.');
                 const isPremium = schedule[day].isWeekendPremium;
-                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                const headerStyle = isPremium ? 'background: #007bff; color: white;' : 'background: #007bff; color: white;';
                 html += `<th style="${headerStyle}">${dateStr}</th>`;
             }
             html += '</tr>';
@@ -1203,7 +1203,7 @@
             for (let day = 0; day < 7; day++) {
                 const hebrewDay = hebrewDaysOrder[day];
                 const isPremium = schedule[day].isWeekendPremium;
-                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #6c757d; color: white;';
+                const headerStyle = isPremium ? 'background: #6c757d; color: white;' : 'background: #6c757d; color: white;';
                 html += `<th style="${headerStyle}">${hebrewDay}</th>`;
             }
             html += '</tr>';
@@ -1228,8 +1228,6 @@
                     let cellStyle = hebrewShift.style;
                     if (worker && workerColor) {
                         cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
-                    } else if (isPremium) {
-                        cellStyle = 'background: #fff9e6;';
                     }
                     
                     html += `<td style="${cellStyle}">${worker || ''}</td>`;
@@ -1260,7 +1258,7 @@
                     year: '2-digit' 
                 }).replace(/\//g, '.');
                 const isPremium = schedule[day].isWeekendPremium;
-                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
+                const headerStyle = isPremium ? 'background: #007bff; color: white;' : 'background: #007bff; color: white;';
                 html += `<th style="${headerStyle}">${dateStr}</th>`;
             }
             html += '</tr>';
@@ -1272,7 +1270,7 @@
                 const dayIndex = day - 7; // 0-6 for Sunday-Saturday
                 const hebrewDay = hebrewDaysOrder[dayIndex];
                 const isPremium = schedule[day].isWeekendPremium;
-                const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #6c757d; color: white;';
+                const headerStyle = isPremium ? 'background: #6c757d; color: white;' : 'background: #6c757d; color: white;';
                 html += `<th style="${headerStyle}">${hebrewDay}</th>`;
             }
             html += '</tr>';
@@ -1291,8 +1289,6 @@
                     let cellStyle = hebrewShift.style;
                     if (worker && workerColor) {
                         cellStyle = `background-color: ${workerColor}; border: 2px solid #333;`;
-                    } else if (isPremium) {
-                        cellStyle = 'background: #fff9e6;';
                     }
                     
                     html += `<td style="${cellStyle}">${worker || ''}</td>`;
