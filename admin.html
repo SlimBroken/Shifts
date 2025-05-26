@@ -1181,6 +1181,7 @@
             // Week 1 Excel table header - Dates row (Hebrew format)
             html += '<thead>';
             html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>'; // Shift names column on the LEFT
             for (let day = 0; day < 7; day++) { // Left to right: Sunday to Saturday
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1193,11 +1194,11 @@
                 const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
                 html += `<th style="${headerStyle}">${dateStr}</th>`;
             }
-            html += '<th style="background: #343a40; color: white;"></th>'; // Shift names column on the right
             html += '</tr>';
             
-            // Week 1 Day names row (Hebrew) - Hebrew days from right to left: ראשון to שבת
+            // Week 1 Day names row (Hebrew) - Hebrew days from left to right: ראשון to שבת
             html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>'; // Empty cell for shift names
             const hebrewDaysOrder = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']; // Sunday to Saturday
             for (let day = 0; day < 7; day++) {
                 const hebrewDay = hebrewDaysOrder[day];
@@ -1205,7 +1206,6 @@
                 const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #6c757d; color: white;';
                 html += `<th style="${headerStyle}">${hebrewDay}</th>`;
             }
-            html += '<th style="background: #343a40; color: white;"></th>'; // Empty cell
             html += '</tr>';
             html += '</thead>';
             
@@ -1219,6 +1219,7 @@
             
             hebrewShifts.forEach(hebrewShift => {
                 html += '<tr>';
+                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
                 for (let day = 0; day < 7; day++) { // Left to right: Sunday to Saturday
                     const worker = schedule[day][hebrewShift.key];
                     const isPremium = schedule[day].isWeekendPremium;
@@ -1233,7 +1234,6 @@
                     
                     html += `<td style="${cellStyle}">${worker || ''}</td>`;
                 }
-                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
                 html += '</tr>';
             });
             html += '</tbody>';
@@ -1250,6 +1250,7 @@
             // Week 2 Excel table header - Dates row (Hebrew format)
             html += '<thead>';
             html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>'; // Shift names column on the LEFT
             for (let day = 7; day < 14; day++) { // Left to right: Sunday to Saturday
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1262,11 +1263,11 @@
                 const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #007bff; color: white;';
                 html += `<th style="${headerStyle}">${dateStr}</th>`;
             }
-            html += '<th style="background: #343a40; color: white;"></th>'; // Shift names column on the right
             html += '</tr>';
             
             // Week 2 Day names row (Hebrew) - Hebrew days from left to right: ראשון to שבת
             html += '<tr>';
+            html += '<th style="background: #343a40; color: white;"></th>'; // Empty cell for shift names
             for (let day = 7; day < 14; day++) {
                 const dayIndex = day - 7; // 0-6 for Sunday-Saturday
                 const hebrewDay = hebrewDaysOrder[dayIndex];
@@ -1274,7 +1275,6 @@
                 const headerStyle = isPremium ? 'background: #ffc107; color: #000;' : 'background: #6c757d; color: white;';
                 html += `<th style="${headerStyle}">${hebrewDay}</th>`;
             }
-            html += '<th style="background: #343a40; color: white;"></th>'; // Empty cell
             html += '</tr>';
             html += '</thead>';
             
@@ -1282,6 +1282,7 @@
             html += '<tbody>';
             hebrewShifts.forEach(hebrewShift => {
                 html += '<tr>';
+                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
                 for (let day = 7; day < 14; day++) { // Left to right: Sunday to Saturday
                     const worker = schedule[day][hebrewShift.key];
                     const isPremium = schedule[day].isWeekendPremium;
@@ -1296,7 +1297,6 @@
                     
                     html += `<td style="${cellStyle}">${worker || ''}</td>`;
                 }
-                html += `<td style="background: #343a40; color: white; font-weight: bold; text-align: center;">${hebrewShift.name}</td>`;
                 html += '</tr>';
             });
             html += '</tbody>';
@@ -1574,7 +1574,8 @@
             excelText += 'שבוע ראשון (Week 1)\n';
             excelText += '\n'; // Empty line
             
-            // Week 1 - Header row 1: Dates (DD.MM.YY format) - LEFT TO RIGHT (ראשון to שבת)
+            // Week 1 - Header row 1: Shift column + Dates (DD.MM.YY format) 
+            excelText += '\t'; // Empty cell for shift names column on the LEFT
             for (let day = 0; day < 7; day++) { // Sunday to Saturday
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1585,19 +1586,18 @@
                 }).replace(/\//g, '.');
                 excelText += dateStr + '\t';
             }
-            excelText += '\t'; // Empty cell for shift names column on the right
             excelText += '\n';
             
-            // Week 1 - Header row 2: Hebrew day names - LEFT TO RIGHT (ראשון to שבת)
+            // Week 1 - Header row 2: Shift column + Hebrew day names 
+            excelText += '\t'; // Empty cell for shift names column on the LEFT
             const hebrewDaysOrder = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']; // Sunday to Saturday
             for (let i = 0; i < 7; i++) {
                 const hebrewDay = hebrewDaysOrder[i];
                 excelText += hebrewDay + '\t';
             }
-            excelText += '\t'; // Empty cell for shift names column on the right
             excelText += '\n';
 
-            // Week 1 - Data rows: Each shift type as a row (Hebrew names on the RIGHT)
+            // Week 1 - Data rows: Each shift type as a row (Hebrew names on the LEFT)
             const hebrewCopyShifts = [
                 { name: 'בוקר', key: 'morning' },
                 { name: 'צהריים', key: 'evening' },
@@ -1605,11 +1605,12 @@
             ];
 
             hebrewCopyShifts.forEach(hebrewCopyShift => {
+                excelText += hebrewCopyShift.name + '\t'; // Shift name on the LEFT
                 for (let day = 0; day < 7; day++) { // Sunday to Saturday
                     const worker = generatedScheduleData[day][hebrewCopyShift.key];
                     excelText += (worker || '') + '\t';
                 }
-                excelText += hebrewCopyShift.name + '\n'; // Shift name on the RIGHT
+                excelText += '\n';
             });
 
             // Empty lines between weeks
@@ -1619,7 +1620,8 @@
             excelText += 'שבוע שני (Week 2)\n';
             excelText += '\n'; // Empty line
             
-            // Week 2 - Header row 1: Dates (DD.MM.YY format) - LEFT TO RIGHT (ראשון to שבת)
+            // Week 2 - Header row 1: Shift column + Dates (DD.MM.YY format)
+            excelText += '\t'; // Empty cell for shift names column on the LEFT
             for (let day = 7; day < 14; day++) { // Sunday to Saturday
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1630,24 +1632,24 @@
                 }).replace(/\//g, '.');
                 excelText += dateStr + '\t';
             }
-            excelText += '\t'; // Empty cell for shift names column on the right
             excelText += '\n';
             
-            // Week 2 - Header row 2: Hebrew day names - LEFT TO RIGHT (ראשון to שבת)
+            // Week 2 - Header row 2: Shift column + Hebrew day names
+            excelText += '\t'; // Empty cell for shift names column on the LEFT
             for (let i = 0; i < 7; i++) {
                 const hebrewDay = hebrewDaysOrder[i];
                 excelText += hebrewDay + '\t';
             }
-            excelText += '\t'; // Empty cell for shift names column on the right
             excelText += '\n';
 
-            // Week 2 - Data rows: Each shift type as a row (Hebrew names on the RIGHT)
+            // Week 2 - Data rows: Each shift type as a row (Hebrew names on the LEFT)
             hebrewCopyShifts.forEach(hebrewCopyShift => {
+                excelText += hebrewCopyShift.name + '\t'; // Shift name on the LEFT
                 for (let day = 7; day < 14; day++) { // Sunday to Saturday
                     const worker = generatedScheduleData[day][hebrewCopyShift.key];
                     excelText += (worker || '') + '\t';
                 }
-                excelText += hebrewCopyShift.name + '\n'; // Shift name on the RIGHT
+                excelText += '\n';
             });
 
             // Copy to clipboard
