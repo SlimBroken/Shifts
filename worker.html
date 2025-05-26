@@ -507,12 +507,12 @@
 
         function createPreferencesGrid() {
             const grid = document.getElementById('preferencesGrid');
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from Sunday
+            // Start from June 1st, 2025
+            const startDate = new Date(2025, 5, 1); // Month is 0-indexed, so 5 = June
             
             let gridHTML = '';
 
-            // Create grid for 14 days
+            // Create grid for 14 days starting from June 1st
             for (let day = 0; day < 14; day++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
