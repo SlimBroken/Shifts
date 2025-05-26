@@ -523,6 +523,19 @@
             showAlert('Data refreshed successfully!', 'success');
         }
 
+        function updateGenerationCounter() {
+            const counterDiv = document.getElementById('generationCounter');
+            if (currentGeneration > 0) {
+                counterDiv.innerHTML = `
+                    <div style="background: #e9ecef; padding: 8px 15px; border-radius: 5px; display: inline-block;">
+                        <strong>Generation ${currentGeneration.toLocaleString()}</strong> of 
+                        <span style="color: #007bff;">~${totalPossibleGenerations.toLocaleString()}</span> possible variations
+                        <br><small style="color: #6c757d;">Each generation creates a unique schedule combination</small>
+                    </div>
+                `;
+            }
+        }
+
         function updateAdminDashboard() {
             document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
             document.getElementById('pendingApprovals').textContent = 
