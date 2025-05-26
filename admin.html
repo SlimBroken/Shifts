@@ -414,6 +414,7 @@
                     <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
                     <button class="btn" onclick="manualSync()" id="syncBtn">🔄 Sync Now</button>
+                    <button class="btn" onclick="forceClearAndSync()" id="forceSync" style="background: #ffc107;">🔄 Force Full Sync</button>
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
                     
                     <div id="syncStatus" style="margin-top: 10px; font-size: 12px;">
@@ -491,14 +492,17 @@
         const ADMIN_PASSWORD = 'admin123'; // Change this in production!
         
         // Shared storage configuration
-          const GITHUB_TOKEN = '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'; 
-          const GIST_ID = 'ea6ff1d66881230e1bb163d3264423aa';
+        const GITHUB_TOKEN = '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'; 
+        const GIST_ID = 'ea6ff1d66881230e1bb163d3264423aa';
         let syncEnabled = false; // Will be enabled if GitHub config is provided
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             checkSyncConfig();
-            loadSubmissions();
+            // Don't load local data immediately if sync is enabled
+            if (!syncEnabled) {
+                loadSubmissions();
+            }
             document.getElementById('adminPassword').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     checkPassword();
@@ -512,12 +516,18 @@
             
             if (!syncEnabled) {
                 console.log('Sync disabled - using local storage only. Configure GITHUB_TOKEN and GIST_ID for shared data.');
+                loadSubmissions(); // Load local data if sync disabled
             } else {
                 console.log('Sync enabled - data will be shared between all admin users.');
                 // Auto-sync every 30 seconds when enabled
                 setInterval(syncFromGitHub, 30000);
-                // Initial sync on load
-                syncFromGitHub();
+                // Initial sync on load - this will load the shared data
+                syncFromGitHub().then(() => {
+                    console.log('Initial sync completed');
+                }).catch(() => {
+                    console.log('Initial sync failed, falling back to local storage');
+                    loadSubmissions(); // Fallback to local if sync fails
+                });
             }
         }
 
@@ -562,6 +572,7 @@
             if (!syncEnabled) return;
             
             try {
+                console.log('Syncing from GitHub...');
                 const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                     headers: {
                         'Authorization': `token ${GITHUB_TOKEN}`,
@@ -574,26 +585,36 @@
                     
                     if (fileContent) {
                         const data = JSON.parse(fileContent);
+                        console.log('GitHub data received:', data);
                         
-                        // Update local data if GitHub data is newer
-                        const localLastUpdate = parseInt(localStorage.getItem('lastUpdate') || '0');
-                        if (data.lastUpdate > localLastUpdate) {
-                            workerSubmissions = data.shiftSubmissions || [];
-                            localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                            localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                            localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                            localStorage.setItem('lastUpdate', data.lastUpdate.toString());
-                            
-                            // Update UI if admin panel is open
-                            if (!document.getElementById('adminContent').classList.contains('hidden')) {
-                                updateAdminDashboard();
-                                showAlert('Data synchronized from shared storage', 'info');
-                            }
+                        // Always update from GitHub data (don't check timestamps on initial load)
+                        workerSubmissions = data.shiftSubmissions || [];
+                        localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                        localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                        localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                        localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                        localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
+                        
+                        console.log('Data updated from GitHub');
+                        
+                        // Update UI if admin panel is open
+                        if (!document.getElementById('adminContent').classList.contains('hidden')) {
+                            updateAdminDashboard();
+                            showAlert('Data synchronized from shared storage', 'info');
                         }
+                    } else {
+                        console.log('No data found in GitHub, initializing empty gist');
+                        // Initialize empty gist if it's empty
+                        await syncToGitHub();
+                        loadSubmissions(); // Load local data as fallback
                     }
+                } else {
+                    console.error('GitHub API error:', response.status, response.statusText);
+                    loadSubmissions(); // Fallback to local storage
                 }
             } catch (error) {
                 console.error('Failed to sync from GitHub:', error);
+                loadSubmissions(); // Fallback to local storage
             }
         }
 
@@ -704,6 +725,47 @@
             } finally {
                 syncBtn.textContent = '🔄 Sync Now';
                 syncBtn.disabled = false;
+            }
+        }
+
+        async function forceClearAndSync() {
+            if (!syncEnabled) {
+                showAlert('Sync is not configured.', 'warning');
+                return;
+            }
+            
+            if (confirm('🔄 Force Full Sync?\n\nThis will:\n1. Clear all local data\n2. Download fresh data from GitHub\n3. Ensure you see the same data as other admins\n\nContinue?')) {
+                const forceBtn = document.getElementById('forceSync');
+                forceBtn.textContent = '🔄 Syncing...';
+                forceBtn.disabled = true;
+                
+                try {
+                    // Clear local storage
+                    localStorage.removeItem('shiftSubmissions');
+                    localStorage.removeItem('approvedWorkers');
+                    localStorage.removeItem('preferencesLocked');
+                    localStorage.removeItem('lockTimestamp');
+                    localStorage.removeItem('lastUpdate');
+                    
+                    // Reset variables
+                    workerSubmissions = [];
+                    currentGeneration = 0;
+                    totalPossibleGenerations = 0;
+                    
+                    // Force download from GitHub
+                    await syncFromGitHub();
+                    
+                    // Update UI
+                    updateAdminDashboard();
+                    
+                    showAlert('✅ Full sync completed! You now see the shared data.', 'success');
+                } catch (error) {
+                    showAlert('Force sync failed. Check console for details.', 'danger');
+                    console.error('Force sync error:', error);
+                } finally {
+                    forceBtn.textContent = '🔄 Force Full Sync';
+                    forceBtn.disabled = false;
+                }
             }
         }
 
