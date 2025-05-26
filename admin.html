@@ -168,6 +168,12 @@
             border: 1px solid #ffeaa7;
         }
 
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -239,13 +245,6 @@
             font-size: 12px;
         }
 
-        #excelTable {
-            overflow-x: auto;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
         .schedule-stats {
             background: #f8f9fa;
             padding: 20px;
@@ -265,12 +264,6 @@
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #dee2e6;
-        }
-
-        .preferences-summary {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 5px;
         }
 
         .admin-actions {
@@ -346,6 +339,14 @@
             border: 1px solid #f5c6cb;
         }
 
+        .token-setup {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
         .hidden {
             display: none;
         }
@@ -389,11 +390,32 @@
             </div>
 
             <div id="adminContent" class="hidden">
+                <!-- GitHub Token Setup -->
+                <div id="tokenSetupSection" class="token-setup">
+                    <h4>🔧 GitHub Sync Configuration</h4>
+                    <p><strong>Current Status:</strong> <span id="tokenStatus">Checking...</span></p>
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer; font-weight: bold;">🔨 Fix Token Issues</summary>
+                        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <p><strong>If sync is not working:</strong></p>
+                            <ol style="margin: 10px 0; padding-left: 20px;">
+                                <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Personal Access Tokens</a></li>
+                                <li>Create a new token with <strong>gist</strong> scope</li>
+                                <li>Update the <code>GITHUB_TOKEN</code> in this file (line ~270)</li>
+                                <li>Refresh the page</li>
+                            </ol>
+                            <p><strong>Current token:</strong> <code id="currentToken">Loading...</code></p>
+                            <p><strong>Gist ID:</strong> <code id="currentGist">Loading...</code></p>
+                            <button class="btn" onclick="validateToken()">🔍 Test Token</button>
+                        </div>
+                    </details>
+                </div>
+
                 <!-- Sync Status Display -->
                 <div id="syncStatusDisplay" class="sync-status">
                     <h4>🔄 Data Synchronization Status</h4>
                     <div id="syncStatusContent">
-                        <!-- Will be populated by JavaScript -->
+                        <div>🔄 Initializing sync...</div>
                     </div>
                 </div>
 
@@ -408,7 +430,7 @@
                         <div>Pending Approvals</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="approvedWorkers">0</div>
+                        <div class="stat-number" id="approvedWorkersCount">0</div>
                         <div>Approved Workers</div>
                     </div>
                 </div>
@@ -516,32 +538,28 @@
         let totalPossibleGenerations = 0;
         const ADMIN_PASSWORD = 'admin123'; // Change this in production!
         
-        // GitHub sync configuration - FIXED VERSION
-        const GITHUB_TOKEN = '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'; 
+        // GitHub sync configuration - UPDATE THESE WITH YOUR WORKING TOKEN
+        const GITHUB_TOKEN = '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'; // ⚠️ REPLACE WITH FRESH TOKEN
         const GIST_ID = 'ea6ff1d66881230e1bb163d3264423aa';
-        let syncEnabled = true; // Force enable sync since we have valid credentials
+        let syncEnabled = false; // Will be enabled after token validation
         let lastSyncTime = null;
         let syncIntervalId = null;
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Admin Dashboard starting...');
-            console.log('📡 GitHub Sync:', syncEnabled ? 'ENABLED' : 'DISABLED');
             
-            if (syncEnabled) {
-                console.log('🔑 Using GitHub Token:', GITHUB_TOKEN.substring(0, 10) + '...');
-                console.log('📋 Using Gist ID:', GIST_ID);
-                
-                // Initial sync on load
-                initialSync();
-                
-                // Auto-sync every 30 seconds
-                syncIntervalId = setInterval(() => {
-                    console.log('⏰ Auto-sync triggered');
-                    syncFromGitHub();
-                }, 30000);
+            // Show current config in UI
+            document.getElementById('currentToken').textContent = 
+                GITHUB_TOKEN === 'YOUR_NEW_TOKEN_HERE' ? 'Not configured' : GITHUB_TOKEN.substring(0, 10) + '...';
+            document.getElementById('currentGist').textContent = GIST_ID;
+            
+            // Check if we have a valid token
+            if (GITHUB_TOKEN !== 'YOUR_NEW_TOKEN_HERE') {
+                validateToken();
             } else {
-                loadSubmissions();
+                updateTokenStatus('❌ No token configured - Using local storage only', 'error');
+                loadSubmissions(); // Fall back to local storage
             }
             
             // Password enter key support
@@ -552,23 +570,83 @@
             });
         });
 
+        async function validateToken() {
+            if (GITHUB_TOKEN === 'YOUR_NEW_TOKEN_HERE') {
+                updateTokenStatus('❌ Token not configured', 'error');
+                return false;
+            }
+
+            updateTokenStatus('🔄 Testing token...', 'info');
+            
+            try {
+                // Test the token by making a simple API call
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    updateTokenStatus(`✅ Token valid (User: ${user.login})`, 'success');
+                    syncEnabled = true;
+                    
+                    // Start sync process
+                    initialSync();
+                    
+                    // Auto-sync every 30 seconds
+                    if (syncIntervalId) clearInterval(syncIntervalId);
+                    syncIntervalId = setInterval(() => {
+                        console.log('⏰ Auto-sync triggered');
+                        syncFromGitHub();
+                    }, 30000);
+                    
+                    return true;
+                } else {
+                    const error = await response.json();
+                    updateTokenStatus(`❌ Token invalid: ${error.message}`, 'error');
+                    syncEnabled = false;
+                    loadSubmissions(); // Fall back to local storage
+                    return false;
+                }
+            } catch (error) {
+                console.error('Token validation error:', error);
+                updateTokenStatus(`❌ Token test failed: ${error.message}`, 'error');
+                syncEnabled = false;
+                loadSubmissions(); // Fall back to local storage
+                return false;
+            }
+        }
+
+        function updateTokenStatus(message, type) {
+            const statusSpan = document.getElementById('tokenStatus');
+            const colors = {
+                success: 'green',
+                error: 'red',
+                info: 'blue',
+                warning: 'orange'
+            };
+            statusSpan.style.color = colors[type] || 'black';
+            statusSpan.textContent = message;
+        }
+
         async function initialSync() {
+            if (!syncEnabled) return;
+            
             console.log('🔄 Starting initial sync...');
             updateSyncStatus('Connecting to GitHub...', 'info');
             
             try {
-                // First try to load from GitHub
                 const success = await syncFromGitHub();
                 if (success) {
                     console.log('✅ Initial sync from GitHub successful');
                     updateSyncStatus('Connected to GitHub - Data synchronized', 'success');
                 } else {
-                    // If GitHub sync fails, load local data and try to push it
                     console.log('⚠️ GitHub sync failed, loading local data');
                     loadSubmissions();
                     updateSyncStatus('GitHub sync failed - Using local data', 'warning');
                     
-                    // Try to push local data to GitHub
                     setTimeout(() => {
                         console.log('🔄 Attempting to push local data to GitHub...');
                         syncToGitHub();
@@ -604,6 +682,7 @@
                     headers: {
                         'Authorization': `Bearer ${GITHUB_TOKEN}`,
                         'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
                     },
                     body: JSON.stringify({
                         files: {
@@ -622,9 +701,9 @@
                     showSyncResult('✅ Synced to GitHub', 'success');
                     return true;
                 } else {
-                    const errorText = await response.text();
-                    console.error('❌ Failed to sync to GitHub:', response.status, errorText);
-                    updateSyncStatus('Upload failed: ' + response.status, 'error');
+                    const errorData = await response.json();
+                    console.error('❌ Failed to sync to GitHub:', response.status, errorData);
+                    updateSyncStatus('Upload failed: ' + response.status + ' - ' + errorData.message, 'error');
                     showSyncResult('❌ Upload failed: ' + response.status, 'error');
                     return false;
                 }
@@ -648,6 +727,7 @@
                 const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                     headers: {
                         'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
                     }
                 });
 
@@ -659,7 +739,6 @@
                         const data = JSON.parse(fileContent);
                         console.log('📦 GitHub data received:', Object.keys(data));
                         
-                        // Update local data with GitHub data
                         workerSubmissions = data.shiftSubmissions || [];
                         localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
                         localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
@@ -673,7 +752,6 @@
                         console.log('✅ Data updated from GitHub');
                         updateSyncStatus('Last sync: ' + new Date().toLocaleTimeString(), 'success');
                         
-                        // Update UI if admin panel is open
                         if (!document.getElementById('adminContent').classList.contains('hidden')) {
                             updateAdminDashboard();
                         }
@@ -681,13 +759,13 @@
                         return true;
                     } else {
                         console.log('📝 No data found in GitHub, initializing...');
-                        // Initialize empty gist
                         await syncToGitHub();
                         return false;
                     }
                 } else {
-                    console.error('❌ GitHub API error:', response.status, response.statusText);
-                    updateSyncStatus('Download failed: ' + response.status, 'error');
+                    const errorData = await response.json();
+                    console.error('❌ GitHub API error:', response.status, errorData);
+                    updateSyncStatus('Download failed: ' + response.status + ' - ' + errorData.message, 'error');
                     return false;
                 }
             } catch (error) {
@@ -746,7 +824,6 @@
             const className = type === 'success' ? 'color: green' : 'color: red';
             resultDiv.innerHTML = `<div style="${className}; font-weight: bold;">${message}</div>`;
             
-            // Clear after 3 seconds
             setTimeout(() => {
                 resultDiv.innerHTML = '';
             }, 3000);
@@ -759,7 +836,6 @@
                 document.getElementById('adminContent').classList.remove('hidden');
                 updateAdminDashboard();
                 
-                // Initial status update
                 if (syncEnabled) {
                     updateSyncStatus('Connected to GitHub', 'success');
                 } else {
@@ -781,7 +857,6 @@
             localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
             localStorage.setItem('lastUpdate', Date.now().toString());
             
-            // Sync to GitHub if enabled
             if (syncEnabled) {
                 syncToGitHub();
             }
@@ -802,7 +877,7 @@
 
         async function manualSync() {
             if (!syncEnabled) {
-                showAlert('Sync is not enabled.', 'warning');
+                showAlert('Sync is not enabled. Please configure GitHub token.', 'warning');
                 return;
             }
             
@@ -813,10 +888,7 @@
             try {
                 updateSyncStatus('Manual sync in progress...', 'info');
                 
-                // Download latest data first
                 const downloadSuccess = await syncFromGitHub();
-                
-                // Then upload our data
                 const uploadSuccess = await syncToGitHub();
                 
                 if (downloadSuccess && uploadSuccess) {
@@ -842,7 +914,7 @@
 
         async function forceClearAndSync() {
             if (!syncEnabled) {
-                showAlert('Sync is not enabled.', 'warning');
+                showAlert('Sync is not enabled. Please configure GitHub token.', 'warning');
                 return;
             }
             
@@ -854,21 +926,18 @@
                 try {
                     updateSyncStatus('Force sync: Clearing local data...', 'info');
                     
-                    // Clear local storage
                     localStorage.removeItem('shiftSubmissions');
                     localStorage.removeItem('approvedWorkers');
                     localStorage.removeItem('preferencesLocked');
                     localStorage.removeItem('lockTimestamp');
                     localStorage.removeItem('lastUpdate');
                     
-                    // Reset variables
                     workerSubmissions = [];
                     currentGeneration = 0;
                     totalPossibleGenerations = 0;
                     
                     updateSyncStatus('Force sync: Downloading from GitHub...', 'info');
                     
-                    // Force download from GitHub
                     const success = await syncFromGitHub();
                     
                     if (success) {
@@ -907,8 +976,9 @@
             document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
             document.getElementById('pendingApprovals').textContent = 
                 workerSubmissions.filter(s => !s.approved).length;
-            document.getElementById('approvedWorkers').textContent = 
-                workerSubmissions.filter(s => s.approved).length;
+            
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            document.getElementById('approvedWorkersCount').textContent = approvedWorkers.length;
 
             displayWorkerSubmissions();
             displayApprovedWorkers();
@@ -926,7 +996,6 @@
             
             updateLockStatus();
             
-            // Sync to GitHub if enabled
             if (syncEnabled) {
                 syncToGitHub();
             }
@@ -996,6 +1065,465 @@
             });
             
             html += '</div>';
+            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
+            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function addWorker() {
+            const newWorkerName = document.getElementById('newWorkerName').value.trim();
+            
+            if (!newWorkerName) {
+                showAlert('Please enter a worker name.', 'warning');
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            const existsAlready = approvedWorkers.some(name => 
+                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
+            );
+
+            if (existsAlready) {
+                showAlert('Worker name already exists in the approved list.', 'warning');
+                return;
+            }
+
+            approvedWorkers.push(newWorkerName);
+            localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+            localStorage.setItem('lastUpdate', Date.now().toString());
+            
+            if (syncEnabled) {
+                syncToGitHub();
+            }
+            
+            document.getElementById('newWorkerName').value = '';
+            displayApprovedWorkers();
+            updateAdminDashboard();
+            
+            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
+        }
+
+        function removeWorker(workerName) {
+            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
+                let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+                
+                approvedWorkers = approvedWorkers.filter(name => name !== workerName);
+                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+                localStorage.setItem('lastUpdate', Date.now().toString());
+                
+                if (syncEnabled) {
+                    syncToGitHub();
+                }
+                
+                displayApprovedWorkers();
+                updateAdminDashboard();
+                
+                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
+            }
+        }
+
+        function testWorkerAccess() {
+            const testName = document.getElementById('testWorkerName').value.trim();
+            const resultDiv = document.getElementById('testResult');
+            
+            if (!testName) {
+                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            const isApproved = approvedWorkers.some(name => 
+                name.toLowerCase().trim() === testName.toLowerCase().trim()
+            );
+
+            if (isApproved) {
+                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
+            } else {
+                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
+            }
+        }
+
+        function displayWorkerSubmissions() {
+            const container = document.getElementById('workerSubmissions');
+            
+            if (workerSubmissions.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
+                return;
+            }
+
+            let html = '';
+            workerSubmissions.forEach(submission => {
+                const availableShifts = Object.values(submission.preferences)
+                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
+
+                html += `
+                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
+                        <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
+                        <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
+                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
+                        
+                        <div style="margin-top: 15px;">
+                            <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
+                                    onclick="toggleApproval(${submission.id})">
+                                ${submission.approved ? '✓ Approved' : 'Approve'}
+                            </button>
+                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleApproval(submissionId) {
+            const submission = workerSubmissions.find(s => s.id === submissionId);
+            if (submission) {
+                submission.approved = !submission.approved;
+                saveSubmissions();
+                updateAdminDashboard();
+                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
+            }
+        }
+
+        function removeSubmission(submissionId) {
+            const submission = workerSubmissions.find(s => s.id === submissionId);
+            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
+                workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
+                saveSubmissions();
+                updateAdminDashboard();
+                showAlert('Submission removed successfully!', 'success');
+            }
+        }
+
+        function generateSchedule() {
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved worker submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            if (approvedSubmissions.length < 3) {
+                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
+            }
+
+            if (totalPossibleGenerations === 0) {
+                const workers = approvedSubmissions.length;
+                totalPossibleGenerations = Math.min(10000, Math.pow(workers, Math.min(8, workers)));
+            }
+            
+            currentGeneration++;
+            updateGenerationCounter();
+
+            const schedule = {};
+            const workers = approvedSubmissions.map(s => s.name);
+            
+            const nightShiftCount = {};
+            const weekendShiftCount = {};
+            const totalShiftCount = {};
+            const nightShiftsWeek1 = {};
+            const nightShiftsWeek2 = {};
+            const shiftsWeek1 = {};
+            const shiftsWeek2 = {};
+            const morningShiftsWeek1 = {};
+            const morningShiftsWeek2 = {};
+            const assignedWorkers = {};
+            
+            workers.forEach(worker => {
+                nightShiftCount[worker] = 0;
+                weekendShiftCount[worker] = 0;
+                totalShiftCount[worker] = 0;
+                nightShiftsWeek1[worker] = 0;
+                nightShiftsWeek2[worker] = 0;
+                shiftsWeek1[worker] = 0;
+                shiftsWeek2[worker] = 0;
+                morningShiftsWeek1[worker] = 0;
+                morningShiftsWeek2[worker] = 0;
+            });
+
+            for (let day = 0; day < 14; day++) {
+                schedule[day] = {
+                    morning: null,
+                    evening: null,
+                    night: null,
+                    isWeekendPremium: false
+                };
+                
+                assignedWorkers[day] = new Set();
+
+                const shiftOrder = ['morning', 'evening', 'night'];
+                shuffleArray(shiftOrder);
+                
+                shiftOrder.forEach(shift => {
+                    const isPremiumShift = (day === 5 && shift === 'evening') || 
+                                          (day === 6) ||                        
+                                          (day === 12 && shift === 'evening') || 
+                                          (day === 13);                         
+                    
+                    if (isPremiumShift) {
+                        schedule[day].isWeekendPremium = true;
+                    }
+
+                    let availableWorkers = approvedSubmissions
+                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
+                        .map(submission => submission.name);
+
+                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
+
+                    if (shift === 'morning' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    if (shift === 'night') {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            if (day <= 6) {
+                                return nightShiftsWeek1[worker] < 2;
+                            } else {
+                                return nightShiftsWeek2[worker] < 2;
+                            }
+                        });
+                    }
+
+                    if (shift === 'night' && day > 0) {
+                        const previousNightWorker = schedule[day - 1].night;
+                        if (previousNightWorker) {
+                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
+                        }
+                    }
+
+                    if (day >= 4) {
+                        availableWorkers = availableWorkers.filter(worker => {
+                            const workedDay0 = schedule[day - 4] && (schedule[day - 4].morning === worker || schedule[day - 4].evening === worker || schedule[day - 4].night === worker);
+                            const workedDay2 = schedule[day - 2] && (schedule[day - 2].morning === worker || schedule[day - 2].evening === worker || schedule[day - 2].night === worker);
+                            
+                            if (workedDay0 && workedDay2) {
+                                return false;
+                            }
+                            return true;
+                        });
+                    }
+
+                    if (availableWorkers.length === 0) {
+                        return;
+                    }
+
+                    let selectedWorker;
+                    const currentWeekShifts = day <= 6 ? shiftsWeek1 : shiftsWeek2;
+                    const currentWeekMornings = day <= 6 ? morningShiftsWeek1 : morningShiftsWeek2;
+                    const workersNeedingShifts = availableWorkers.filter(w => currentWeekShifts[w] < 5);
+                    const workersNeedingMornings = availableWorkers.filter(w => currentWeekMornings[w] === 0);
+                    const workersUnder4Shifts = availableWorkers.filter(w => currentWeekShifts[w] < 4);
+
+                    if (shift === 'night') {
+                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
+                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
+                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
+                        
+                        if (candidateWorkers.length > 1 && workersNeedingShifts.length > 0) {
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
+                            }
+                        }
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        
+                        nightShiftCount[selectedWorker]++;
+                        if (day <= 6) {
+                            nightShiftsWeek1[selectedWorker]++;
+                        } else {
+                            nightShiftsWeek2[selectedWorker]++;
+                        }
+                    } else if (isPremiumShift) {
+                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
+                        let candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
+                        
+                        if (candidateWorkers.length > 1 && workersNeedingShifts.length > 0) {
+                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
+                            if (candidatesNeedingShifts.length > 0) {
+                                candidateWorkers = candidatesNeedingShifts;
+                            }
+                        }
+                        
+                        selectedWorker = getRandomFromArray(candidateWorkers);
+                        weekendShiftCount[selectedWorker]++;
+                    } else {
+                        if (shift === 'morning' && workersNeedingMornings.length > 0 && workersUnder4Shifts.length > 0) {
+                            const morningNeedyUnder4 = workersNeedingMornings.filter(w => workersUnder4Shifts.includes(w));
+                            if (morningNeedyUnder4.length > 0) {
+                                selectedWorker = getRandomFromArray(morningNeedyUnder4);
+                            } else {
+                                selectedWorker = getRandomFromArray(workersNeedingMornings);
+                            }
+                        } else if (workersUnder4Shifts.length > 0) {
+                            selectedWorker = getRandomFromArray(workersUnder4Shifts);
+                        } else if (workersNeedingShifts.length > 0) {
+                            selectedWorker = getRandomFromArray(workersNeedingShifts);
+                        } else {
+                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, currentWeekShifts);
+                        }
+                    }
+
+                    schedule[day][shift] = selectedWorker;
+                    totalShiftCount[selectedWorker]++;
+                    
+                    if (day <= 6) {
+                        shiftsWeek1[selectedWorker]++;
+                        if (shift === 'morning') {
+                            morningShiftsWeek1[selectedWorker]++;
+                        }
+                    } else {
+                        shiftsWeek2[selectedWorker]++;
+                        if (shift === 'morning') {
+                            morningShiftsWeek2[selectedWorker]++;
+                        }
+                    }
+                    
+                    assignedWorkers[day].add(selectedWorker);
+                });
+            }
+
+            generatedScheduleData = schedule;
+            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
+            
+            const minWeek1Shifts = Math.min(...Object.values(shiftsWeek1));
+            const minWeek2Shifts = Math.min(...Object.values(shiftsWeek2));
+            const overallMinWeekly = Math.min(minWeek1Shifts, minWeek2Shifts);
+            
+            const minWeek1Mornings = Math.min(...Object.values(morningShiftsWeek1));
+            const minWeek2Mornings = Math.min(...Object.values(morningShiftsWeek2));
+            const overallMinMornings = Math.min(minWeek1Mornings, minWeek2Mornings);
+            
+            let fairnessMessage = 'Schedule generated!';
+            
+            if (overallMinWeekly >= 5 && overallMinMornings >= 1) {
+                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts per week AND at least 1 morning shift per week!';
+            } else if (overallMinWeekly >= 5) {
+                fairnessMessage = '⚠️ Everyone got 5+ shifts per week, but some workers may lack morning shifts.';
+            } else if (overallMinMornings >= 1) {
+                fairnessMessage = '⚠️ Everyone got at least 1 morning shift per week, but some workers got less than 5 shifts.';
+            } else {
+                fairnessMessage = '❌ Warning: Some workers missing morning shifts or have less than 5 shifts per week.';
+            }
+            
+            showAlert(fairnessMessage, (overallMinWeekly >= 5 && overallMinMornings >= 1) ? 'success' : 'warning');
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function getRandomFromArray(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
+            if (availableWorkers.length === 1) {
+                return availableWorkers[0];
+            }
+
+            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
+            const minShifts = Math.min(...shiftCounts);
+            const maxShifts = Math.max(...shiftCounts);
+            
+            if (minShifts === maxShifts) {
+                return getRandomFromArray(availableWorkers);
+            }
+
+            const weights = availableWorkers.map(worker => {
+                const currentShifts = totalShiftCount[worker];
+                return (maxShifts - currentShifts) + 1;
+            });
+
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (let i = 0; i < availableWorkers.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return availableWorkers[i];
+                }
+            }
+            
+            return availableWorkers[0];
+        }
+
+        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
+            const container = document.getElementById('generatedSchedule');
+            const startDate = new Date(2025, 5, 1); // June 1st, 2025
+
+            const workerColors = {};
+            const colorPalette = [
+                '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', 
+                '#C9BAFF', '#FFBAE1', '#FFD4BA', '#BAF2FF', '#E1BAFF',
+                '#BAFFE1', '#FFC9BA', '#BAFFFF', '#F2BAFF', '#BAFF9A',
+                '#FF9ABA', '#9ABAFF', '#BA9AFF', '#FFBA9A', '#9AFFBA'
+            ];
+            
+            const workers = [...new Set(Object.values(schedule).flatMap(day => 
+                [day.morning, day.evening, day.night].filter(worker => worker)
+            ))];
+            
+            workers.forEach((worker, index) => {
+                workerColors[worker] = colorPalette[index % colorPalette.length];
+            });
+
+            let html = '<div class="schedule-grid">';
+            
+            html += '<div class="grid-header">Shift</div>';
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr = currentDate.getDate();
+                const isPremium = schedule[day].isWeekendPremium;
+                const weekLabel = day < 7 ? 'W1' : 'W2';
+                html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}<br><small>${weekLabel}</small>${isPremium ? '<br>💰' : ''}</div>`;
+            }
+
+            const shiftTypes = [
+                { name: 'Morning (07-15)', key: 'morning', class: 'shift-morning' },
+                { name: 'Evening (15-23)', key: 'evening', class: 'shift-evening' },
+                { name: 'Night (23-07)', key: 'night', class: 'shift-night' }
+            ];
+
+            shiftTypes.forEach(shiftType => {
+                html += `<div class="grid-header">${shiftType.name}</div>`;
+                for (let day = 0; day < 14; day++) {
+                    const worker = schedule[day][shiftType.key];
+                    const cellClass = `grid-cell ${shiftType.class} ${schedule[day].isWeekendPremium ? 'weekend-premium' : ''}`;
+                    const workerColor = worker ? workerColors[worker] : '';
+                    const colorStyle = worker ? `background-color: ${workerColor}; border: 2px solid #333;` : '';
+                    html += `<div class="${cellClass}" style="${colorStyle}">${worker || 'Unassigned'}</div>`;
+                }
+            });
+
+            html += '</div>';
+
+            html += '<div style="margin-top: 20px;">';
+            html += '<h4>👥 Worker Color Legend</h4>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">';
+            Object.entries(workerColors).forEach(([worker, color]) => {
+                html += `<div style="background-color: ${color}; padding: 8px 15px; border-radius: 5px; border: 2px solid #333; font-weight: bold;">${worker}</div>`;
+            });
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div style="margin-top: 30px;">';
+            html += '<h4>📋 Excel-Ready Format (Hebrew) <button class="btn" onclick="copyExcelFormat()" style="margin-left: 10px; padding: 5px 15px; font-size: 12px;">Copy to Clipboard</button></h4>';
+            html += '<p style="color: #6c757d; font-size: 14px;">Select the tables below and copy (Ctrl+C), then paste into Excel:</p>';
+            
+            // Week 1 Table
             html += '<div style="margin-top: 20px;">';
             html += '<h5>🗓️ שבוע ראשון (Week 1)</h5>';
             html += '<div id="excelTableWeek1">';
@@ -1313,7 +1841,7 @@
             }
 
             let csvContent = 'Date,Day,Morning,Evening,Night,Weekend Premium,Notes\n';
-            const startDate = new Date(2025, 5, 1); // June 1st, 2025
+            const startDate = new Date(2025, 5, 1);
 
             for (let day = 0; day < 14; day++) {
                 const currentDate = new Date(startDate);
@@ -1346,14 +1874,10 @@
                 return;
             }
 
-            const startDate = new Date(2025, 5, 1); // June 1st, 2025
-
+            const startDate = new Date(2025, 5, 1);
             let excelText = '';
             
-            excelText += 'שבוע ראשון (Week 1)\n';
-            excelText += '\n';
-            
-            excelText += '\t';
+            excelText += 'שבוע ראשון (Week 1)\n\n\t';
             for (let day = 0; day < 7; day++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1364,13 +1888,11 @@
                 }).replace(/\//g, '.');
                 excelText += dateStr + '\t';
             }
-            excelText += '\n';
+            excelText += '\n\t';
             
-            excelText += '\t';
             const hebrewDaysOrder = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
             for (let i = 0; i < 7; i++) {
-                const hebrewDay = hebrewDaysOrder[i];
-                excelText += hebrewDay + '\t';
+                excelText += hebrewDaysOrder[i] + '\t';
             }
             excelText += '\n';
 
@@ -1389,12 +1911,7 @@
                 excelText += '\n';
             });
 
-            excelText += '\n\n';
-
-            excelText += 'שבוע שני (Week 2)\n';
-            excelText += '\n';
-            
-            excelText += '\t';
+            excelText += '\n\nשבוע שני (Week 2)\n\n\t';
             for (let day = 7; day < 14; day++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + day);
@@ -1405,12 +1922,10 @@
                 }).replace(/\//g, '.');
                 excelText += dateStr + '\t';
             }
-            excelText += '\n';
+            excelText += '\n\t';
             
-            excelText += '\t';
             for (let i = 0; i < 7; i++) {
-                const hebrewDay = hebrewDaysOrder[i];
-                excelText += hebrewDay + '\t';
+                excelText += hebrewDaysOrder[i] + '\t';
             }
             excelText += '\n';
 
@@ -1424,7 +1939,7 @@
             });
 
             navigator.clipboard.writeText(excelText).then(() => {
-                showAlert('Hebrew RTL schedule format (2 weeks separated) copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+                showAlert('Hebrew RTL schedule format copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
             }).catch(err => {
                 const textArea = document.createElement('textarea');
                 textArea.value = excelText;
@@ -1432,7 +1947,7 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showAlert('Hebrew RTL schedule format (2 weeks separated) copied to clipboard! Perfect for Excel paste (Ctrl+V)', 'success');
+                showAlert('Hebrew RTL schedule format copied to clipboard!', 'success');
             });
         }
 
@@ -1497,475 +2012,4 @@
         });
     </script>
 </body>
-</html> 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
-            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
-            html += '</div>';
-
-            container.innerHTML = html;
-        }
-
-        function addWorker() {
-            const newWorkerName = document.getElementById('newWorkerName').value.trim();
-            
-            if (!newWorkerName) {
-                showAlert('Please enter a worker name.', 'warning');
-                return;
-            }
-
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            
-            // Check if worker already exists (case-insensitive)
-            const existsAlready = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
-            );
-
-            if (existsAlready) {
-                showAlert('Worker name already exists in the approved list.', 'warning');
-                return;
-            }
-
-            // Add the new worker
-            approvedWorkers.push(newWorkerName);
-            localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-            localStorage.setItem('lastUpdate', Date.now().toString());
-            
-            // Sync to GitHub if enabled
-            if (syncEnabled) {
-                syncToGitHub();
-            }
-            
-            // Clear input
-            document.getElementById('newWorkerName').value = '';
-            
-            // Refresh display
-            displayApprovedWorkers();
-            
-            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
-        }
-
-        function removeWorker(workerName) {
-            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
-                let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                
-                // Remove the worker (case-sensitive match for exact removal)
-                approvedWorkers = approvedWorkers.filter(name => name !== workerName);
-                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-                localStorage.setItem('lastUpdate', Date.now().toString());
-                
-                // Sync to GitHub if enabled
-                if (syncEnabled) {
-                    syncToGitHub();
-                }
-                
-                // Refresh display
-                displayApprovedWorkers();
-                
-                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
-            }
-        }
-
-        function testWorkerAccess() {
-            const testName = document.getElementById('testWorkerName').value.trim();
-            const resultDiv = document.getElementById('testResult');
-            
-            if (!testName) {
-                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
-                return;
-            }
-
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            const isApproved = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === testName.toLowerCase().trim()
-            );
-
-            if (isApproved) {
-                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
-            } else {
-                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
-            }
-        }
-
-        function displayWorkerSubmissions() {
-            const container = document.getElementById('workerSubmissions');
-            
-            if (workerSubmissions.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
-                return;
-            }
-
-            let html = '';
-            workerSubmissions.forEach(submission => {
-                const availableShifts = Object.values(submission.preferences)
-                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
-
-                html += `
-                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
-                        <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
-                        <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
-                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
-                        
-                        <div style="margin-top: 15px;">
-                            <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
-                                    onclick="toggleApproval(${submission.id})">
-                                ${submission.approved ? '✓ Approved' : 'Approve'}
-                            </button>
-                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function toggleApproval(submissionId) {
-            const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission) {
-                submission.approved = !submission.approved;
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
-            }
-        }
-
-        function removeSubmission(submissionId) {
-            const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
-                workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert('Submission removed successfully!', 'success');
-            }
-        }
-
-        function generateSchedule() {
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('No approved worker submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
-
-            if (approvedSubmissions.length < 3) {
-                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
-            }
-
-            // Calculate total possible generations (simplified estimation)
-            if (totalPossibleGenerations === 0) {
-                const workers = approvedSubmissions.length;
-                totalPossibleGenerations = Math.min(10000, Math.pow(workers, Math.min(8, workers)));
-            }
-            
-            currentGeneration++;
-            updateGenerationCounter();
-
-            // Initialize schedule structure
-            const schedule = {};
-            const workers = approvedSubmissions.map(s => s.name);
-            
-            // Track shifts per worker
-            const nightShiftCount = {};
-            const weekendShiftCount = {};
-            const totalShiftCount = {};
-            const nightShiftsWeek1 = {};
-            const nightShiftsWeek2 = {};
-            const shiftsWeek1 = {};
-            const shiftsWeek2 = {};
-            const morningShiftsWeek1 = {};
-            const morningShiftsWeek2 = {};
-            const assignedWorkers = {};
-            
-            workers.forEach(worker => {
-                nightShiftCount[worker] = 0;
-                weekendShiftCount[worker] = 0;
-                totalShiftCount[worker] = 0;
-                nightShiftsWeek1[worker] = 0;
-                nightShiftsWeek2[worker] = 0;
-                shiftsWeek1[worker] = 0;
-                shiftsWeek2[worker] = 0;
-                morningShiftsWeek1[worker] = 0;
-                morningShiftsWeek2[worker] = 0;
-            });
-
-            // Generate schedule for 14 days
-            for (let day = 0; day < 14; day++) {
-                schedule[day] = {
-                    morning: null,
-                    evening: null,
-                    night: null,
-                    isWeekendPremium: false
-                };
-                
-                assignedWorkers[day] = new Set();
-
-                const shiftOrder = ['morning', 'evening', 'night'];
-                shuffleArray(shiftOrder);
-                
-                shiftOrder.forEach(shift => {
-                    const isPremiumShift = (day === 5 && shift === 'evening') || 
-                                          (day === 6) ||                        
-                                          (day === 12 && shift === 'evening') || 
-                                          (day === 13);                         
-                    
-                    if (isPremiumShift) {
-                        schedule[day].isWeekendPremium = true;
-                    }
-
-                    let availableWorkers = approvedSubmissions
-                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
-                        .map(submission => submission.name);
-
-                    // Apply scheduling rules
-                    availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
-
-                    if (shift === 'morning' && day > 0) {
-                        const previousNightWorker = schedule[day - 1].night;
-                        if (previousNightWorker) {
-                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                        }
-                    }
-
-                    if (shift === 'night') {
-                        availableWorkers = availableWorkers.filter(worker => {
-                            if (day <= 6) {
-                                return nightShiftsWeek1[worker] < 2;
-                            } else {
-                                return nightShiftsWeek2[worker] < 2;
-                            }
-                        });
-                    }
-
-                    if (shift === 'night' && day > 0) {
-                        const previousNightWorker = schedule[day - 1].night;
-                        if (previousNightWorker) {
-                            availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                        }
-                    }
-
-                    if (day >= 4) {
-                        availableWorkers = availableWorkers.filter(worker => {
-                            const workedDay0 = schedule[day - 4] && (schedule[day - 4].morning === worker || schedule[day - 4].evening === worker || schedule[day - 4].night === worker);
-                            const workedDay2 = schedule[day - 2] && (schedule[day - 2].morning === worker || schedule[day - 2].evening === worker || schedule[day - 2].night === worker);
-                            
-                            if (workedDay0 && workedDay2) {
-                                return false;
-                            }
-                            return true;
-                        });
-                    }
-
-                    if (availableWorkers.length === 0) {
-                        return;
-                    }
-
-                    let selectedWorker;
-                    const currentWeekShifts = day <= 6 ? shiftsWeek1 : shiftsWeek2;
-                    const currentWeekMornings = day <= 6 ? morningShiftsWeek1 : morningShiftsWeek2;
-                    const workersNeedingShifts = availableWorkers.filter(w => currentWeekShifts[w] < 5);
-                    const workersNeedingMornings = availableWorkers.filter(w => currentWeekMornings[w] === 0);
-                    const workersUnder4Shifts = availableWorkers.filter(w => currentWeekShifts[w] < 4);
-
-                    if (shift === 'night') {
-                        const currentWeekNights = day <= 6 ? nightShiftsWeek1 : nightShiftsWeek2;
-                        const minNightsThisWeek = Math.min(...availableWorkers.map(w => currentWeekNights[w]));
-                        let candidateWorkers = availableWorkers.filter(w => currentWeekNights[w] === minNightsThisWeek);
-                        
-                        if (candidateWorkers.length > 1 && workersNeedingShifts.length > 0) {
-                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
-                            if (candidatesNeedingShifts.length > 0) {
-                                candidateWorkers = candidatesNeedingShifts;
-                            }
-                        }
-                        
-                        selectedWorker = getRandomFromArray(candidateWorkers);
-                        
-                        nightShiftCount[selectedWorker]++;
-                        if (day <= 6) {
-                            nightShiftsWeek1[selectedWorker]++;
-                        } else {
-                            nightShiftsWeek2[selectedWorker]++;
-                        }
-                    } else if (isPremiumShift) {
-                        const minWeekendShifts = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
-                        let candidateWorkers = availableWorkers.filter(w => weekendShiftCount[w] === minWeekendShifts);
-                        
-                        if (candidateWorkers.length > 1 && workersNeedingShifts.length > 0) {
-                            const candidatesNeedingShifts = candidateWorkers.filter(w => workersNeedingShifts.includes(w));
-                            if (candidatesNeedingShifts.length > 0) {
-                                candidateWorkers = candidatesNeedingShifts;
-                            }
-                        }
-                        
-                        selectedWorker = getRandomFromArray(candidateWorkers);
-                        weekendShiftCount[selectedWorker]++;
-                    } else {
-                        if (shift === 'morning' && workersNeedingMornings.length > 0 && workersUnder4Shifts.length > 0) {
-                            const morningNeedyUnder4 = workersNeedingMornings.filter(w => workersUnder4Shifts.includes(w));
-                            if (morningNeedyUnder4.length > 0) {
-                                selectedWorker = getRandomFromArray(morningNeedyUnder4);
-                            } else {
-                                selectedWorker = getRandomFromArray(workersNeedingMornings);
-                            }
-                        } else if (workersUnder4Shifts.length > 0) {
-                            selectedWorker = getRandomFromArray(workersUnder4Shifts);
-                        } else if (workersNeedingShifts.length > 0) {
-                            selectedWorker = getRandomFromArray(workersNeedingShifts);
-                        } else {
-                            selectedWorker = selectWorkerWeightedRandom(availableWorkers, currentWeekShifts);
-                        }
-                    }
-
-                    schedule[day][shift] = selectedWorker;
-                    totalShiftCount[selectedWorker]++;
-                    
-                    if (day <= 6) {
-                        shiftsWeek1[selectedWorker]++;
-                        if (shift === 'morning') {
-                            morningShiftsWeek1[selectedWorker]++;
-                        }
-                    } else {
-                        shiftsWeek2[selectedWorker]++;
-                        if (shift === 'morning') {
-                            morningShiftsWeek2[selectedWorker]++;
-                        }
-                    }
-                    
-                    assignedWorkers[day].add(selectedWorker);
-                });
-            }
-
-            generatedScheduleData = schedule;
-            displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
-            
-            const minWeek1Shifts = Math.min(...Object.values(shiftsWeek1));
-            const minWeek2Shifts = Math.min(...Object.values(shiftsWeek2));
-            const overallMinWeekly = Math.min(minWeek1Shifts, minWeek2Shifts);
-            
-            const minWeek1Mornings = Math.min(...Object.values(morningShiftsWeek1));
-            const minWeek2Mornings = Math.min(...Object.values(morningShiftsWeek2));
-            const overallMinMornings = Math.min(minWeek1Mornings, minWeek2Mornings);
-            
-            let fairnessMessage = 'Schedule generated!';
-            
-            if (overallMinWeekly >= 5 && overallMinMornings >= 1) {
-                fairnessMessage = '✅ Perfect! Everyone got at least 5 shifts per week AND at least 1 morning shift per week!';
-            } else if (overallMinWeekly >= 5) {
-                fairnessMessage = '⚠️ Everyone got 5+ shifts per week, but some workers may lack morning shifts.';
-            } else if (overallMinMornings >= 1) {
-                fairnessMessage = '⚠️ Everyone got at least 1 morning shift per week, but some workers got less than 5 shifts.';
-            } else {
-                fairnessMessage = '❌ Warning: Some workers missing morning shifts or have less than 5 shifts per week.';
-            }
-            
-            showAlert(fairnessMessage, (overallMinWeekly >= 5 && overallMinMornings >= 1) ? 'success' : 'warning');
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function getRandomFromArray(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
-
-        function selectWorkerWeightedRandom(availableWorkers, totalShiftCount) {
-            if (availableWorkers.length === 1) {
-                return availableWorkers[0];
-            }
-
-            const shiftCounts = availableWorkers.map(w => totalShiftCount[w]);
-            const minShifts = Math.min(...shiftCounts);
-            const maxShifts = Math.max(...shiftCounts);
-            
-            if (minShifts === maxShifts) {
-                return getRandomFromArray(availableWorkers);
-            }
-
-            const weights = availableWorkers.map(worker => {
-                const currentShifts = totalShiftCount[worker];
-                return (maxShifts - currentShifts) + 1;
-            });
-
-            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-            let random = Math.random() * totalWeight;
-            
-            for (let i = 0; i < availableWorkers.length; i++) {
-                random -= weights[i];
-                if (random <= 0) {
-                    return availableWorkers[i];
-                }
-            }
-            
-            return availableWorkers[0];
-        }
-
-        function displaySchedule(schedule, nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
-            const container = document.getElementById('generatedSchedule');
-            const startDate = new Date(2025, 5, 1); // June 1st, 2025
-
-            const workerColors = {};
-            const colorPalette = [
-                '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', 
-                '#C9BAFF', '#FFBAE1', '#FFD4BA', '#BAF2FF', '#E1BAFF',
-                '#BAFFE1', '#FFC9BA', '#BAFFFF', '#F2BAFF', '#BAFF9A',
-                '#FF9ABA', '#9ABAFF', '#BA9AFF', '#FFBA9A', '#9AFFBA'
-            ];
-            
-            const workers = [...new Set(Object.values(schedule).flatMap(day => 
-                [day.morning, day.evening, day.night].filter(worker => worker)
-            ))];
-            
-            workers.forEach((worker, index) => {
-                workerColors[worker] = colorPalette[index % colorPalette.length];
-            });
-
-            let html = '<div class="schedule-grid">';
-            
-            html += '<div class="grid-header">Shift</div>';
-            for (let day = 0; day < 14; day++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + day);
-                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = currentDate.getDate();
-                const isPremium = schedule[day].isWeekendPremium;
-                const weekLabel = day < 7 ? 'W1' : 'W2';
-                html += `<div class="grid-header ${isPremium ? 'weekend-premium' : ''}">${dayName}<br>${dateStr}<br><small>${weekLabel}</small>${isPremium ? '<br>💰' : ''}</div>`;
-            }
-
-            const shiftTypes = [
-                { name: 'Morning (07-15)', key: 'morning', class: 'shift-morning' },
-                { name: 'Evening (15-23)', key: 'evening', class: 'shift-evening' },
-                { name: 'Night (23-07)', key: 'night', class: 'shift-night' }
-            ];
-
-            shiftTypes.forEach(shiftType => {
-                html += `<div class="grid-header">${shiftType.name}</div>`;
-                for (let day = 0; day < 14; day++) {
-                    const worker = schedule[day][shiftType.key];
-                    const cellClass = `grid-cell ${shiftType.class} ${schedule[day].isWeekendPremium ? 'weekend-premium' : ''}`;
-                    const workerColor = worker ? workerColors[worker] : '';
-                    const colorStyle = worker ? `background-color: ${workerColor}; border: 2px solid #333;` : '';
-                    html += `<div class="${cellClass}" style="${colorStyle}">${worker || 'Unassigned'}</div>`;
-                }
-            });
-
-            html += '</div>';
-
-            html += '<div style="margin-top: 20px;">';
-            html += '<h4>👥 Worker Color Legend</h4>';
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;">';
-            Object.entries(workerColors).forEach(([worker, color]) => {
-                html += `<div style="background-color: ${color}; padding: 8px 15px; border-radius: 5px; border: 2px solid #333; font-weight: bold;">${worker}</div>`;
-            });
-            html += '</div>';
-            html += '</div>';
-
-            html += '<div style="margin-top: 30px;">';
-            html += '<h4>📋 Excel-Ready Format (Hebrew) <button class="btn" onclick="copyExcelFormat()" style="margin-left: 10px; padding: 5px 15px; font-size: 12px;">Copy to Clipboard</button></h4>';
-            html += '<p style="color: #6c757d; font-size: 14px;">Select the tables below and copy (Ctrl+C), then paste into Excel:</p>';
-            
-            // Week 1 Table
-            html += '<div style="margin-top:
+</html>
