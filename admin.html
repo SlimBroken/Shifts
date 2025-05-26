@@ -716,25 +716,7 @@
                     <div class="worker-card ${submission.approved ? 'approved' : ''}">
                         <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
                         <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
-                        <p><strong>Weekend Premium Shifts:</strong> ${weekendShifts} available</p>
                         <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
-                        ${submission.notes ? `<p><strong>Notes:</strong> ${submission.notes}</p>` : ''}
-                        
-                        <div class="preferences-summary">
-                            ${generatePreferencesSummary(submission.preferences)}
-                        </div>
-                        
-                        <div style="margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 12px;">
-                            <strong>Scheduling Rules Applied:</strong><br>
-                            • Max 1 shift per day<br>
-                            • Max 2 night shifts per week<br>
-                            • No consecutive night shifts<br>
-                            • No morning after night shift<br>
-                            • <strong>Minimum 4 shifts per week guaranteed</strong><br>
-                            • Target: 5+ shifts per week for fairness<br>
-                            • <strong>Everyone gets minimum 1 morning shift per week</strong><br>
-                            • Premium: Fri evening → Sat evening only
-                        </div>
                         
                         <div style="margin-top: 15px;">
                             <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
