@@ -456,6 +456,9 @@
                     <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
                         🔄 Generate Optimized Schedule
                     </button>
+                    <div id="generationCounter" style="margin-top: 10px; font-size: 14px; color: #6c757d;">
+                        <!-- Will show generation count after first generation -->
+                    </div>
                 </div>
 
                 <!-- Generated Schedule -->
@@ -478,6 +481,8 @@
     <script>
         let workerSubmissions = [];
         let generatedScheduleData = null;
+        let currentGeneration = 0;
+        let totalPossibleGenerations = 0;
         const ADMIN_PASSWORD = 'admin123'; // Change this in production!
 
         // Initialize the application
@@ -780,6 +785,21 @@
             if (approvedSubmissions.length < 3) {
                 showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
             }
+
+            // Calculate total possible generations (simplified estimation)
+            // This is based on the number of workers and available shift combinations
+            if (totalPossibleGenerations === 0) {
+                const workers = approvedSubmissions.length;
+                const totalShifts = 42; // 14 days × 3 shifts
+                // Simplified calculation: combinations of worker assignments
+                totalPossibleGenerations = Math.min(10000, Math.pow(workers, Math.min(8, workers))); // Cap at 10,000 for display
+            }
+            
+            // Increment generation counter
+            currentGeneration++;
+            
+            // Update counter display
+            updateGenerationCounter();
 
             // Initialize schedule structure
             const schedule = {};
@@ -1650,12 +1670,15 @@
                 if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
                     workerSubmissions = [];
                     generatedScheduleData = null;
+                    currentGeneration = 0;
+                    totalPossibleGenerations = 0;
                     saveSubmissions();
                     
                     // Also clear approved workers list
                     localStorage.removeItem('approvedWorkers');
                     
                     updateAdminDashboard();
+                    updateGenerationCounter(); // Reset counter display
                     
                     document.getElementById('generatedSchedule').innerHTML = 
                         '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
