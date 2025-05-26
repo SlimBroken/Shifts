@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -21,10 +21,12 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
             border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .header {
@@ -32,6 +34,7 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -298,6 +301,27 @@
                 </div>
             </div>
 
+            <!-- Preferences Locked Section -->
+            <div id="preferencesLockedSection" class="hidden">
+                <div class="access-denied">
+                    <h2>🔒 Preferences Locked</h2>
+                    <div class="alert alert-warning">
+                        <strong>Preference submission is currently disabled.</strong><br><br>
+                        The administrator has locked preference submissions, likely to generate schedules or perform maintenance.<br><br>
+                        Please try again later or contact your administrator.
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <button class="btn" onclick="checkLockStatus()">Check Status Again</button>
+                        <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    </div>
+
+                    <div style="margin-top: 20px; font-size: 14px; color: #6c757d;" id="lockDetails">
+                        <!-- Lock details will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Main Worker Interface -->
             <div id="mainWorkerInterface" class="hidden">
                 <!-- Worker Info Bar -->
@@ -328,6 +352,7 @@
                                 <li>No consecutive night shifts (no night-to-night)</li>
                                 <li>No morning shift the day after working night shift</li>
                                 <li><strong>Everyone gets at least 5 shifts per week minimum</strong></li>
+                                <li><strong>Everyone gets at least 1 morning shift per week minimum</strong></li>
                                 <li>Premium pay applies Friday evening through Saturday evening only</li>
                             </ul>
                         </li>
@@ -389,6 +414,15 @@
                 console.log('Current approved workers:', approvedWorkers);
                 
                 if (isStillApproved) {
+                    // Check if preferences are locked BEFORE allowing access
+                    if (checkPreferenceLock()) {
+                        console.log('Preferences are locked - showing locked screen');
+                        verifiedWorkerName = verifiedWorker;
+                        document.getElementById('workerDisplayName').textContent = verifiedWorkerName;
+                        showLockedMessage();
+                        return;
+                    }
+                    
                     // Grant access
                     verifiedWorkerName = verifiedWorker;
                     document.getElementById('workerDisplayName').textContent = verifiedWorkerName;
@@ -415,6 +449,7 @@
             
             document.getElementById('accessDeniedSection').classList.remove('hidden');
             document.getElementById('mainWorkerInterface').classList.add('hidden');
+            document.getElementById('preferencesLockedSection').classList.add('hidden');
             
             if (customMessage) {
                 const alertDiv = document.querySelector('#accessDeniedSection .alert-danger');
@@ -441,6 +476,42 @@
                 
                 // Redirect to check page
                 window.location.href = 'check.html';
+            }
+        }
+
+        function checkPreferenceLock() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            console.log('Checking preference lock status:', isLocked);
+            return isLocked;
+        }
+
+        function showLockedMessage() {
+            const lockTimestamp = localStorage.getItem('lockTimestamp');
+            const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown time';
+            
+            // Hide all other sections and show locked screen
+            document.getElementById('accessDeniedSection').classList.add('hidden');
+            document.getElementById('mainWorkerInterface').classList.add('hidden');
+            document.getElementById('preferencesLockedSection').classList.remove('hidden');
+            
+            document.getElementById('lockDetails').innerHTML = `
+                <strong>Lock Details:</strong><br>
+                Locked since: ${lockTime}<br>
+                This is temporary - check back later or contact your administrator.
+            `;
+            
+            console.log('Showing locked message screen');
+        }
+
+        function checkLockStatus() {
+            console.log('Manually checking lock status...');
+            if (!checkPreferenceLock()) {
+                // Lock has been removed, show main interface
+                document.getElementById('preferencesLockedSection').classList.add('hidden');
+                document.getElementById('mainWorkerInterface').classList.remove('hidden');
+                showStatus('🔓 Preferences have been unlocked! You can now submit your preferences.', 'success');
+            } else {
+                showStatus('⏳ Preferences are still locked. Please try again later.', 'warning');
             }
         }
 
@@ -499,6 +570,13 @@
                 return;
             }
 
+            // Check if preferences are locked
+            if (checkPreferenceLock()) {
+                showStatus('❌ Cannot submit preferences: Submissions are currently locked by administrator.', 'error');
+                showLockedMessage(); // Switch to locked screen
+                return;
+            }
+
             const notes = document.getElementById('workerNotes').value.trim();
 
             // Collect preferences
@@ -535,6 +613,13 @@
         }
 
         function saveSubmission(submission) {
+            // Double-check lock before saving
+            if (checkPreferenceLock()) {
+                showStatus('❌ Cannot save preferences: Submissions are currently locked by administrator.', 'error');
+                showLockedMessage();
+                return;
+            }
+
             let submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
             
             // Remove any existing submission from this name
@@ -638,6 +723,23 @@
                 allCheckbox.checked = false;
             }
         }
+
+        // Add periodic check for lock status (every 10 seconds for more responsive checking)
+        setInterval(() => {
+            // Check if we're currently on the main interface
+            const isOnMainInterface = !document.getElementById('mainWorkerInterface').classList.contains('hidden');
+            const isOnLockedScreen = !document.getElementById('preferencesLockedSection').classList.contains('hidden');
+            
+            if (isOnMainInterface && checkPreferenceLock()) {
+                // Preferences just got locked - switch to locked screen
+                console.log('Preferences locked while user was active - switching to locked screen');
+                showLockedMessage();
+            } else if (isOnLockedScreen && !checkPreferenceLock()) {
+                // Preferences just got unlocked - switch back to main interface
+                console.log('Preferences unlocked while on locked screen - switching to main interface');
+                checkLockStatus();
+            }
+        }, 10000); // Check every 10 seconds for faster response
     </script>
 </body>
 </html>
