@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<script src="config.js"></script>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -250,6 +251,25 @@
             color: #155724;
         }
 
+        .sync-status {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .sync-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sync-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         @media (max-width: 768px) {
             .preferences-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -333,6 +353,11 @@
                     <button class="btn btn-danger" onclick="logout()" style="padding: 8px 15px; font-size: 14px;">Logout</button>
                 </div>
 
+                <!-- Sync Status -->
+                <div id="syncStatusDisplay" class="sync-status">
+                    🔄 Checking sync status...
+                </div>
+
                 <div class="instructions">
                     <h3>Instructions:</h3>
                     <ul>
@@ -373,13 +398,117 @@
     <script>
         let verifiedWorkerName = null;
 
+        // 🔧 GITHUB SYNC CONFIGURATION - UPDATE THESE VALUES:
+        const GITHUB_TOKEN = window.SHIFT_SCHEDULER_CONFIG?.GITHUB_TOKEN || 'NOT_CONFIGURED';  // Replace with your ghp_... token
+        const GIST_ID = window.SHIFT_SCHEDULER_CONFIG?.GIST_ID || 'NOT_CONFIGURED';            // Replace with your gist ID
+        
+        let syncEnabled = GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE' && GIST_ID !== 'YOUR_GIST_ID_HERE';
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            updateSyncStatus('Initializing...', 'info');
             checkAccess();
         });
 
-        function checkAccess() {
+        function updateSyncStatus(message, type) {
+            const statusDiv = document.getElementById('syncStatusDisplay');
+            if (!statusDiv) return;
+            
+            statusDiv.className = `sync-status ${type === 'success' ? 'connected' : type === 'error' ? 'disconnected' : ''}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔄';
+            statusDiv.textContent = `${icon} ${message}`;
+        }
+
+        async function syncToGitHub(data) {
+            if (!syncEnabled) {
+                console.log('Sync disabled - using local storage only');
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'shift_data.json': {
+                                content: JSON.stringify(data, null, 2)
+                            }
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    updateSyncStatus('Synced to cloud storage', 'success');
+                    return true;
+                } else {
+                    console.error('Sync failed:', response.status);
+                    updateSyncStatus('Sync failed - using local storage', 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                updateSyncStatus('Sync error - using local storage', 'error');
+                return false;
+            }
+        }
+
+        async function syncFromGitHub() {
+            if (!syncEnabled) {
+                updateSyncStatus('Using local storage only', 'info');
+                return null;
+            }
+            
+            try {
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    const fileContent = gist.files['shift_data.json']?.content;
+                    
+                    if (fileContent) {
+                        const data = JSON.parse(fileContent);
+                        updateSyncStatus('Connected to cloud storage', 'success');
+                        return data;
+                    }
+                }
+            } catch (error) {
+                console.error('Sync from GitHub error:', error);
+            }
+            
+            updateSyncStatus('Using local storage only', 'error');
+            return null;
+        }
+
+        async function checkAccess() {
             console.log('Checking worker access...');
+            
+            // First, try to sync approved workers from GitHub
+            const syncData = await syncFromGitHub();
+            let approvedWorkers;
+            
+            if (syncData && syncData.approvedWorkers) {
+                // Use synced data
+                approvedWorkers = syncData.approvedWorkers;
+                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+                localStorage.setItem('preferencesLocked', syncData.preferencesLocked ? 'true' : 'false');
+                localStorage.setItem('lockTimestamp', syncData.lockTimestamp || '');
+                console.log('Using synced approved workers:', approvedWorkers.length);
+            } else {
+                // Fallback to local storage
+                approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+                console.log('Using local approved workers:', approvedWorkers.length);
+            }
             
             // Check if user came from proper verification
             const verifiedWorker = localStorage.getItem('verifiedWorker');
@@ -395,7 +524,6 @@
             
             if (verifiedWorker && isVerificationValid) {
                 // Double-check against current approved workers list
-                const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
                 const isStillApproved = approvedWorkers.some(name => 
                     name.toLowerCase().trim() === verifiedWorker.toLowerCase().trim()
                 );
@@ -554,7 +682,7 @@
             grid.innerHTML = gridHTML;
         }
 
-        function submitPreferences() {
+        async function submitPreferences() {
             if (!verifiedWorkerName) {
                 showStatus('Error: No verified worker found. Please logout and verify access again.', 'error');
                 return;
@@ -599,10 +727,10 @@
             };
 
             console.log('Submitting preferences for:', verifiedWorkerName);
-            saveSubmission(submission);
+            await saveSubmission(submission);
         }
 
-        function saveSubmission(submission) {
+        async function saveSubmission(submission) {
             // Double-check lock before saving
             if (checkPreferenceLock()) {
                 showStatus('❌ Cannot save preferences: Submissions are currently locked by administrator.', 'error');
@@ -610,17 +738,37 @@
                 return;
             }
 
-            let submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
-            
-            // Remove any existing submission from this name
-            submissions = submissions.filter(s => s.name !== submission.name);
+            // Get current data (local or synced)
+            let currentData = await syncFromGitHub();
+            if (!currentData) {
+                // Fallback to local storage
+                currentData = {
+                    shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
+                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                    lastUpdate: Date.now()
+                };
+            }
+
+            // Remove any existing submission from this worker
+            currentData.shiftSubmissions = currentData.shiftSubmissions.filter(s => s.name !== submission.name);
             
             // Add new submission
-            submissions.push(submission);
+            currentData.shiftSubmissions.push(submission);
+            currentData.lastUpdate = Date.now();
             
-            localStorage.setItem('shiftSubmissions', JSON.stringify(submissions));
+            // Save locally first
+            localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
             
-            showStatus(`✅ Your preferences have been submitted successfully, ${verifiedWorkerName}!`, 'success');
+            // Try to sync to GitHub
+            const syncSuccess = await syncToGitHub(currentData);
+            
+            if (syncSuccess) {
+                showStatus(`✅ Your preferences have been submitted and synced to cloud storage, ${verifiedWorkerName}!`, 'success');
+            } else {
+                showStatus(`✅ Your preferences have been submitted locally, ${verifiedWorkerName}! (Sync will retry automatically)`, 'success');
+            }
             
             // Optional: Clear form after successful submission
             setTimeout(() => {
@@ -630,9 +778,19 @@
             }, 2000);
         }
 
-        function loadExistingPreferences() {
+        async function loadExistingPreferences() {
             if (verifiedWorkerName) {
-                const submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+                // Try to get data from GitHub first
+                let currentData = await syncFromGitHub();
+                let submissions;
+                
+                if (currentData && currentData.shiftSubmissions) {
+                    submissions = currentData.shiftSubmissions;
+                } else {
+                    // Fallback to local storage
+                    submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+                }
+                
                 const existingSubmission = submissions.find(s => s.name === verifiedWorkerName);
                 
                 if (existingSubmission) {
@@ -714,22 +872,34 @@
             }
         }
 
-        // Add periodic check for lock status (every 10 seconds for more responsive checking)
-        setInterval(() => {
+        // Add periodic check for lock status and sync updates
+        setInterval(async () => {
             // Check if we're currently on the main interface
             const isOnMainInterface = !document.getElementById('mainWorkerInterface').classList.contains('hidden');
             const isOnLockedScreen = !document.getElementById('preferencesLockedSection').classList.contains('hidden');
             
-            if (isOnMainInterface && checkPreferenceLock()) {
-                // Preferences just got locked - switch to locked screen
-                console.log('Preferences locked while user was active - switching to locked screen');
-                showLockedMessage();
-            } else if (isOnLockedScreen && !checkPreferenceLock()) {
-                // Preferences just got unlocked - switch back to main interface
-                console.log('Preferences unlocked while on locked screen - switching to main interface');
-                checkLockStatus();
+            if (syncEnabled && (isOnMainInterface || isOnLockedScreen)) {
+                // Try to sync latest data
+                const syncData = await syncFromGitHub();
+                if (syncData) {
+                    // Update local storage with synced data
+                    localStorage.setItem('approvedWorkers', JSON.stringify(syncData.approvedWorkers || []));
+                    localStorage.setItem('preferencesLocked', syncData.preferencesLocked ? 'true' : 'false');
+                    localStorage.setItem('lockTimestamp', syncData.lockTimestamp || '');
+                    
+                    // Check for lock status changes
+                    if (isOnMainInterface && syncData.preferencesLocked) {
+                        // Preferences just got locked - switch to locked screen
+                        console.log('Preferences locked while user was active - switching to locked screen');
+                        showLockedMessage();
+                    } else if (isOnLockedScreen && !syncData.preferencesLocked) {
+                        // Preferences just got unlocked - switch back to main interface
+                        console.log('Preferences unlocked while on locked screen - switching to main interface');
+                        checkLockStatus();
+                    }
+                }
             }
-        }, 10000); // Check every 10 seconds for faster response
+        }, 15000); // Check every 15 seconds for sync updates
     </script>
 </body>
 </html>
