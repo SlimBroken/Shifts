@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<script src="config.js"></script>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -539,8 +540,8 @@
         const ADMIN_PASSWORD = 'admin123'; // Change this in production!
         
         // GitHub sync configuration - UPDATE THESE WITH YOUR WORKING TOKEN
-        const GITHUB_TOKEN = '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'; // ⚠️ REPLACE WITH FRESH TOKEN
-        const GIST_ID = 'ea6ff1d66881230e1bb163d3264423aa';
+        const GITHUB_TOKEN = window.SHIFT_SCHEDULER_CONFIG?.GITHUB_TOKEN || 'NOT_CONFIGURED'; // ⚠️ REPLACE WITH FRESH TOKEN
+        const GIST_ID = window.SHIFT_SCHEDULER_CONFIG?.GIST_ID || 'NOT_CONFIGURED';
         let syncEnabled = false; // Will be enabled after token validation
         let lastSyncTime = null;
         let syncIntervalId = null;
