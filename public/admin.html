@@ -812,9 +812,11 @@
 
             // Week 1
             html += createWeekTable('שבוע 1 (1-7 ביוני, 2025)', schedule.week1, schedule.workers);
+            html += createWeekStats('שבוע 1', schedule.week1, schedule.workers);
             
             // Week 2
             html += createWeekTable('שבוע 2 (8-14 ביוני, 2025)', schedule.week2, schedule.workers);
+            html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
 
             // Add color legend
             if (schedule.workers && schedule.workers.length > 0) {
@@ -843,6 +845,72 @@
             
             // Store for Excel export
             window.currentSchedule = schedule;
+        }
+
+        function createWeekStats(weekTitle, week, workers) {
+            // Count shifts for each worker in this week
+            const workerShiftCounts = {};
+            const workerPremiumCounts = {};
+            
+            // Initialize counts
+            workers.forEach(worker => {
+                workerShiftCounts[worker] = 0;
+                workerPremiumCounts[worker] = 0;
+            });
+            
+            // Count shifts for each day and shift type
+            week.days.forEach((day, dayIndex) => {
+                ['morning', 'evening', 'night'].forEach(shiftType => {
+                    const assignedWorker = day.shifts[shiftType];
+                    if (assignedWorker && workers.includes(assignedWorker)) {
+                        workerShiftCounts[assignedWorker]++;
+                        
+                        // Count premium shifts (Friday evening to Saturday evening)
+                        if (isPremiumWeekendShift(dayIndex, shiftType)) {
+                            workerPremiumCounts[assignedWorker]++;
+                        }
+                    }
+                });
+            });
+
+            let html = `
+                <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f1f3f4 0%, #e8eaf6 100%); border-radius: 10px; border: 2px solid #c5cae9;">
+                    <h5 style="color: #3f51b5; margin-bottom: 15px; text-align: center;">📈 סיכום משמרות ${weekTitle}</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            `;
+
+            // Sort workers by total shifts for this week (descending)
+            const sortedWorkers = workers.sort((a, b) => workerShiftCounts[b] - workerShiftCounts[a]);
+
+            sortedWorkers.forEach(worker => {
+                const totalShifts = workerShiftCounts[worker];
+                const premiumShifts = workerPremiumCounts[worker];
+                const workerColor = getWorkerColor(worker, workers);
+                
+                html += `
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
+                                border-right: 4px solid ${workerColor}; transition: transform 0.2s ease;"
+                         onmouseover="this.style.transform='translateY(-2px)'" 
+                         onmouseout="this.style.transform='translateY(0)'">
+                        <div style="font-weight: bold; color: #333; margin-bottom: 8px; font-size: 16px;">${worker}</div>
+                        <div style="color: #666; font-size: 14px;">
+                            <div style="margin-bottom: 4px;">
+                                <span style="color: #1976d2;">📊 סה"כ משמרות:</span> 
+                                <strong style="color: #1976d2;">${totalShifts}</strong>
+                            </div>
+                            ${premiumShifts > 0 ? `
+                                <div style="color: #f57c00;">
+                                    <span>💰 משמרות פרמיום:</span> 
+                                    <strong>${premiumShifts}</strong>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div></div>';
+            return html;
         }
 
         function adjustBrightness(hex, percent) {
