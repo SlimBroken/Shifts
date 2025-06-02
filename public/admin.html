@@ -858,13 +858,13 @@
         }
 
         function generateWeekExcelFormat(week) {
-            let text = '';
+            let text = 'משמרת\t';
             
-            // Headers (correct RTL order) - shift column comes LAST for RTL Excel
+            // Headers in correct visual order (RTL): Sunday to Saturday
             week.days.forEach(day => {
                 text += `${day.dayShort} ${day.dateStr}\t`;
             });
-            text += 'משמרת\n'; // Shift column at the end for RTL
+            text += '\n';
             
             // Shift rows with Hebrew names
             const shifts = [
@@ -874,12 +874,13 @@
             ];
             
             shifts.forEach(shift => {
-                // Correct RTL order - data comes first, then shift label
+                text += `${shift.label}\t`;
+                // Data in same order as visual table: Sunday to Saturday
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     text += `${assignment || 'לא מוקצה'}\t`;
                 });
-                text += `${shift.label}\n`; // Shift label at the end
+                text += '\n';
             });
             
             return text;
