@@ -1,4 +1,77 @@
-<!DOCTYPE html>
+function displayGeneratedSchedule(schedule) {
+            const container = document.getElementById('generatedSchedule');
+            
+            // Generate unique colors for each worker
+            const workerColors = generateWorkerColors(schedule.workerStats);
+            
+            // Rule compliance summary
+            let ruleComplianceClass = schedule.ruleViolations.length === 0 ? 'success' : 'warning';
+            let ruleComplianceIcon = schedule.ruleViolations.length === 0 ? '✅' : '⚠️';
+            
+            let html = `
+                <style>
+                    .hebrew-schedule {
+                        direction: rtl;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    }
+                    .schedule-week {
+                        background: white;
+                        margin: 30px 0;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                        overflow: hidden;
+                    }
+                    .week-header {
+                        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                        color: white;
+                        padding: 15px 20px;
+                        text-align: center;
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+                    .hebrew-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 14px;
+                    }
+                    .hebrew-table th {
+                        background: #f8f9fa;
+                        padding: 12px 8px;
+                        border: 1px solid #dee2e6;
+                        text-align: center;
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .hebrew-table td {
+                        padding: 15px 8px;
+                        border: 1px solid #dee2e6;
+                        text-align: center;
+                        vertical-align: middle;
+                        min-height: 40px;
+                    }
+                    .shift-label {
+                        background: #e9ecef;
+                        font-weight: bold;
+                        color: #495057;
+                        text-align: center;
+                        width: 80px;
+                    }
+                    .weekday-cell {
+                        background: #e3f2fd;
+                        color: #1976d2;
+                    }
+                    .weekend-cell {
+                        background: #ffebee;
+                        color: #c62828;
+                    }
+                    .premium-shift {
+                        background: #fff3e0;
+                        border: 2px solid #ff9800;
+                        font-weight: bold;
+                    }
+                    .assigned-shift {
+                        border: 2px solid #4caf50;
+                <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1050,7 +1123,7 @@
             try {
                 showAlert('🔄 Generating optimized schedule...', 'info');
                 
-                const schedule = generateOptimizedScheduleWithRules(approvedSubmissions);
+                const schedule = generateOptimizedSchedule(approvedSubmissions);
                 
                 if (schedule) {
                     generatedScheduleData = schedule;
@@ -1071,49 +1144,7 @@
             }
         }
 
-        // Schedule generation functions with ground rules
-        function generateSchedule() {
-            console.log('🔄 Starting schedule generation...');
-            
-            // Get approved submissions only
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('❌ No approved worker submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
-
-            // Lock preferences during generation
-            if (localStorage.getItem('preferencesLocked') !== 'true') {
-                showAlert('🔒 Locking preferences during schedule generation...', 'info');
-                togglePreferenceLock();
-            }
-
-            try {
-                showAlert('🔄 Generating optimized schedule...', 'info');
-                
-                const schedule = generateOptimizedScheduleWithRules(approvedSubmissions);
-                
-                if (schedule) {
-                    generatedScheduleData = schedule;
-                    currentGeneration++;
-                    displayGeneratedSchedule(schedule);
-                    
-                    // Update generation counter
-                    const counterDiv = document.getElementById('generationCounter');
-                    counterDiv.textContent = `Generation #${currentGeneration} completed at ${new Date().toLocaleString()}`;
-                    
-                    showAlert(`✅ Schedule generated successfully! Assigned ${schedule.totalAssignments} shifts across ${schedule.days.length} days.`, 'success');
-                } else {
-                    showAlert('❌ Failed to generate schedule. Please check worker availability.', 'danger');
-                }
-            } catch (error) {
-                console.error('Schedule generation error:', error);
-                showAlert('❌ Error generating schedule: ' + error.message, 'danger');
-            }
-        }
-
-        function generateOptimizedScheduleWithRules(approvedSubmissions) {
+        function generateOptimizedSchedule(approvedSubmissions) {
             console.log('📊 Generating schedule for', approvedSubmissions.length, 'approved workers');
             
             const workers = approvedSubmissions.map(s => ({
@@ -1497,31 +1528,443 @@
                 </div>
             `;
 
-            html += `
-                <div class="schedule-container">
-                    <h4>👥 Worker Statistics</h4>
-                    <div class="worker-stats">
+        function displayGeneratedScheduleHebrew(scheduleData) {
+            const container = document.getElementById('generatedSchedule');
+            
+            // Generate unique colors for each worker
+            const workerColors = generateWorkerColors(scheduleData);
+            
+            // Rule compliance summary
+            let ruleComplianceClass = scheduleData.ruleViolations.length === 0 ? 'success' : 'warning';
+            let ruleComplianceIcon = scheduleData.ruleViolations.length === 0 ? '✅' : '⚠️';
+            
+            let html = `
+                <style>
+                    .hebrew-schedule {
+                        direction: rtl;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    }
+                    .schedule-week {
+                        background: white;
+                        margin: 30px 0;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                        overflow: hidden;
+                    }
+                    .week-header {
+                        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                        color: white;
+                        padding: 15px 20px;
+                        text-align: center;
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+                    .hebrew-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 14px;
+                    }
+                    .hebrew-table th {
+                        background: #f8f9fa;
+                        padding: 12px 8px;
+                        border: 1px solid #dee2e6;
+                        text-align: center;
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .hebrew-table td {
+                        padding: 15px 8px;
+                        border: 1px solid #dee2e6;
+                        text-align: center;
+                        vertical-align: middle;
+                        min-height: 40px;
+                    }
+                    .shift-label {
+                        background: #e9ecef;
+                        font-weight: bold;
+                        color: #495057;
+                        text-align: center;
+                        width: 80px;
+                    }
+                    .weekday-cell {
+                        background: #e3f2fd;
+                        color: #1976d2;
+                    }
+                    .weekend-cell {
+                        background: #ffebee;
+                        color: #c62828;
+                    }
+                    .premium-shift {
+                        background: #fff3e0;
+                        border: 2px solid #ff9800;
+                        font-weight: bold;
+                    }
+                    .assigned-shift {
+                        border: 2px solid #4caf50;
+                        font-weight: bold;
+                    }
+                    .unassigned-shift {
+                        background: #fafafa;
+                        color: #757575;
+                        font-style: italic;
+                    }
+                    .worker-legend {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 10px;
+                        margin: 15px 0;
+                        justify-content: center;
+                    }
+                    .worker-color {
+                        padding: 8px 15px;
+                        border-radius: 5px;
+                        border: 2px solid #333;
+                        font-weight: bold;
+                        text-align: center;
+                    }
+                </style>
+                
+                <div class="hebrew-schedule">
+                    <!-- Rule Compliance Summary -->
+                    <div style="background: ${scheduleData.ruleViolations.length === 0 ? '#d4edda' : '#fff3cd'}; border: 1px solid ${scheduleData.ruleViolations.length === 0 ? '#c3e6cb' : '#ffeaa7'}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <h4>${ruleComplianceIcon} Rule Compliance Status</h4>
+                        ${scheduleData.ruleViolations.length === 0 ? 
+                            '<div style="color: #155724;"><strong>✅ All scheduling rules followed perfectly!</strong></div>' :
+                            `<div style="color: #856404;"><strong>⚠️ ${scheduleData.ruleViolations.length} rule violations detected:</strong><ul style="margin: 10px 0 0 20px;">${scheduleData.ruleViolations.map(v => `<li>${v}</li>`).join('')}</ul></div>`
+                        }
+                        <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
+                            <strong>Applied Rules:</strong> 1) 8-hour gap between shifts | 2) Max 6 shifts/week | 3) Min 1 morning/week | 4) Fair premium distribution
+                        </div>
+                    </div>
+
+                    <!-- Worker Color Legend -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <h4 style="text-align: center; margin-bottom: 10px;">👥 עובדים - Worker Legend</h4>
+                        <div class="worker-legend">
             `;
 
-            Object.entries(schedule.workerStats).forEach(([workerName, stats]) => {
+            // Add worker colors to legend
+            Object.entries(workerColors).forEach(([worker, color]) => {
+                html += `<div class="worker-color" style="background-color: ${color};">${worker}</div>`;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <!-- Week 1 Table -->
+                    <div class="schedule-week">
+                        <div class="week-header">שבוע ראשון: 1-7 יוני 2025 (Week 1: June 1-7, 2025)</div>
+                        <table class="hebrew-table">
+                            <thead>
+                                <tr>
+                                    <th class="shift-label"></th>
+                                    <th class="weekend-cell">07.06.25</th>
+                                    <th class="premium-shift">06.06.25</th>
+                                    <th class="weekday-cell">05.06.25</th>
+                                    <th class="weekday-cell">04.06.25</th>
+                                    <th class="weekday-cell">03.06.25</th>
+                                    <th class="weekday-cell">02.06.25</th>
+                                    <th class="weekday-cell">01.06.25</th>
+                                </tr>
+                                <tr>
+                                    <th class="shift-label"></th>
+                                    <th class="weekend-cell">שבת</th>
+                                    <th class="premium-shift">שישי</th>
+                                    <th class="weekday-cell">חמישי</th>
+                                    <th class="weekday-cell">רביעי</th>
+                                    <th class="weekday-cell">שלישי</th>
+                                    <th class="weekday-cell">שני</th>
+                                    <th class="weekday-cell">ראשון</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            // Week 1 shift rows
+            const hebrewShifts = [
+                { name: 'בקר', nameEn: '07-15', key: 'morning' },
+                { name: 'ערב', nameEn: '15-23', key: 'evening' },
+                { name: 'לילה', nameEn: '23-07', key: 'night' }
+            ];
+
+            hebrewShifts.forEach(shift => {
+                html += `<tr><td class="shift-label">${shift.name}<br><small>${shift.nameEn}</small></td>`;
+                
+                for (let day = 6; day >= 0; day--) { // Right to left: Saturday to Sunday
+                    const worker = scheduleData.schedule[day][shift.key];
+                    const isPremium = scheduleData.schedule[day].isWeekendPremium && 
+                        ((day === 5 && shift.key === 'evening') || (day === 6));
+                    
+                    let cellClass = 'assigned-shift';
+                    let cellStyle = '';
+                    
+                    if (worker) {
+                        cellStyle = `background-color: ${workerColors[worker]};`;
+                        const premiumIcon = isPremium ? ' 💰' : '';
+                        html += `<td class="${cellClass}" style="${cellStyle}">${worker}${premiumIcon}</td>`;
+                    } else {
+                        html += `<td class="unassigned-shift">לא מאויש</td>`;
+                    }
+                }
+                html += '</tr>';
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Week 2 Table -->
+                    <div class="schedule-week">
+                        <div class="week-header">שבוע שני: 8-14 יוני 2025 (Week 2: June 8-14, 2025)</div>
+                        <table class="hebrew-table">
+                            <thead>
+                                <tr>
+                                    <th class="shift-label"></th>
+                                    <th class="weekend-cell">14.06.25</th>
+                                    <th class="premium-shift">13.06.25</th>
+                                    <th class="weekday-cell">12.06.25</th>
+                                    <th class="weekday-cell">11.06.25</th>
+                                    <th class="weekday-cell">10.06.25</th>
+                                    <th class="weekday-cell">09.06.25</th>
+                                    <th class="weekday-cell">08.06.25</th>
+                                </tr>
+                                <tr>
+                                    <th class="shift-label"></th>
+                                    <th class="weekend-cell">שבת</th>
+                                    <th class="premium-shift">שישי</th>
+                                    <th class="weekday-cell">חמישי</th>
+                                    <th class="weekday-cell">רביעי</th>
+                                    <th class="weekday-cell">שלישי</th>
+                                    <th class="weekday-cell">שני</th>
+                                    <th class="weekday-cell">ראשון</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            // Week 2 shift rows
+            hebrewShifts.forEach(shift => {
+                html += `<tr><td class="shift-label">${shift.name}<br><small>${shift.nameEn}</small></td>`;
+                
+                for (let day = 13; day >= 7; day--) { // Right to left: Saturday to Sunday
+                    const worker = scheduleData.schedule[day][shift.key];
+                    const isPremium = scheduleData.schedule[day].isWeekendPremium && 
+                        ((day === 12 && shift.key === 'evening') || (day === 13));
+                    
+                    let cellClass = 'assigned-shift';
+                    let cellStyle = '';
+                    
+                    if (worker) {
+                        cellStyle = `background-color: ${workerColors[worker]};`;
+                        const premiumIcon = isPremium ? ' 💰' : '';
+                        html += `<td class="${cellClass}" style="${cellStyle}">${worker}${premiumIcon}</td>`;
+                    } else {
+                        html += `<td class="unassigned-shift">לא מאויש</td>`;
+                    }
+                }
+                html += '</tr>';
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Schedule Statistics -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px;">
+                        <h4>📊 Schedule Statistics & Worker Performance</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
+            `;
+
+            // Calculate and display worker statistics
+            Object.entries(scheduleData.shiftsWeek1).forEach(([workerName, week1Shifts]) => {
+                const week2Shifts = scheduleData.shiftsWeek2[workerName] || 0;
+                const week1Mornings = scheduleData.morningShiftsWeek1[workerName] || 0;
+                const week2Mornings = scheduleData.morningShiftsWeek2[workerName] || 0;
+                const premiumShifts = scheduleData.weekendShiftCount[workerName] || 0;
+                const totalShifts = scheduleData.totalShiftCount[workerName] || 0;
+                
+                // Check rule compliance for this worker
+                const hasViolations = 
+                    week1Shifts > 6 || week2Shifts > 6 || 
+                    (week1Shifts > 0 && week1Mornings === 0) || 
+                    (week2Shifts > 0 && week2Mornings === 0);
+                
+                const cardStyle = hasViolations ? 'border: 2px solid #ffc107; background: #fff3cd;' : 'border: 1px solid #dee2e6; background: white;';
+                
                 html += `
-                    <div class="worker-stat-card">
-                        <h5 style="margin-bottom: 10px; color: #495057;">${workerName}</h5>
-                        <div style="font-size: 12px; line-height: 1.4;">
-                            <div><strong>Total Shifts:</strong> ${stats.totalShifts}</div>
-                            <div><strong>Morning:</strong> ${stats.morningShifts} | <strong>Evening:</strong> ${stats.eveningShifts} | <strong>Night:</strong> ${stats.nightShifts}</div>
-                            <div><strong>Weekend Shifts:</strong> ${stats.weekendShifts}</div>
+                    <div style="${cardStyle} padding: 15px; border-radius: 5px;">
+                        <h5 style="margin-bottom: 10px; color: #495057;">
+                            ${workerName} ${hasViolations ? '⚠️' : '✅'}
+                            <span style="background-color: ${workerColors[workerName]}; padding: 2px 8px; border-radius: 3px; margin-right: 5px; border: 1px solid #333;"></span>
+                        </h5>
+                        <div style="font-size: 12px; line-height: 1.6;">
+                            <div><strong>Total Shifts:</strong> ${totalShifts}</div>
+                            <div><strong>Week 1:</strong> ${week1Shifts} shifts (${week1Mornings} morning)</div>
+                            <div><strong>Week 2:</strong> ${week2Shifts} shifts (${week2Mornings} morning)</div>
+                            <div><strong>Premium Shifts:</strong> ${premiumShifts} 💰</div>
+                            ${hasViolations ? 
+                                '<div style="color: #856404; margin-top: 8px; font-weight: bold;">⚠️ Rule violations detected</div>' : 
+                                '<div style="color: #155724; margin-top: 8px; font-weight: bold;">✅ All rules followed</div>'
+                            }
                         </div>
                     </div>
                 `;
             });
 
             html += `
+                        </div>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div style="background: #e7f3ff; border: 1px solid #b8daff; border-radius: 8px; padding: 15px; margin-top: 20px;">
+                        <h4>📋 Export Options</h4>
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-secondary" onclick="exportSchedule()" style="margin-right: 10px;">📊 Export CSV</button>
+                            <button class="btn" onclick="copyExcelFormat()">📋 Copy Hebrew Excel Format</button>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #0c5460;">
+                            <strong>💡 Export Tips:</strong><br>
+                            • CSV: Standard format for all spreadsheet programs<br>
+                            • Hebrew Excel: Right-to-left format optimized for Hebrew Excel/Google Sheets<br>
+                            • Both formats include worker colors and premium shift indicators
+                        </div>
                     </div>
                 </div>
             `;
 
             container.innerHTML = html;
+        }
+
+        function generateWorkerColors(scheduleData) {
+            const workers = Object.keys(scheduleData.totalShiftCount);
+            const colors = [
+                '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', 
+                '#C9BAFF', '#FFBAE1', '#FFD4BA', '#BAF2FF', '#E1BAFF',
+                '#BAFFE1', '#FFC9BA', '#BAFFFF', '#F2BAFF', '#BAFF9A',
+                '#FF9ABA', '#9ABAFF', '#BA9AFF', '#FFBA9A', '#9AFFBA'
+            ];
+            
+            const workerColors = {};
+            workers.forEach((worker, index) => {
+                workerColors[worker] = colors[index % colors.length];
+            });
+            
+            return workerColors;
+        }
+
+        function exportSchedule() {
+            if (!generatedScheduleData) {
+                showAlert('❌ No schedule to export. Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            try {
+                let csvContent = 'Date,Day,Morning Shift,Evening Shift,Night Shift,Premium Day,Notes\n';
+                
+                const startDate = new Date(2025, 5, 1); // June 1st, 2025
+                
+                for (let day = 0; day < 14; day++) {
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + day);
+                    
+                    const dateStr = currentDate.toLocaleDateString('en-GB');
+                    const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                    const morning = generatedScheduleData.schedule[day].morning || 'Unassigned';
+                    const evening = generatedScheduleData.schedule[day].evening || 'Unassigned';
+                    const night = generatedScheduleData.schedule[day].night || 'Unassigned';
+                    const isPremium = generatedScheduleData.schedule[day].isWeekendPremium ? 'Yes' : 'No';
+                    const notes = generatedScheduleData.schedule[day].isWeekendPremium ? 'Premium pay period' : '';
+                    
+                    csvContent += `${dateStr},${dayName},${morning},${evening},${night},${isPremium},"${notes}"\n`;
+                }
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showAlert('✅ Schedule exported as CSV file!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showAlert('❌ Failed to export schedule: ' + error.message, 'danger');
+            }
+        }
+
+        function copyExcelFormat() {
+            if (!generatedScheduleData) {
+                showAlert('❌ No schedule to copy. Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            try {
+                let excelContent = '';
+                
+                // Week 1 Header
+                excelContent += 'שבוע ראשון (Week 1)\n\n';
+                
+                // Week 1 dates header
+                excelContent += '\t07.06.25\t06.06.25\t05.06.25\t04.06.25\t03.06.25\t02.06.25\t01.06.25\n';
+                
+                // Week 1 Hebrew days header
+                excelContent += '\tשבת\tשישי\tחמישי\tרביעי\tשלישי\tשני\tראשון\n';
+                
+                // Week 1 data rows
+                const hebrewShifts = [
+                    { name: 'בקר', key: 'morning' },
+                    { name: 'ערב', key: 'evening' },
+                    { name: 'לילה', key: 'night' }
+                ];
+                
+                hebrewShifts.forEach(shift => {
+                    excelContent += shift.name;
+                    for (let day = 6; day >= 0; day--) { // Right to left
+                        const worker = generatedScheduleData.schedule[day][shift.key] || '';
+                        excelContent += '\t' + worker;
+                    }
+                    excelContent += '\n';
+                });
+                
+                excelContent += '\n\n';
+                
+                // Week 2 Header
+                excelContent += 'שבוע שני (Week 2)\n\n';
+                
+                // Week 2 dates header
+                excelContent += '\t14.06.25\t13.06.25\t12.06.25\t11.06.25\t10.06.25\t09.06.25\t08.06.25\n';
+                
+                // Week 2 Hebrew days header
+                excelContent += '\tשבת\tשישי\tחמישי\tרביעי\tשלישי\tשני\tראשון\n';
+                
+                // Week 2 data rows
+                hebrewShifts.forEach(shift => {
+                    excelContent += shift.name;
+                    for (let day = 13; day >= 7; day--) { // Right to left
+                        const worker = generatedScheduleData.schedule[day][shift.key] || '';
+                        excelContent += '\t' + worker;
+                    }
+                    excelContent += '\n';
+                });
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(excelContent).then(() => {
+                    showAlert('✅ Hebrew schedule format copied to clipboard! Ready to paste into Excel.', 'success');
+                }).catch(err => {
+                    console.error('Clipboard error:', err);
+                    showAlert('❌ Failed to copy to clipboard. Try using the CSV export instead.', 'warning');
+                });
+            } catch (error) {
+                console.error('Copy error:', error);
+                showAlert('❌ Failed to copy schedule: ' + error.message, 'danger');
+            }
         } with rule compliance
             html += `
                 <div class="schedule-container">
