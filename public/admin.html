@@ -701,6 +701,72 @@
             return score + Math.random() * 5;
         }
 
+        function canWorkerTakeShift(worker, shift, globalDay, currentSchedule) {
+            // Check 8-hour break rule - worker cannot work consecutive shifts
+            
+            // Get the previous shift (8 hours earlier)
+            const previousShiftDay = globalDay;
+            const previousShift = getPreviousShift(shift);
+            
+            // Get the next shift (8 hours later) 
+            const nextShiftDay = globalDay;
+            const nextShift = getNextShift(shift);
+            
+            // Check previous shift on same day
+            if (previousShift) {
+                const week = globalDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
+                const dayIndex = globalDay % 7;
+                
+                if (week.days[dayIndex].shifts[previousShift] === worker.name) {
+                    return false; // Cannot work consecutive shifts
+                }
+            }
+            
+            // Check next shift on same day  
+            if (nextShift) {
+                const week = globalDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
+                const dayIndex = globalDay % 7;
+                
+                if (week.days[dayIndex].shifts[nextShift] === worker.name) {
+                    return false; // Cannot work consecutive shifts
+                }
+            }
+            
+            // Check night shift to morning shift across days (most critical)
+            if (shift === 'morning' && globalDay > 0) {
+                // Check if worker worked night shift previous day
+                const prevDay = globalDay - 1;
+                const prevWeek = prevDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
+                const prevDayIndex = prevDay % 7;
+                
+                if (prevWeek.days[prevDayIndex] && prevWeek.days[prevDayIndex].shifts.night === worker.name) {
+                    return false; // Cannot work morning after night shift
+                }
+            }
+            
+            return true; // Worker can take this shift
+        }
+
+        function getPreviousShift(currentShift) {
+            const shiftOrder = ['morning', 'evening', 'night'];
+            const currentIndex = shiftOrder.indexOf(currentShift);
+            
+            if (currentIndex > 0) {
+                return shiftOrder[currentIndex - 1];
+            }
+            return null; // No previous shift on same day
+        }
+
+        function getNextShift(currentShift) {
+            const shiftOrder = ['morning', 'evening', 'night'];
+            const currentIndex = shiftOrder.indexOf(currentShift);
+            
+            if (currentIndex < shiftOrder.length - 1) {
+                return shiftOrder[currentIndex + 1];
+            }
+            return null; // No next shift on same day
+        }
+
         function displaySchedule(schedule) {
             let html = `
                 <div style="margin-top: 30px;">
