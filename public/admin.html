@@ -266,8 +266,8 @@
         }
 
         .schedule-table .assigned {
-            background: #d4edda;
             color: #155724;
+            font-weight: bold;
         }
 
         .schedule-table .unassigned {
@@ -554,7 +554,8 @@
 
             const schedule = {
                 week1: initializeWeek(0),
-                week2: initializeWeek(7)
+                week2: initializeWeek(7),
+                workers: workers.map(w => w.name) // Store worker names for color assignment
             };
 
             const workerStats = {};
@@ -672,10 +673,20 @@
             `;
 
             // Week 1
-            html += createWeekTable('שבוע 1 (1-7 ביוני, 2025)', schedule.week1);
+            html += createWeekTable('שבוע 1 (1-7 ביוני, 2025)', schedule.week1, schedule.workers);
             
             // Week 2
-            html += createWeekTable('שבוע 2 (8-14 ביוני, 2025)', schedule.week2);
+            html += createWeekTable('שבוע 2 (8-14 ביוני, 2025)', schedule.week2, schedule.workers);
+
+            // Add color legend
+            if (schedule.workers && schedule.workers.length > 0) {
+                html += '<div style="margin: 20px 0;"><h5>מקרא צבעים:</h5><div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
+                schedule.workers.forEach(worker => {
+                    const color = getWorkerColor(worker, schedule.workers);
+                    html += `<div style="background-color: ${color}; color: #000; padding: 8px 12px; border-radius: 4px; font-weight: bold;">${worker}</div>`;
+                });
+                html += '</div></div>';
+            }
 
             document.getElementById('scheduleOutput').innerHTML = html;
             
@@ -683,7 +694,20 @@
             window.currentSchedule = schedule;
         }
 
-        function createWeekTable(title, week) {
+        function getWorkerColor(workerName, workers) {
+            // Predefined beautiful colors for workers
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                '#F8C471', '#82E0AA', '#F1948A', '#85C5FF', '#B19CD9',
+                '#FFB347', '#87CEEB', '#DEB887', '#F0E68C', '#FFE4E1'
+            ];
+            
+            const workerIndex = workers.indexOf(workerName);
+            return colors[workerIndex % colors.length];
+        }
+
+        function createWeekTable(title, week, workers = []) {
             let html = `
                 <div style="margin: 20px 0;">
                     <h5>${title}</h5>
@@ -716,9 +740,13 @@
                 for (let i = week.days.length - 1; i >= 0; i--) {
                     const day = week.days[i];
                     const assignment = day.shifts[shift.key];
-                    const cellClass = assignment ? 'assigned' : 'unassigned';
-                    const cellContent = assignment || 'לא מוקצה';
-                    html += `<td class="${cellClass}">${cellContent}</td>`;
+                    
+                    if (assignment) {
+                        const workerColor = getWorkerColor(assignment, workers);
+                        html += `<td class="assigned" style="background-color: ${workerColor}; color: #000;">${assignment}</td>`;
+                    } else {
+                        html += `<td class="unassigned">לא מוקצה</td>`;
+                    }
                 }
                 
                 html += '</tr>';
@@ -754,14 +782,14 @@
         }
 
         function generateWeekExcelFormat(week) {
-            let text = 'משמרת\t';
+            let text = '';
             
-            // Headers (reversed for RTL)
+            // Headers (reversed for RTL) - shift column comes LAST for RTL Excel
             for (let i = week.days.length - 1; i >= 0; i--) {
                 const day = week.days[i];
                 text += `${day.dayShort} ${day.dateStr}\t`;
             }
-            text += '\n';
+            text += 'משמרת\n'; // Shift column at the end for RTL
             
             // Shift rows with Hebrew names
             const shifts = [
@@ -771,14 +799,13 @@
             ];
             
             shifts.forEach(shift => {
-                text += `${shift.label}\t`;
-                // Reverse order for RTL
+                // Reverse order for RTL - data comes first, then shift label
                 for (let i = week.days.length - 1; i >= 0; i--) {
                     const day = week.days[i];
                     const assignment = day.shifts[shift.key];
                     text += `${assignment || 'לא מוקצה'}\t`;
                 }
-                text += '\n';
+                text += `${shift.label}\n`; // Shift label at the end
             });
             
             return text;
