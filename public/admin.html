@@ -1,1016 +1,4 @@
-if (serverConnected) {
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: newLockState,
-                    lockTimestamp: localStorage.getItem('lockTimestamp'),
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-            
-            if (newLockState) {
-                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
-            } else {
-                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
-            }
-        }
-
-        function updateLockStatus() {
-            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
-            const lockTimestamp = localStorage.getItem('lockTimestamp');
-            const lockStatusDiv = document.getElementById('lockStatus');
-            const toggleBtn = document.getElementById('toggleLockBtn');
-            
-            if (isLocked) {
-                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
-                lockStatusDiv.className = 'lock-status locked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔒 PREFERENCES LOCKED</strong><br>
-                    <small>Locked since: ${lockTime}</small><br>
-                    <small>Workers cannot submit or modify preferences while locked.</small>
-                `;
-                toggleBtn.textContent = '🔓 Unlock Preferences';
-                toggleBtn.className = 'btn btn-success';
-            } else {
-                lockStatusDiv.className = 'lock-status unlocked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
-                    <small>Workers can submit and modify their preferences.</small>
-                `;
-                toggleBtn.textContent = '🔒 Lock Preferences';
-                toggleBtn.className = 'btn btn-warning';
-            }
-        }
-
-        function displayApprovedWorkers() {
-            const container = document.getElementById('approvedWorkersList');
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            
-            if (approvedWorkers.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
-                        <strong>⚠️ No approved workers!</strong><br>
-                        Workers cannot access the system until you add their names to the approved list.<br>
-                        <small>Add worker names above to allow them to submit shift preferences.</small>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
-            
-            approvedWorkers.forEach(workerName => {
-                html += `
-                    <div style="background: white; padding: 10px 15px; border-radius: 5px; border: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-weight: 500;">${workerName}</span>
-                        <button onclick="removeWorker('${workerName.replace(/'/g, "\\'")}')" 
-                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
-                            ✕
-                        </button>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
-            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
-            html += '</div>';
-
-            container.innerHTML = html;
-        }
-
-        function addWorker() {
-            const newWorkerName = document.getElementById('newWorkerName').value.trim();
-            
-            if (!newWorkerName) {
-                showAlert('Please enter a worker name.', 'warning');
-                return;
-            }
-
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            
-            const existsAlready = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
-            );
-
-            if (existsAlready) {
-                showAlert('Worker name already exists in the approved list.', 'warning');
-                return;
-            }
-
-            approvedWorkers.push(newWorkerName);
-            localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-            localStorage.setItem('lastUpdate', Date.now().toString());
-            
-            if (serverConnected) {
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: approvedWorkers,
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-            
-            document.getElementById('newWorkerName').value = '';
-            displayApprovedWorkers();
-            updateAdminDashboard();
-            
-            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
-        }
-
-        function removeWorker(workerName) {
-            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
-                let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                
-                approvedWorkers = approvedWorkers.filter(name => name !== workerName);
-                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-                localStorage.setItem('lastUpdate', Date.now().toString());
-                
-                if (serverConnected) {
-                    const dataToSync = {
-                        shiftSubmissions: workerSubmissions,
-                        approvedWorkers: approvedWorkers,
-                        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                        lastUpdate: Date.now()
-                    };
-                    syncToGitHub(dataToSync);
-                }
-                
-                displayApprovedWorkers();
-                updateAdminDashboard();
-                
-                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
-            }
-        }
-
-        function testWorkerAccess() {
-            const testName = document.getElementById('testWorkerName').value.trim();
-            const resultDiv = document.getElementById('testResult');
-            
-            if (!testName) {
-                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
-                return;
-            }
-
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            const isApproved = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === testName.toLowerCase().trim()
-            );
-
-            if (isApproved) {
-                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
-            } else {
-                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
-            }
-        }
-
-        function displayWorkerSubmissions() {
-            const container = document.getElementById('workerSubmissions');
-            
-            if (workerSubmissions.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
-                return;
-            }
-
-            let html = '';
-            workerSubmissions.forEach(submission => {
-                const availableShifts = Object.values(submission.preferences)
-                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
-
-                html += `
-                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
-                        <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
-                        <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
-                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
-                        
-                        <div style="margin-top: 15px;">
-                            <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
-                                    onclick="toggleApproval(${submission.id})">
-                                ${submission.approved ? '✓ Approved' : 'Approve'}
-                            </button>
-                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function toggleApproval(submissionId) {
-            const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission) {
-                submission.approved = !submission.approved;
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
-            }
-        }
-
-        function removeSubmission(submissionId) {
-            const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
-                workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert('Submission removed successfully!', 'success');
-            }
-        }
-
-        // Schedule generation functions with comprehensive rules
-        function generateSchedule() {
-            console.log('🔄 Starting schedule generation...');
-            
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('❌ No approved worker submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
-
-            if (approvedSubmissions.length < 3) {
-                showAlert('Warning: Less than 3 approved workers. Schedule may have many unassigned shifts.', 'warning');
-            }
-
-            // Lock preferences during generation
-            if (localStorage.getItem('preferencesLocked') !== 'true') {
-                showAlert('🔒 Locking preferences during schedule generation...', 'info');
-                togglePreferenceLock();
-            }
-
-            try {
-                showAlert('🔄 Generating optimized schedule with Hebrew format...', 'info');
-                
-                // Calculate total possible generations (simplified estimation)
-                if (totalPossibleGenerations === 0) {
-                    const workers = approvedSubmissions.length;
-                    const totalShifts = 42; // 14 days × 3 shifts
-                    totalPossibleGenerations = Math.min(10000, Math.pow(workers, Math.min(8, workers)));
-                }
-                
-                currentGeneration++;
-                const schedule = generateOptimizedScheduleWithRules(approvedSubmissions);
-                
-                if (schedule) {
-                    generatedScheduleData = schedule;
-                    displayGeneratedScheduleHebrew(schedule);
-                    
-                    // Update generation counter
-                    const counterDiv = document.getElementById('generationCounter');
-                    counterDiv.innerHTML = `
-                        <div style="background: #e9ecef; padding: 8px 15px; border-radius: 5px; display: inline-block;">
-                            <strong>Generation ${currentGeneration.toLocaleString()}</strong> of 
-                            <span style="color: #007bff;">~${totalPossibleGenerations.toLocaleString()}</span> possible variations
-                            <br><small style="color: #6c757d;">Each generation creates a unique schedule combination</small>
-                        </div>
-                    `;
-                    
-                    showAlert(`✅ Schedule generated successfully! Coverage and Hebrew tables ready for export.`, 'success');
-                } else {
-                    showAlert('❌ Failed to generate schedule. Please check worker availability.', 'danger');
-                }
-            } catch (error) {
-                console.error('Schedule generation error:', error);
-                showAlert('❌ Error generating schedule: ' + error.message, 'danger');
-            }
-        }
-
-        function generateOptimizedScheduleWithRules(approvedSubmissions) {
-            console.log('📊 Generating rule-based schedule for', approvedSubmissions.length, 'approved workers');
-            
-            // Initialize schedule structure
-            const schedule = {};
-            const workers = approvedSubmissions.map(s => s.name);
-            
-            // Track shifts per worker with all rules
-            const nightShiftCount = {};
-            const weekendShiftCount = {};
-            const totalShiftCount = {};
-            const nightShiftsWeek1 = {}; // Track night shifts per week (days 0-6)
-            const nightShiftsWeek2 = {}; // Track night shifts per week (days 7-13)
-            const shiftsWeek1 = {}; // Track ALL shifts per week (days 0-6)
-            const shiftsWeek2 = {}; // Track ALL shifts per week (days 7-13)
-            const morningShiftsWeek1 = {}; // Track morning shifts per week (days 0-6)
-            const morningShiftsWeek2 = {}; // Track morning shifts per week (days 7-13)
-            const assignedWorkers = {}; // Track who is assigned to which shifts
-            
-            workers.forEach(worker => {
-                nightShiftCount[worker] = 0;
-                weekendShiftCount[worker] = 0;
-                totalShiftCount[worker] = 0;
-                nightShiftsWeek1[worker] = 0;
-                nightShiftsWeek2[worker] = 0;
-                shiftsWeek1[worker] = 0;
-                shiftsWeek2[worker] = 0;
-                morningShiftsWeek1[worker] = 0;
-                morningShiftsWeek2[worker] = 0;
-            });
-
-            // Generate schedule for 14 days
-            for (let day = 0; day < 14; day++) {
-                schedule[day] = {
-                    morning: null,
-                    evening: null,
-                    night: null,
-                    isWeekendPremium: false
-                };
-                
-                assignedWorkers[day] = new Set(); // Track workers assigned on this day
-
-                // Check if this day has premium shifts (Friday evening to Saturday evening)
-                const isPremiumDay = (day === 5) || (day === 6) || (day === 12) || (day === 13);
-                if (isPremiumDay) {
-                    schedule[day].isWeekendPremium = true;
-                }
-
-                // Randomize shift processing order for variety
-                const shiftOrder = ['morning', 'evening', 'night'];
-                shuffleArray(shiftOrder);
-                
-                shiftOrder.forEach(shift => {
-                    // Check if this specific shift is premium
-                    const isPremiumShift = (day === 5 && shift === 'evening') || // Friday evening
-                                          (day === 6) ||                        // Saturday all day
-                                          (day === 12 && shift === 'evening') || // Friday evening week 2
-                                          (day === 13);                         // Saturday all day week 2
-
-                    // Get available workers for this shift based on preferences
-                    let availableWorkers = approvedSubmissions
-                        .filter(submission => submission.preferences[day] && submission.preferences[day][shift])
-                        .map(submission => submission.name);
-
-                    // Apply all scheduling rules
-                    availableWorkers = applySchedulingRules(availableWorkers, day, shift, schedule, assignedWorkers, 
-                        nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
-
-                    if (availableWorkers.length === 0) {
-                        return; // No eligible workers for this shift
-                    }
-
-                    // Select worker using prioritized rules
-                    const selectedWorker = selectWorkerByRules(availableWorkers, day, shift, isPremiumShift,
-                        nightShiftCount, weekendShiftCount, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
-
-                    if (selectedWorker) {
-                        // Assign shift
-                        schedule[day][shift] = selectedWorker;
-                        
-                        // Update all tracking counters
-                        updateWorkerCounters(selectedWorker, day, shift, isPremiumShift,
-                            nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2,
-                            shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2);
-                        
-                        assignedWorkers[day].add(selectedWorker);
-                    }
-                });
-            }
-
-            // Add statistics and rule compliance to schedule object
-            const scheduleStats = {
-                schedule,
-                nightShiftCount,
-                weekendShiftCount,
-                totalShiftCount,
-                nightShiftsWeek1,
-                nightShiftsWeek2,
-                shiftsWeek1,
-                shiftsWeek2,
-                morningShiftsWeek1,
-                morningShiftsWeek2,
-                ruleViolations: checkRuleCompliance(schedule, workers, nightShiftsWeek1, nightShiftsWeek2, 
-                    shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2)
-            };
-
-            console.log('📈 Schedule generated with rule compliance check');
-            return scheduleStats;
-        }
-
-        function applySchedulingRules(availableWorkers, day, shift, schedule, assignedWorkers, 
-            nightShiftsWeek1, nightShiftsWeek2, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
-            
-            // Rule 1: Worker can only work once per day (8-hour gap)
-            availableWorkers = availableWorkers.filter(worker => !assignedWorkers[day].has(worker));
-
-            // Rule 2: If worker worked night shift previous day, cannot work morning shift today (8-hour gap)
-            if (shift === 'morning' && day > 0) {
-                const previousNightWorker = schedule[day - 1].night;
-                if (previousNightWorker) {
-                    availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                }
-            }
-
-            // Rule 3: Maximum 6 shifts per week
-            availableWorkers = availableWorkers.filter(worker => {
-                const currentWeek = Math.floor(day / 7);
-                const weeklyShifts = currentWeek === 0 ? shiftsWeek1[worker] : shiftsWeek2[worker];
-                return weeklyShifts < 6;
-            });
-
-            // Rule 4: Maximum 2 night shifts per week
-            if (shift === 'night') {
-                availableWorkers = availableWorkers.filter(worker => {
-                    if (day <= 6) {
-                        return nightShiftsWeek1[worker] < 2;
-                    } else {
-                        return nightShiftsWeek2[worker] < 2;
-                    }
-                });
-            }
-
-            // Rule 5: No consecutive night shifts
-            if (shift === 'night' && day > 0) {
-                const previousNightWorker = schedule[day - 1].night;
-                if (previousNightWorker) {
-                    availableWorkers = availableWorkers.filter(worker => worker !== previousNightWorker);
-                }
-            }
-
-            // Rule 6: Prevent "888" pattern (work-off-work-off-work)
-            if (day >= 4) {
-                availableWorkers = availableWorkers.filter(worker => {
-                    const workedDay0 = schedule[day - 4] && 
-                        (schedule[day - 4].morning === worker || schedule[day - 4].evening === worker || schedule[day - 4].night === worker);
-                    const workedDay2 = schedule[day - 2] && 
-                        (schedule[day - 2].morning === worker || schedule[day - 2].evening === worker || schedule[day - 2].night === worker);
-                    
-                    // If worker worked on day-4 and day-2, they cannot work today (would create 888)
-                    if (workedDay0 && workedDay2) {
-                        return false;
-                    }
-                    return true;
-                });
-            }
-
-            return availableWorkers;
-        }
-
-        function selectWorkerByRules(availableWorkers, day, shift, isPremiumShift,
-            nightShiftCount, weekendShiftCount, shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
-            
-            const currentWeek = Math.floor(day / 7);
-            const currentWeekShifts = currentWeek === 0 ? shiftsWeek1 : shiftsWeek2;
-            const currentWeekMornings = currentWeek === 0 ? morningShiftsWeek1 : morningShiftsWeek2;
-
-            // Priority 1: Workers needing morning shifts (Rule: min 1 morning per week)
-            if (shift === 'morning') {
-                const workersNeedingMornings = availableWorkers.filter(w => currentWeekMornings[w] === 0);
-                if (workersNeedingMornings.length > 0) {
-                    // Among workers needing mornings, pick one with fewest total shifts this week
-                    const minShiftsAmongMorningNeedy = Math.min(...workersNeedingMornings.map(w => currentWeekShifts[w]));
-                    const candidates = workersNeedingMornings.filter(w => currentWeekShifts[w] === minShiftsAmongMorningNeedy);
-                    return getRandomFromArray(candidates);
-                }
-            }
-
-            // Priority 2: Workers with less than 6 shifts this week (Rule: max 6 per week)
-            const workersUnder6 = availableWorkers.filter(w => currentWeekShifts[w] < 6);
-            if (workersUnder6.length > 0) {
-                // Among workers under 6, prioritize by shift type
-                if (shift === 'night') {
-                    // For night shifts: balance night distribution
-                    const currentWeekNights = currentWeek === 0 ? nightShiftsWeek1 : nightShiftsWeek2;
-                    const minNights = Math.min(...workersUnder6.map(w => currentWeekNights[w]));
-                    const candidates = workersUnder6.filter(w => currentWeekNights[w] === minNights);
-                    return getRandomFromArray(candidates);
-                } else if (isPremiumShift) {
-                    // For premium shifts: balance weekend distribution
-                    const minWeekend = Math.min(...workersUnder6.map(w => weekendShiftCount[w]));
-                    const candidates = workersUnder6.filter(w => weekendShiftCount[w] === minWeekend);
-                    return getRandomFromArray(candidates);
-                } else {
-                    // For regular shifts: balance weekly distribution
-                    const minWeekly = Math.min(...workersUnder6.map(w => currentWeekShifts[w]));
-                    const candidates = workersUnder6.filter(w => currentWeekShifts[w] === minWeekly);
-                    return getRandomFromArray(candidates);
-                }
-            }
-
-            // Fallback: Pick worker with minimum shifts in relevant category
-            if (shift === 'night') {
-                const minNights = Math.min(...availableWorkers.map(w => nightShiftCount[w]));
-                const candidates = availableWorkers.filter(w => nightShiftCount[w] === minNights);
-                return getRandomFromArray(candidates);
-            } else if (isPremiumShift) {
-                const minWeekend = Math.min(...availableWorkers.map(w => weekendShiftCount[w]));
-                const candidates = availableWorkers.filter(w => weekendShiftCount[w] === minWeekend);
-                return getRandomFromArray(candidates);
-            } else {
-                const minWeekly = Math.min(...availableWorkers.map(w => currentWeekShifts[w]));
-                const candidates = availableWorkers.filter(w => currentWeekShifts[w] === minWeekly);
-                return getRandomFromArray(candidates);
-            }
-        }
-
-        function updateWorkerCounters(selectedWorker, day, shift, isPremiumShift,
-            nightShiftCount, weekendShiftCount, totalShiftCount, nightShiftsWeek1, nightShiftsWeek2,
-            shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
-            
-            totalShiftCount[selectedWorker]++;
-            
-            // Update weekly counters
-            if (day <= 6) {
-                shiftsWeek1[selectedWorker]++;
-                if (shift === 'morning') morningShiftsWeek1[selectedWorker]++;
-                if (shift === 'night') nightShiftsWeek1[selectedWorker]++;
-            } else {
-                shiftsWeek2[selectedWorker]++;
-                if (shift === 'morning') morningShiftsWeek2[selectedWorker]++;
-                if (shift === 'night') nightShiftsWeek2[selectedWorker]++;
-            }
-            
-            // Update night and weekend counters
-            if (shift === 'night') {
-                nightShiftCount[selectedWorker]++;
-            }
-            
-            if (isPremiumShift) {
-                weekendShiftCount[selectedWorker]++;
-            }
-        }
-
-        function checkRuleCompliance(schedule, workers, nightShiftsWeek1, nightShiftsWeek2, 
-            shiftsWeek1, shiftsWeek2, morningShiftsWeek1, morningShiftsWeek2) {
-            
-            const violations = [];
-
-            workers.forEach(worker => {
-                // Check Rule: Max 6 shifts per week
-                if (shiftsWeek1[worker] > 6) {
-                    violations.push(`${worker}: ${shiftsWeek1[worker]} shifts in week 1 (max 6)`);
-                }
-                if (shiftsWeek2[worker] > 6) {
-                    violations.push(`${worker}: ${shiftsWeek2[worker]} shifts in week 2 (max 6)`);
-                }
-                
-                // Check Rule: Min 1 morning per week (if worker has any shifts that week)
-                if (shiftsWeek1[worker] > 0 && morningShiftsWeek1[worker] === 0) {
-                    violations.push(`${worker}: No morning shifts in week 1`);
-                }
-                if (shiftsWeek2[worker] > 0 && morningShiftsWeek2[worker] === 0) {
-                    violations.push(`${worker}: No morning shifts in week 2`);
-                }
-                
-                // Check Rule: Max 2 night shifts per week
-                if (nightShiftsWeek1[worker] > 2) {
-                    violations.push(`${worker}: ${nightShiftsWeek1[worker]} night shifts in week 1 (max 2)`);
-                }
-                if (nightShiftsWeek2[worker] > 2) {
-                    violations.push(`${worker}: ${nightShiftsWeek2[worker]} night shifts in week 2 (max 2)`);
-                }
-            });
-
-            // Check Rule: 8-hour gap (no consecutive night-morning)
-            for (let day = 1; day < 14; day++) {
-                const currentMorning = schedule[day].morning;
-                const previousNight = schedule[day - 1].night;
-                if (currentMorning && previousNight && currentMorning === previousNight) {
-                    violations.push(`${currentMorning}: 8-hour gap violation (night day ${day} → morning day ${day + 1})`);
-                }
-            }
-
-            // Check Rule: No consecutive night shifts
-            for (let day = 1; day < 14; day++) {
-                const currentNight = schedule[day].night;
-                const previousNight = schedule[day - 1].night;
-                if (currentNight && previousNight && currentNight === previousNight) {
-                    violations.push(`${currentNight}: Consecutive night shifts (days ${day} and ${day + 1})`);
-                }
-            }
-
-            return violations;
-        }
-
-        // Helper functions
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function getRandomFromArray(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
-
-        function displayGeneratedScheduleHebrew(scheduleData) {
-            const container = document.getElementById('generatedSchedule');
-            
-            // Generate unique colors for each worker
-            const workerColors = generateWorkerColors(scheduleData);
-            
-            // Rule compliance summary
-            let ruleComplianceClass = scheduleData.ruleViolations.length === 0 ? 'success' : 'warning';
-            let ruleComplianceIcon = scheduleData.ruleViolations.length === 0 ? '✅' : '⚠️';
-            
-            let html = `
-                <div class="hebrew-schedule">
-                    <!-- Rule Compliance Summary -->
-                    <div style="background: ${scheduleData.ruleViolations.length === 0 ? '#d4edda' : '#fff3cd'}; border: 1px solid ${scheduleData.ruleViolations.length === 0 ? '#c3e6cb' : '#ffeaa7'}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                        <h4>${ruleComplianceIcon} Rule Compliance Status</h4>
-                        ${scheduleData.ruleViolations.length === 0 ? 
-                            '<div style="color: #155724;"><strong>✅ All scheduling rules followed perfectly!</strong></div>' :
-                            `<div style="color: #856404;"><strong>⚠️ ${scheduleData.ruleViolations.length} rule violations detected:</strong><ul style="margin: 10px 0 0 20px;">${scheduleData.ruleViolations.map(v => `<li>${v}</li>`).join('')}</ul></div>`
-                        }
-                        <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
-                            <strong>Applied Rules:</strong> 1) 8-hour gap between shifts | 2) Max 6 shifts/week | 3) Min 1 morning/week | 4) Fair premium distribution
-                        </div>
-                    </div>
-
-                    <!-- Worker Color Legend -->
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                        <h4 style="text-align: center; margin-bottom: 10px;">👥 עובדים - Worker Legend</h4>
-                        <div class="worker-legend">
-            `;
-
-            // Add worker colors to legend
-            Object.entries(workerColors).forEach(([worker, color]) => {
-                html += `<div class="worker-color" style="background-color: ${color};">${worker}</div>`;
-            });
-
-            html += `
-                        </div>
-                    </div>
-
-                    <!-- Week 1 Table -->
-                    <div class="schedule-week">
-                        <div class="week-header">שבוע ראשון: 1-7 יוני 2025 (Week 1: June 1-7, 2025)</div>
-                        <table class="hebrew-table">
-                            <thead>
-                                <tr>
-                                    <th class="shift-label"></th>
-                                    <th class="weekend-cell">07.06.25</th>
-                                    <th class="premium-shift">06.06.25</th>
-                                    <th class="weekday-cell">05.06.25</th>
-                                    <th class="weekday-cell">04.06.25</th>
-                                    <th class="weekday-cell">03.06.25</th>
-                                    <th class="weekday-cell">02.06.25</th>
-                                    <th class="weekday-cell">01.06.25</th>
-                                </tr>
-                                <tr>
-                                    <th class="shift-label"></th>
-                                    <th class="weekend-cell">שבת</th>
-                                    <th class="premium-shift">שישי</th>
-                                    <th class="weekday-cell">חמישי</th>
-                                    <th class="weekday-cell">רביעי</th>
-                                    <th class="weekday-cell">שלישי</th>
-                                    <th class="weekday-cell">שני</th>
-                                    <th class="weekday-cell">ראשון</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-
-            // Week 1 shift rows
-            const hebrewShifts = [
-                { name: 'בקר', nameEn: '07-15', key: 'morning' },
-                { name: 'ערב', nameEn: '15-23', key: 'evening' },
-                { name: 'לילה', nameEn: '23-07', key: 'night' }
-            ];
-
-            hebrewShifts.forEach(shift => {
-                html += `<tr><td class="shift-label">${shift.name}<br><small>${shift.nameEn}</small></td>`;
-                
-                for (let day = 6; day >= 0; day--) { // Right to left: Saturday to Sunday
-                    const worker = scheduleData.schedule[day][shift.key];
-                    const isPremium = scheduleData.schedule[day].isWeekendPremium && 
-                        ((day === 5 && shift.key === 'evening') || (day === 6));
-                    
-                    let cellClass = 'assigned-shift';
-                    let cellStyle = '';
-                    
-                    if (worker) {
-                        cellStyle = `background-color: ${workerColors[worker]};`;
-                        const premiumIcon = isPremium ? ' 💰' : '';
-                        html += `<td class="${cellClass}" style="${cellStyle}">${worker}${premiumIcon}</td>`;
-                    } else {
-                        html += `<td class="unassigned-shift">לא מאויש</td>`;
-                    }
-                }
-                html += '</tr>';
-            });
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Week 2 Table -->
-                    <div class="schedule-week">
-                        <div class="week-header">שבוע שני: 8-14 יוני 2025 (Week 2: June 8-14, 2025)</div>
-                        <table class="hebrew-table">
-                            <thead>
-                                <tr>
-                                    <th class="shift-label"></th>
-                                    <th class="weekend-cell">14.06.25</th>
-                                    <th class="premium-shift">13.06.25</th>
-                                    <th class="weekday-cell">12.06.25</th>
-                                    <th class="weekday-cell">11.06.25</th>
-                                    <th class="weekday-cell">10.06.25</th>
-                                    <th class="weekday-cell">09.06.25</th>
-                                    <th class="weekday-cell">08.06.25</th>
-                                </tr>
-                                <tr>
-                                    <th class="shift-label"></th>
-                                    <th class="weekend-cell">שבת</th>
-                                    <th class="premium-shift">שישי</th>
-                                    <th class="weekday-cell">חמישי</th>
-                                    <th class="weekday-cell">רביעי</th>
-                                    <th class="weekday-cell">שלישי</th>
-                                    <th class="weekday-cell">שני</th>
-                                    <th class="weekday-cell">ראשון</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-
-            // Week 2 shift rows
-            hebrewShifts.forEach(shift => {
-                html += `<tr><td class="shift-label">${shift.name}<br><small>${shift.nameEn}</small></td>`;
-                
-                for (let day = 13; day >= 7; day--) { // Right to left: Saturday to Sunday
-                    const worker = scheduleData.schedule[day][shift.key];
-                    const isPremium = scheduleData.schedule[day].isWeekendPremium && 
-                        ((day === 12 && shift.key === 'evening') || (day === 13));
-                    
-                    let cellClass = 'assigned-shift';
-                    let cellStyle = '';
-                    
-                    if (worker) {
-                        cellStyle = `background-color: ${workerColors[worker]};`;
-                        const premiumIcon = isPremium ? ' 💰' : '';
-                        html += `<td class="${cellClass}" style="${cellStyle}">${worker}${premiumIcon}</td>`;
-                    } else {
-                        html += `<td class="unassigned-shift">לא מאויש</td>`;
-                    }
-                }
-                html += '</tr>';
-            });
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Schedule Statistics -->
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px;">
-                        <h4>📊 Schedule Statistics & Worker Performance</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
-            `;
-
-            // Calculate and display worker statistics
-            Object.entries(scheduleData.shiftsWeek1).forEach(([workerName, week1Shifts]) => {
-                const week2Shifts = scheduleData.shiftsWeek2[workerName] || 0;
-                const week1Mornings = scheduleData.morningShiftsWeek1[workerName] || 0;
-                const week2Mornings = scheduleData.morningShiftsWeek2[workerName] || 0;
-                const premiumShifts = scheduleData.weekendShiftCount[workerName] || 0;
-                const totalShifts = scheduleData.totalShiftCount[workerName] || 0;
-                
-                // Check rule compliance for this worker
-                const hasViolations = 
-                    week1Shifts > 6 || week2Shifts > 6 || 
-                    (week1Shifts > 0 && week1Mornings === 0) || 
-                    (week2Shifts > 0 && week2Mornings === 0);
-                
-                const cardStyle = hasViolations ? 'border: 2px solid #ffc107; background: #fff3cd;' : 'border: 1px solid #dee2e6; background: white;';
-                
-                html += `
-                    <div style="${cardStyle} padding: 15px; border-radius: 5px;">
-                        <h5 style="margin-bottom: 10px; color: #495057;">
-                            ${workerName} ${hasViolations ? '⚠️' : '✅'}
-                            <span style="background-color: ${workerColors[workerName]}; padding: 2px 8px; border-radius: 3px; margin-right: 5px; border: 1px solid #333;"></span>
-                        </h5>
-                        <div style="font-size: 12px; line-height: 1.6;">
-                            <div><strong>Total Shifts:</strong> ${totalShifts}</div>
-                            <div><strong>Week 1:</strong> ${week1Shifts} shifts (${week1Mornings} morning)</div>
-                            <div><strong>Week 2:</strong> ${week2Shifts} shifts (${week2Mornings} morning)</div>
-                            <div><strong>Premium Shifts:</strong> ${premiumShifts} 💰</div>
-                            ${hasViolations ? 
-                                '<div style="color: #856404; margin-top: 8px; font-weight: bold;">⚠️ Rule violations detected</div>' : 
-                                '<div style="color: #155724; margin-top: 8px; font-weight: bold;">✅ All rules followed</div>'
-                            }
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += `
-                        </div>
-                    </div>
-
-                    <!-- Export Section -->
-                    <div style="background: #e7f3ff; border: 1px solid #b8daff; border-radius: 8px; padding: 15px; margin-top: 20px;">
-                        <h4>📋 Export Options</h4>
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-secondary" onclick="exportSchedule()" style="margin-right: 10px;">📊 Export CSV</button>
-                            <button class="btn" onclick="copyExcelFormat()">📋 Copy Hebrew Excel Format</button>
-                        </div>
-                        <div style="margin-top: 10px; font-size: 12px; color: #0c5460;">
-                            <strong>💡 Export Tips:</strong><br>
-                            • CSV: Standard format for all spreadsheet programs<br>
-                            • Hebrew Excel: Right-to-left format optimized for Hebrew Excel/Google Sheets<br>
-                            • Both formats include worker colors and premium shift indicators
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            container.innerHTML = html;
-        }
-
-        function generateWorkerColors(scheduleData) {
-            const workers = Object.keys(scheduleData.totalShiftCount);
-            const colors = [
-                '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', 
-                '#C9BAFF', '#FFBAE1', '#FFD4BA', '#BAF2FF', '#E1BAFF',
-                '#BAFFE1', '#FFC9BA', '#BAFFFF', '#F2BAFF', '#BAFF9A',
-                '#FF9ABA', '#9ABAFF', '#BA9AFF', '#FFBA9A', '#9AFFBA'
-            ];
-            
-            const workerColors = {};
-            workers.forEach((worker, index) => {
-                workerColors[worker] = colors[index % colors.length];
-            });
-            
-            return workerColors;
-        }
-
-        function exportSchedule() {
-            if (!generatedScheduleData) {
-                showAlert('❌ No schedule to export. Please generate a schedule first.', 'warning');
-                return;
-            }
-
-            try {
-                let csvContent = 'Date,Day,Morning Shift,Evening Shift,Night Shift,Premium Day,Notes\n';
-                
-                const startDate = new Date(2025, 5, 1); // June 1st, 2025
-                
-                for (let day = 0; day < 14; day++) {
-                    const currentDate = new Date(startDate);
-                    currentDate.setDate(startDate.getDate() + day);
-                    
-                    const dateStr = currentDate.toLocaleDateString('en-GB');
-                    const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-                    const morning = generatedScheduleData.schedule[day].morning || 'Unassigned';
-                    const evening = generatedScheduleData.schedule[day].evening || 'Unassigned';
-                    const night = generatedScheduleData.schedule[day].night || 'Unassigned';
-                    const isPremium = generatedScheduleData.schedule[day].isWeekendPremium ? 'Yes' : 'No';
-                    const notes = generatedScheduleData.schedule[day].isWeekendPremium ? 'Premium pay period' : '';
-                    
-                    csvContent += `${dateStr},${dayName},${morning},${evening},${night},${isPremium},"${notes}"\n`;
-                }
-
-                // Create and download file
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showAlert('✅ Schedule exported as CSV file!', 'success');
-            } catch (error) {
-                console.error('Export error:', error);
-                showAlert('❌ Failed to export schedule: ' + error.message, 'danger');
-            }
-        }
-
-        function copyExcelFormat() {
-            if (!generatedScheduleData) {
-                showAlert('❌ No schedule to copy. Please generate a schedule first.', 'warning');
-                return;
-            }
-
-            try {
-                let excelContent = '';
-                
-                // Week 1 Header
-                excelContent += 'שבוע ראשון (Week 1)\n\n';
-                
-                // Week 1 dates header
-                excelContent += '\t07.06.25\t06.06.25\t05.06.25\t04.06.25\t03.06.25\t02.06.25\t01.06.25\n';
-                
-                // Week 1 Hebrew days header
-                excelContent += '\tשבת\tשישי\tחמישי\tרביעי\tשלישי\tשני\tראשון\n';
-                
-                // Week 1 data rows
-                const hebrewShifts = [
-                    { name: 'בקר', key: 'morning' },
-                    { name: 'ערב', key: 'evening' },
-                    { name: 'לילה', key: 'night' }
-                ];
-                
-                hebrewShifts.forEach(shift => {
-                    excelContent += shift.name;
-                    for (let day = 6; day >= 0; day--) { // Right to left
-                        const worker = generatedScheduleData.schedule[day][shift.key] || '';
-                        excelContent += '\t' + worker;
-                    }
-                    excelContent += '\n';
-                });
-                
-                excelContent += '\n\n';
-                
-                // Week 2 Header
-                excelContent += 'שבוע שני (Week 2)\n\n';
-                
-                // Week 2 dates header
-                excelContent += '\t14.06.25\t13.06.25\t12.06.25\t11.06.25\t10.06.25\t09.06.25\t08.06.25\n';
-                
-                // Week 2 Hebrew days header
-                excelContent += '\tשבת\tשישי\tחמישי\tרביעי\tשלישי\tשני\tראשון\n';
-                
-                // Week 2 data rows
-                hebrewShifts.forEach(shift => {
-                    excelContent += shift.name;
-                    for (let day = 13; day >= 7; day--) { // Right to left
-                        const worker = generatedScheduleData.schedule[day][shift.key] || '';
-                        excelContent += '\t' + worker;
-                    }
-                    excelContent += '\n';
-                });
-
-                // Copy to clipboard
-                navigator.clipboard.writeText(excelContent).then(() => {
-                    showAlert('✅ Hebrew schedule format copied to clipboard! Ready to paste into Excel.', 'success');
-                }).catch(err => {
-                    console.error('Clipboard error:', err);
-                    showAlert('❌ Failed to copy to clipboard. Try using the CSV export instead.', 'warning');
-                });
-            } catch (error) {
-                console.error('Copy error:', error);
-                showAlert('❌ Failed to copy schedule: ' + error.message, 'danger');
-            }
-        }
-
-        function clearAllData() {
-            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
-                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
-                    workerSubmissions = [];
-                    generatedScheduleData = null;
-                    currentGeneration = 0;
-                    totalPossibleGenerations = 0;
-                    
-                    localStorage.removeItem('approvedWorkers');
-                    localStorage.removeItem('preferencesLocked');
-                    localStorage.removeItem('lockTimestamp');
-                    
-                    saveSubmissions();
-                    updateAdminDashboard();
-                    
-                    document.getElementById('generatedSchedule').innerHTML = 
-                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
-                    
-                    showAlert('All data has been cleared, including approved worker names.', 'success');
-                }
-            }
-        }
-
-        function showAlert(message, type = 'info') {
-            const alertClass = `alert-${type}`;
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert ${alertClass}`;
-            alertDiv.innerHTML = message;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(alertDiv, content.firstChild);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
-        }
-
-        // Initialize with Enter key support
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                const newWorkerInput = document.getElementById('newWorkerName');
-                if (newWorkerInput) {
-                    newWorkerInput.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            addWorker();
-                        }
-                    });
-                }
-            }, 100);
-        });
-
-        // Cleanup interval on page unload
-        window.addEventListener('beforeunload', function() {
-            if (syncIntervalId) {
-                clearInterval(syncIntervalId);
-            }
-        });
-    </script>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1258,103 +246,6 @@ if (serverConnected) {
         .hidden {
             display: none;
         }
-
-        /* Hebrew Schedule Styles */
-        .hebrew-schedule {
-            direction: rtl;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .schedule-week {
-            background: white;
-            margin: 30px 0;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .week-header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .hebrew-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        
-        .hebrew-table th {
-            background: #f8f9fa;
-            padding: 12px 8px;
-            border: 1px solid #dee2e6;
-            text-align: center;
-            font-weight: bold;
-            color: #495057;
-        }
-        
-        .hebrew-table td {
-            padding: 15px 8px;
-            border: 1px solid #dee2e6;
-            text-align: center;
-            vertical-align: middle;
-            min-height: 40px;
-        }
-        
-        .shift-label {
-            background: #e9ecef;
-            font-weight: bold;
-            color: #495057;
-            text-align: center;
-            width: 80px;
-        }
-        
-        .weekday-cell {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .weekend-cell {
-            background: #ffebee;
-            color: #c62828;
-        }
-        
-        .premium-shift {
-            background: #fff3e0;
-            border: 2px solid #ff9800;
-            font-weight: bold;
-        }
-        
-        .assigned-shift {
-            border: 2px solid #4caf50;
-            font-weight: bold;
-        }
-        
-        .unassigned-shift {
-            background: #fafafa;
-            color: #757575;
-            font-style: italic;
-        }
-        
-        .worker-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
-            justify-content: center;
-        }
-        
-        .worker-color {
-            padding: 8px 15px;
-            border-radius: 5px;
-            border: 2px solid #333;
-            font-weight: bold;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -1431,8 +322,8 @@ if (serverConnected) {
                 <!-- Admin Actions -->
                 <div class="admin-actions">
                     <h3>Quick Actions</h3>
-                    <button class="btn btn-secondary" onclick="exportSchedule()">📊 Export Schedule (CSV)</button>
-                    <button class="btn" onclick="copyExcelFormat()">📋 Copy Excel Format</button>
+                    <button class="btn btn-secondary" onclick="exportScheduleCSV()">📊 Export Schedule (CSV)</button>
+                    <button class="btn" onclick="copyScheduleToClipboard()">📋 Copy Excel Format</button>
                     <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
                     <button class="btn" onclick="manualSync()" id="syncBtn">🔄 Sync Now</button>
                     <button class="btn" onclick="testServerConnection()" id="testBtn">🔍 Test Connection</button>
@@ -1762,7 +653,731 @@ if (serverConnected) {
                 // Create the data object to sync
                 const dataToSync = {
                     shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    approvedWorkers.forEach(workerName => {
+                html += `
+                    <div style="background: white; padding: 10px 15px; border-radius: 5px; border: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight: 500;">${workerName}</span>
+                        <button onclick="removeWorker('${workerName.replace(/'/g, "\\'")}')" 
+                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                            ✕
+                        </button>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
+            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function addWorker() {
+            const newWorkerName = document.getElementById('newWorkerName').value.trim();
+            
+            if (!newWorkerName) {
+                showAlert('Please enter a worker name.', 'warning');
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            const existsAlready = approvedWorkers.some(name => 
+                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
+            );
+
+            if (existsAlready) {
+                showAlert('Worker name already exists in the approved list.', 'warning');
+                return;
+            }
+
+            approvedWorkers.push(newWorkerName);
+            localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+            localStorage.setItem('lastUpdate', Date.now().toString());
+            
+            if (serverConnected) {
+                const dataToSync = {
+                    shiftSubmissions: workerSubmissions,
+                    approvedWorkers: approvedWorkers,
+                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                    lastUpdate: Date.now()
+                };
+                syncToGitHub(dataToSync);
+            }
+            
+            document.getElementById('newWorkerName').value = '';
+            displayApprovedWorkers();
+            updateAdminDashboard();
+            
+            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
+        }
+
+        function removeWorker(workerName) {
+            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
+                let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+                
+                approvedWorkers = approvedWorkers.filter(name => name !== workerName);
+                localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+                localStorage.setItem('lastUpdate', Date.now().toString());
+                
+                if (serverConnected) {
+                    const dataToSync = {
+                        shiftSubmissions: workerSubmissions,
+                        approvedWorkers: approvedWorkers,
+                        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                        lastUpdate: Date.now()
+                    };
+                    syncToGitHub(dataToSync);
+                }
+                
+                displayApprovedWorkers();
+                updateAdminDashboard();
+                
+                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
+            }
+        }
+
+        function testWorkerAccess() {
+            const testName = document.getElementById('testWorkerName').value.trim();
+            const resultDiv = document.getElementById('testResult');
+            
+            if (!testName) {
+                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
+                return;
+            }
+
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            const isApproved = approvedWorkers.some(name => 
+                name.toLowerCase().trim() === testName.toLowerCase().trim()
+            );
+
+            if (isApproved) {
+                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
+            } else {
+                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
+            }
+        }
+
+        function displayWorkerSubmissions() {
+            const container = document.getElementById('workerSubmissions');
+            
+            if (workerSubmissions.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
+                return;
+            }
+
+            let html = '';
+            workerSubmissions.forEach(submission => {
+                const availableShifts = Object.values(submission.preferences)
+                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
+
+                html += `
+                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
+                        <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
+                        <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
+                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
+                        
+                        <div style="margin-top: 15px;">
+                            <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
+                                    onclick="toggleApproval(${submission.id})">
+                                ${submission.approved ? '✓ Approved' : 'Approve'}
+                            </button>
+                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleApproval(submissionId) {
+            const submission = workerSubmissions.find(s => s.id === submissionId);
+            if (submission) {
+                submission.approved = !submission.approved;
+                saveSubmissions();
+                updateAdminDashboard();
+                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
+            }
+        }
+
+        function removeSubmission(submissionId) {
+            const submission = workerSubmissions.find(s => s.id === submissionId);
+            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
+                workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
+                saveSubmissions();
+                updateAdminDashboard();
+                showAlert('Submission removed successfully!', 'success');
+            }
+        }
+
+        // Schedule Generation Algorithm
+        function generateSchedule() {
+            console.log('🔄 Starting schedule generation...');
+            
+            // Get approved submissions only
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('❌ No approved worker submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            // Lock preferences during generation
+            if (localStorage.getItem('preferencesLocked') !== 'true') {
+                localStorage.setItem('preferencesLocked', 'true');
+                localStorage.setItem('lockTimestamp', Date.now().toString());
+                updateLockStatus();
+                showAlert('🔒 Preferences locked for schedule generation...', 'info');
+            }
+
+            try {
+                // Generate optimized schedule
+                const schedule = generateOptimizedSchedule(approvedSubmissions);
+                
+                if (schedule) {
+                    generatedScheduleData = schedule;
+                    currentGeneration++;
+                    displayGeneratedSchedule(schedule);
+                    
+                    showAlert('✅ Schedule generated successfully! Data is ready for Excel export.', 'success');
+                    
+                    // Update generation counter
+                    const counterDiv = document.getElementById('generationCounter');
+                    counterDiv.innerHTML = `
+                        <div style="color: #28a745; font-weight: bold;">
+                            📊 Generation #${currentGeneration} completed successfully<br>
+                            <small>Coverage: ${schedule.coverage.toFixed(1)}% | Workers: ${schedule.stats.totalWorkers} | Total Shifts: ${schedule.stats.totalAssignedShifts}</small>
+                        </div>
+                    `;
+                } else {
+                    showAlert('❌ Failed to generate schedule. Please check worker availability.', 'danger');
+                }
+            } catch (error) {
+                console.error('Schedule generation error:', error);
+                showAlert('❌ Error generating schedule: ' + error.message, 'danger');
+            }
+        }
+
+        function generateOptimizedSchedule(submissions) {
+            console.log('🧮 Running schedule optimization algorithm...');
+            
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences,
+                notes: s.notes || ''
+            }));
+
+            // Initialize schedule structure
+            const schedule = {
+                week1: initializeWeek(0),
+                week2: initializeWeek(7)
+            };
+
+            // Track worker assignments for fairness
+            const workerStats = {};
+            workers.forEach(worker => {
+                workerStats[worker.name] = {
+                    totalShifts: 0,
+                    nightShifts: 0,
+                    weekendShifts: 0,
+                    consecutiveDays: 0,
+                    lastAssignedDay: -1
+                };
+            });
+
+            // Generate assignments for each week
+            let totalCoverage = 0;
+            let totalPossibleShifts = 0;
+
+            [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+                const weekStartDay = weekIndex * 7;
+                
+                for (let day = 0; day < 7; day++) {
+                    const globalDay = weekStartDay + day;
+                    
+                    ['morning', 'evening', 'night'].forEach(shift => {
+                        totalPossibleShifts++;
+                        
+                        // Find available workers for this shift
+                        const availableWorkers = workers.filter(worker => 
+                            worker.preferences[globalDay] && worker.preferences[globalDay][shift]
+                        );
+
+                        if (availableWorkers.length > 0) {
+                            // Score workers based on various factors
+                            const scoredWorkers = availableWorkers.map(worker => ({
+                                worker: worker,
+                                score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name])
+                            })).sort((a, b) => b.score - a.score);
+
+                            // Assign best available worker
+                            const bestWorker = scoredWorkers[0].worker;
+                            week.days[day].shifts[shift] = {
+                                worker: bestWorker.name,
+                                notes: bestWorker.notes
+                            };
+
+                            // Update worker stats
+                            const stats = workerStats[bestWorker.name];
+                            stats.totalShifts++;
+                            if (shift === 'night') stats.nightShifts++;
+                            if (day === 5 || day === 6) stats.weekendShifts++; // Friday/Saturday
+                            
+                            // Track consecutive days
+                            if (stats.lastAssignedDay === globalDay - 1) {
+                                stats.consecutiveDays++;
+                            } else {
+                                stats.consecutiveDays = 1;
+                            }
+                            stats.lastAssignedDay = globalDay;
+
+                            totalCoverage++;
+                        }
+                    });
+                }
+            });
+
+            // Calculate final statistics
+            const finalSchedule = {
+                ...schedule,
+                coverage: (totalCoverage / totalPossibleShifts) * 100,
+                stats: {
+                    totalWorkers: workers.length,
+                    totalAssignedShifts: totalCoverage,
+                    totalPossibleShifts: totalPossibleShifts,
+                    workerStats: workerStats
+                },
+                generatedAt: new Date().toISOString(),
+                generationNumber: currentGeneration + 1
+            };
+
+            console.log('📊 Schedule generated with', totalCoverage, 'of', totalPossibleShifts, 'shifts covered');
+            return finalSchedule;
+        }
+
+        function initializeWeek(startDay) {
+            const week = { days: [] };
+            const startDate = new Date(2025, 5, 1 + startDay); // June 1st + offset
+            
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                week.days.push({
+                    date: currentDate,
+                    dayName: currentDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                    dayShort: currentDate.toLocaleDateString('en-US', { weekday: 'short' }),
+                    dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+                    shifts: {
+                        morning: null,
+                        evening: null,
+                        night: null
+                    }
+                });
+            }
+            
+            return week;
+        }
+
+        function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, workerStats) {
+            let score = 100; // Base score
+            
+            // Prefer workers with fewer total shifts (load balancing)
+            score -= workerStats.totalShifts * 5;
+            
+            // Avoid too many consecutive days (worker wellbeing)
+            if (workerStats.consecutiveDays >= 3) {
+                score -= 30;
+            }
+            
+            // Distribute night shifts fairly
+            if (shift === 'night') {
+                score -= workerStats.nightShifts * 10;
+            }
+            
+            // Weekend shift considerations (Friday/Saturday)
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                score -= workerStats.weekendShifts * 8;
+            }
+            
+            // Avoid 888 patterns (8hr shifts back-to-back-to-back)
+            if (workerStats.consecutiveDays >= 2) {
+                score -= 20;
+            }
+            
+            // Small random factor to break ties
+            score += Math.random() * 5;
+            
+            return score;
+        }
+
+        function displayGeneratedSchedule(schedule) {
+            const container = document.getElementById('generatedSchedule');
+            
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>📊 Generated Schedule</h3>
+                    <div>
+                        <button class="btn btn-success" onclick="copyScheduleToClipboard()">📋 Copy Excel Format</button>
+                        <button class="btn btn-secondary" onclick="exportScheduleCSV()">📊 Export CSV</button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>📈 Schedule Statistics:</strong><br>
+                    Coverage: ${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)<br>
+                    Workers: ${schedule.stats.totalWorkers} | Generated: ${new Date(schedule.generatedAt).toLocaleString()}
+                </div>
+            `;
+
+            // Week 1
+            html += createWeekTable('Week 1 (June 1-7, 2025)', schedule.week1);
+            
+            // Week 2  
+            html += createWeekTable('Week 2 (June 8-14, 2025)', schedule.week2);
+
+            // Worker Statistics
+            html += createWorkerStatsTable(schedule.stats.workerStats);
+            
+            container.innerHTML = html;
+        }
+
+        function createWeekTable(weekTitle, week) {
+            let html = `
+                <div style="margin: 30px 0;">
+                    <h4>${weekTitle}</h4>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <thead style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                                <tr>
+                                    <th style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Shift</th>
+            `;
+            
+            // Day headers
+            week.days.forEach(day => {
+                const isPremium = day.dayShort === 'Fri' || day.dayShort === 'Sat';
+                html += `<th style="padding: 12px; border: 1px solid #ddd; text-align: center; ${isPremium ? 'background: rgba(255,193,7,0.3);' : ''}">${day.dayShort}<br><small>${day.dateStr}</small>${isPremium ? '<br>💰' : ''}</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // Shift rows
+            const shifts = [
+                { key: 'morning', label: 'Morning (07:00-15:00)', icon: '🌅' },
+                { key: 'evening', label: 'Evening (15:00-23:00)', icon: '🌆' },
+                { key: 'night', label: 'Night (23:00-07:00)', icon: '🌙' }
+            ];
+            
+            shifts.forEach((shift, shiftIndex) => {
+                html += `<tr style="background: ${shiftIndex % 2 === 0 ? '#f8f9fa' : 'white'};">`;
+                html += `<td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #e9ecef;">${shift.icon} ${shift.label}</td>`;
+                
+                week.days.forEach(day => {
+                    const assignment = day.shifts[shift.key];
+                    const cellContent = assignment ? 
+                        `<strong>${assignment.worker}</strong>${assignment.notes ? `<br><small style="color: #6c757d;">${assignment.notes}</small>` : ''}` : 
+                        '<span style="color: #6c757d;">Unassigned</span>';
+                    
+                    const cellStyle = assignment ? 
+                        'background: #d4edda; color: #155724;' : 
+                        'background: #f8d7da; color: #721c24;';
+                    
+                    html += `<td style="padding: 12px; border: 1px solid #ddd; text-align: center; ${cellStyle}">${cellContent}</td>`;
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+
+        function createWorkerStatsTable(workerStats) {
+            let html = `
+                <div style="margin: 30px 0;">
+                    <h4>👥 Worker Statistics</h4>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <thead style="background: #6c757d; color: white;">
+                                <tr>
+                                    <th style="padding: 12px; border: 1px solid #ddd;">Worker Name</th>
+                                    <th style="padding: 12px; border: 1px solid #ddd;">Total Shifts</th>
+                                    <th style="padding: 12px; border: 1px solid #ddd;">Night Shifts</th>
+                                    <th style="padding: 12px; border: 1px solid #ddd;">Weekend Shifts</th>
+                                    <th style="padding: 12px; border: 1px solid #ddd;">Load Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            const workers = Object.entries(workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
+            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
+            
+            workers.forEach(([name, stats], index) => {
+                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) : 0;
+                const balanceColor = loadBalance > 120 ? '#dc3545' : loadBalance < 80 ? '#fd7e14' : '#28a745';
+                
+                html += `
+                    <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">${name}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.totalShifts}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.nightShifts}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.weekendShifts}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: ${balanceColor}; font-weight: bold;">${loadBalance}%</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                        <strong>Load Balance:</strong> Percentage relative to average shifts per worker. 
+                        <span style="color: #28a745;">80-120% is ideal</span>, 
+                        <span style="color: #fd7e14;">&lt;80% underutilized</span>, 
+                        <span style="color: #dc3545;">&gt;120% overloaded</span>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        function copyScheduleToClipboard() {
+            if (!generatedScheduleData) {
+                showAlert('❌ No schedule generated yet. Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const excelFormat = generateExcelFormat(generatedScheduleData);
+            
+            navigator.clipboard.writeText(excelFormat).then(() => {
+                showAlert('✅ Schedule copied to clipboard in Excel format! You can now paste it directly into Excel.', 'success');
+            }).catch(err => {
+                console.error('Failed to copy to clipboard:', err);
+                // Fallback: show the text in a modal/alert
+                const textArea = document.createElement('textarea');
+                textArea.value = excelFormat;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('✅ Schedule copied to clipboard! (Fallback method)', 'success');
+            });
+        }
+
+        function generateExcelFormat(schedule) {
+            let excelText = '';
+            
+            // Title and metadata
+            excelText += `SHIFT SCHEDULE - Generated ${new Date(schedule.generatedAt).toLocaleDateString()}\n`;
+            excelText += `Coverage: ${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)\n\n`;
+            
+            // Week 1
+            excelText += 'WEEK 1 (June 1-7, 2025)\n';
+            excelText += generateWeekExcelFormat(schedule.week1);
+            excelText += '\n';
+            
+            // Week 2
+            excelText += 'WEEK 2 (June 8-14, 2025)\n';
+            excelText += generateWeekExcelFormat(schedule.week2);
+            excelText += '\n';
+            
+            // Worker Statistics
+            excelText += 'WORKER STATISTICS\n';
+            excelText += 'Worker Name\tTotal Shifts\tNight Shifts\tWeekend Shifts\tLoad Balance\n';
+            
+            const workers = Object.entries(schedule.stats.workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
+            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
+            
+            workers.forEach(([name, stats]) => {
+                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) + '%' : '0%';
+                excelText += `${name}\t${stats.totalShifts}\t${stats.nightShifts}\t${stats.weekendShifts}\t${loadBalance}\n`;
+            });
+            
+            return excelText;
+        }
+
+        function generateWeekExcelFormat(week) {
+            let weekText = 'Shift\t';
+            
+            // Headers
+            week.days.forEach(day => {
+                weekText += `${day.dayShort} ${day.dateStr}\t`;
+            });
+            weekText += '\n';
+            
+            // Shift rows
+            const shifts = [
+                { key: 'morning', label: 'Morning (07:00-15:00)' },
+                { key: 'evening', label: 'Evening (15:00-23:00)' },
+                { key: 'night', label: 'Night (23:00-07:00)' }
+            ];
+            
+            shifts.forEach(shift => {
+                weekText += `${shift.label}\t`;
+                week.days.forEach(day => {
+                    const assignment = day.shifts[shift.key];
+                    weekText += `${assignment ? assignment.worker : 'Unassigned'}\t`;
+                });
+                weekText += '\n';
+            });
+            
+            return weekText;
+        }
+
+        function exportScheduleCSV() {
+            if (!generatedScheduleData) {
+                showAlert('❌ No schedule generated yet. Please generate a schedule first.', 'warning');
+                return;
+            }
+
+            const csvContent = generateCSVFormat(generatedScheduleData);
+            
+            // Create and download CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showAlert('✅ Schedule exported as CSV file!', 'success');
+            } else {
+                showAlert('❌ CSV export not supported in this browser.', 'warning');
+            }
+        }
+
+        function generateCSVFormat(schedule) {
+            let csvContent = '';
+            
+            // Metadata
+            csvContent += `"SHIFT SCHEDULE","Generated ${new Date(schedule.generatedAt).toLocaleDateString()}"\n`;
+            csvContent += `"Coverage","${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)"\n\n`;
+            
+            // Week 1
+            csvContent += '"WEEK 1 (June 1-7, 2025)"\n';
+            csvContent += generateWeekCSVFormat(schedule.week1);
+            csvContent += '\n';
+            
+            // Week 2
+            csvContent += '"WEEK 2 (June 8-14, 2025)"\n';
+            csvContent += generateWeekCSVFormat(schedule.week2);
+            csvContent += '\n';
+            
+            // Worker Statistics
+            csvContent += '"WORKER STATISTICS"\n';
+            csvContent += '"Worker Name","Total Shifts","Night Shifts","Weekend Shifts","Load Balance"\n';
+            
+            const workers = Object.entries(schedule.stats.workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
+            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
+            
+            workers.forEach(([name, stats]) => {
+                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) + '%' : '0%';
+                csvContent += `"${name}","${stats.totalShifts}","${stats.nightShifts}","${stats.weekendShifts}","${loadBalance}"\n`;
+            });
+            
+            return csvContent;
+        }
+
+        function generateWeekCSVFormat(week) {
+            let weekText = '"Shift",';
+            
+            // Headers
+            week.days.forEach(day => {
+                weekText += `"${day.dayShort} ${day.dateStr}",`;
+            });
+            weekText += '\n';
+            
+            // Shift rows
+            const shifts = [
+                { key: 'morning', label: 'Morning (07:00-15:00)' },
+                { key: 'evening', label: 'Evening (15:00-23:00)' },
+                { key: 'night', label: 'Night (23:00-07:00)' }
+            ];
+            
+            shifts.forEach(shift => {
+                weekText += `"${shift.label}",`;
+                week.days.forEach(day => {
+                    const assignment = day.shifts[shift.key];
+                    weekText += `"${assignment ? assignment.worker : 'Unassigned'}",`;
+                });
+                weekText += '\n';
+            });
+            
+            return weekText;
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
+                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
+                    workerSubmissions = [];
+                    generatedScheduleData = null;
+                    currentGeneration = 0;
+                    totalPossibleGenerations = 0;
+                    
+                    localStorage.removeItem('approvedWorkers');
+                    localStorage.removeItem('preferencesLocked');
+                    localStorage.removeItem('lockTimestamp');
+                    
+                    saveSubmissions();
+                    updateAdminDashboard();
+                    
+                    document.getElementById('generatedSchedule').innerHTML = 
+                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
+                    
+                    showAlert('All data has been cleared, including approved worker names.', 'success');
+                }
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertClass = `alert-${type}`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.innerHTML = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize with Enter key support
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const newWorkerInput = document.getElementById('newWorkerName');
+                if (newWorkerInput) {
+                    newWorkerInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            addWorker();
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        // Cleanup interval on page unload
+        window.addEventListener('beforeunload', function() {
+            if (syncIntervalId) {
+                clearInterval(syncIntervalId);
+            }
+        });
+    </script>
+</body>
+</html>: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
                     preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
                     lockTimestamp: localStorage.getItem('lockTimestamp') || '',
                     lastUpdate: Date.now()
@@ -1859,3 +1474,63 @@ if (serverConnected) {
                 const dataToSync = {
                     shiftSubmissions: workerSubmissions,
                     approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: newLockState,
+                    lockTimestamp: localStorage.getItem('lockTimestamp'),
+                    lastUpdate: Date.now()
+                };
+                syncToGitHub(dataToSync);
+            }
+            
+            if (newLockState) {
+                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
+            } else {
+                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
+            }
+        }
+
+        function updateLockStatus() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const lockTimestamp = localStorage.getItem('lockTimestamp');
+            const lockStatusDiv = document.getElementById('lockStatus');
+            const toggleBtn = document.getElementById('toggleLockBtn');
+            
+            if (isLocked) {
+                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
+                lockStatusDiv.className = 'lock-status locked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔒 PREFERENCES LOCKED</strong><br>
+                    <small>Locked since: ${lockTime}</small><br>
+                    <small>Workers cannot submit or modify preferences while locked.</small>
+                `;
+                toggleBtn.textContent = '🔓 Unlock Preferences';
+                toggleBtn.className = 'btn btn-success';
+            } else {
+                lockStatusDiv.className = 'lock-status unlocked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
+                    <small>Workers can submit and modify their preferences.</small>
+                `;
+                toggleBtn.textContent = '🔒 Lock Preferences';
+                toggleBtn.className = 'btn btn-warning';
+            }
+        }
+
+        function displayApprovedWorkers() {
+            const container = document.getElementById('approvedWorkersList');
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            if (approvedWorkers.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+                        <strong>⚠️ No approved workers!</strong><br>
+                        Workers cannot access the system until you add their names to the approved list.<br>
+                        <small>Add worker names above to allow them to submit shift preferences.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
+            
+            approvedWorkers
