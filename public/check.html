@@ -191,6 +191,28 @@
             font-size: 12px;
             color: #721c24;
         }
+
+        .server-status {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .server-status.connected {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .server-status.disconnected {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -201,6 +223,11 @@
         </div>
 
         <div class="content">
+            <!-- Server Connection Status -->
+            <div id="serverStatus" class="server-status">
+                🔄 Checking server connection...
+            </div>
+
             <div class="security-notice">
                 <strong>🔒 Secure Access</strong><br>
                 Only authorized workers can access the shift preference system. Enter your exact name as registered by the administrator.
@@ -253,9 +280,12 @@
         let failedAttemptCount = 0;
         const maxFailedAttempts = 5;
         const lockoutDuration = 15 * 60 * 1000; // 15 minutes
+        let serverConnected = false;
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Worker Access Verification starting (Server-based)...');
+            
             // Add enter key support
             document.getElementById('workerName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -263,9 +293,102 @@
                 }
             });
 
+            // Check server connection and load approved workers
+            initializeSystem();
+
             // Check if user is locked out
             checkLockoutStatus();
         });
+
+        async function initializeSystem() {
+            console.log('🔄 Initializing worker access system...');
+            updateServerStatus('Connecting to server...', 'info');
+            
+            try {
+                // Test server connection
+                const testResponse = await fetch('/api/test');
+                const testResult = await testResponse.json();
+                
+                if (testResult.success) {
+                    console.log('✅ Server connected successfully');
+                    serverConnected = true;
+                    updateServerStatus(`Connected to server as ${testResult.user}`, 'success');
+                    
+                    // Load approved workers data
+                    await loadApprovedWorkers();
+                } else {
+                    console.log('❌ Server connection failed:', testResult.error);
+                    serverConnected = false;
+                    updateServerStatus('Server connection failed', 'error');
+                    showStatus('⚠️ Server connection failed. Please try again later or contact your administrator.', 'warning');
+                }
+            } catch (error) {
+                console.error('❌ Failed to connect to server:', error);
+                serverConnected = false;
+                updateServerStatus('Server unavailable', 'error');
+                showStatus('❌ Cannot connect to server. Please check your internet connection and try again.', 'danger');
+            }
+        }
+
+        async function loadApprovedWorkers() {
+            try {
+                console.log('📥 Loading approved workers from server...');
+                
+                const response = await fetch('/api/data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    console.log('📦 Server data received');
+                    
+                    // Store approved workers locally for quick access
+                    localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                    localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                    localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                    localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
+                    
+                    console.log('✅ Approved workers loaded:', (data.approvedWorkers || []).length, 'workers');
+                    
+                    if (!data.approvedWorkers || data.approvedWorkers.length === 0) {
+                        showStatus('⚠️ No approved workers configured. Please contact your administrator to set up worker access.', 'warning');
+                        showAdminContact();
+                    }
+                } else {
+                    console.error('❌ Failed to load data from server:', result.error);
+                    showStatus('❌ Failed to load worker data from server. Please try again later.', 'danger');
+                }
+            } catch (error) {
+                console.error('❌ Error loading approved workers:', error);
+                showStatus('❌ Error loading worker data. Please try again later.', 'danger');
+            }
+        }
+
+        function updateServerStatus(message, type) {
+            const statusDiv = document.getElementById('serverStatus');
+            
+            let statusClass = 'server-status';
+            let icon = '🔄';
+            
+            switch(type) {
+                case 'success':
+                    statusClass += ' connected';
+                    icon = '✅';
+                    break;
+                case 'error':
+                    statusClass += ' disconnected';
+                    icon = '❌';
+                    break;
+                case 'warning':
+                    statusClass += ' disconnected';
+                    icon = '⚠️';
+                    break;
+                default:
+                    icon = '🔄';
+            }
+            
+            statusDiv.className = statusClass;
+            statusDiv.innerHTML = `${icon} ${message}`;
+        }
 
         function checkLockoutStatus() {
             const lockoutEnd = localStorage.getItem('accessLockoutEnd');
@@ -288,9 +411,14 @@
             return false;
         }
 
-        function verifyAccess() {
+        async function verifyAccess() {
             if (checkLockoutStatus()) {
                 return; // User is locked out
+            }
+
+            if (!serverConnected) {
+                showStatus('❌ Cannot verify access: Server is not connected. Please refresh the page and try again.', 'danger');
+                return;
             }
 
             const enteredName = document.getElementById('workerName').value.trim();
@@ -306,17 +434,30 @@
             verifyBtn.disabled = true;
             loading.style.display = 'block';
             
-            // Simulate verification process (add small delay for UX)
-            setTimeout(() => {
-                performVerification(enteredName);
-            }, 800);
+            // Perform server-based verification
+            try {
+                console.log('🔍 Verifying access for:', enteredName);
+                
+                // Get fresh data from server to ensure we have the latest approved workers
+                await loadApprovedWorkers();
+                
+                setTimeout(() => {
+                    performVerification(enteredName);
+                }, 800); // Small delay for UX
+                
+            } catch (error) {
+                console.error('❌ Verification error:', error);
+                loading.style.display = 'none';
+                verifyBtn.disabled = false;
+                showStatus('❌ Verification failed due to server error. Please try again.', 'danger');
+            }
         }
 
         function performVerification(enteredName) {
             const verifyBtn = document.getElementById('verifyBtn');
             const loading = document.getElementById('loading');
 
-            // Get approved workers list from localStorage
+            // Get approved workers list from localStorage (freshly loaded from server)
             const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
             
             console.log('Verification attempt for:', enteredName);
@@ -356,19 +497,19 @@
 
                 showStatus('✅ Access granted! Redirecting to shift preference system...', 'success');
                 
-                // Store verified worker name
+                // Store verified worker name with verification timestamp
                 localStorage.setItem('verifiedWorker', exactName);
                 localStorage.setItem('verificationTime', Date.now().toString());
                 
                 // Redirect to worker page after short delay
                 setTimeout(() => {
-                    window.location.href = 'worker.html';
+                    window.location.href = '/worker';
                 }, 1500);
 
             } else {
                 recordFailedAttempt();
                 
-                // Generic denial message - NO worker names disclosed
+                // Generic denial message - NO worker names disclosed for security
                 showStatus('❌ Access Denied: Name not found in approved workers list.', 'danger');
                 showAdminContact();
                 
@@ -443,7 +584,18 @@
             
             statusDiv.innerHTML = `<div class="alert ${className}">${message}</div>`;
         }
+
+        // Auto-refresh approved workers every 30 seconds to keep data current
+        setInterval(async () => {
+            if (serverConnected) {
+                try {
+                    await loadApprovedWorkers();
+                    console.log('🔄 Auto-refreshed approved workers data');
+                } catch (error) {
+                    console.error('❌ Auto-refresh failed:', error);
+                }
+            }
+        }, 30000);
     </script>
 </body>
 </html>
-
