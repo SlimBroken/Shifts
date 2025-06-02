@@ -640,8 +640,6 @@
         }
 
         // PART 1 ENDS HERE - CONTINUE WITH PART 2
-    </script>
-    <script>
     function loadSubmissions() {
             const stored = localStorage.getItem('shiftSubmissions');
             workerSubmissions = stored ? JSON.parse(stored) : [];
@@ -1446,7 +1444,9 @@
             if (syncIntervalId) {
                 clearInterval(syncIntervalId);
             }
-        });ExcelFormat(week) {
+        });});
+
+        function generateWeekExcelFormat(week) {
             let weekText = 'Shift\t';
             
             // Headers
@@ -1532,8 +1532,6 @@
             
             return csvContent;
         }
-
-        function generateWeek
-      </script>          
+    </script>
 </body>
 </html>
