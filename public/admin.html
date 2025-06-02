@@ -243,21 +243,21 @@
         }
 
         .schedule-table th {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             color: white;
             padding: 16px 12px;
             border: none;
             font-weight: bold;
             text-align: center;
             font-size: 14px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
             position: relative;
         }
 
         .schedule-table th.premium {
-            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
-            color: #333;
-            font-weight: bolder;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            font-weight: bold;
         }
 
         .schedule-table td {
@@ -790,7 +790,6 @@
                 const borderRadius = isLast ? '0 12px 0 0' : '0';
                 html += `<th class="${isPremium ? 'premium' : ''}" style="border-radius: ${borderRadius};">
                     ${day.dayShort}<br><small style="font-size: 12px; opacity: 0.9;">${day.dateStr}</small>
-                    ${isPremium ? '<br><span style="font-size: 11px;">פרמיום</span>' : ''}
                 </th>`;
             });
             
