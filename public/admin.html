@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -231,53 +232,57 @@
 
         .schedule-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            border-collapse: collapse;
             background: white;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin: 20px 0;
             direction: rtl;
-            border: 2px solid #e9ecef;
+            border: 2px solid #e3f2fd;
         }
 
         .schedule-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             padding: 16px 12px;
+            border: none;
             font-weight: bold;
             text-align: center;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
             font-size: 14px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .schedule-table th.premium {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+            color: #333;
+            font-weight: bolder;
         }
 
         .schedule-table td {
             padding: 14px 10px;
+            border: 1px solid #e9ecef;
             text-align: center;
-            border-bottom: 1px solid #f1f3f4;
             font-size: 13px;
-            font-weight: 500;
             transition: all 0.2s ease;
-            position: relative;
         }
 
-        .schedule-table tbody tr:hover td {
-            background-color: rgba(102, 126, 234, 0.08) !important;
-            transform: translateY(-1px);
+        .schedule-table tbody tr:hover {
+            background: rgba(79, 172, 254, 0.05);
+            transform: scale(1.01);
         }
 
-        .schedule-table tbody tr:nth-child(even) td:not(.assigned) {
-            background: #f8f9fa;
+        .schedule-table tbody tr:nth-child(even) {
+            background: rgba(248, 249, 250, 0.8);
         }
 
         .schedule-table .shift-label {
-            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             font-weight: bold;
             color: #495057;
-            border-right: 4px solid #667eea;
-            text-shadow: none;
+            border-right: 4px solid #4facfe;
+            font-size: 13px;
         }
 
         .schedule-table .assigned {
@@ -285,7 +290,8 @@
             font-weight: bold;
             border-radius: 6px;
             margin: 2px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 8px 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border: 1px solid rgba(0,0,0,0.1);
         }
 
@@ -295,99 +301,19 @@
             font-style: italic;
             border-radius: 6px;
             margin: 2px;
+            padding: 8px 6px;
         }
 
         .schedule-table .premium {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
             position: relative;
         }
 
         .schedule-table .premium::after {
-            content: "💰";
+            content: '💰';
             position: absolute;
             top: 2px;
             right: 2px;
             font-size: 10px;
-        }
-
-        .color-legend {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 25px 0;
-            border: 1px solid #dee2e6;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-
-        .color-legend h5 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .legend-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .legend-item {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            border: 2px solid rgba(0,0,0,0.1);
-            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-            transition: transform 0.2s ease;
-            font-size: 14px;
-        }
-
-        .legend-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
-        }
-
-        .schedule-header {
-            text-align: center;
-            margin: 30px 0 20px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-            border-radius: 12px;
-            border: 1px solid #90caf9;
-        }
-
-        .schedule-header h4 {
-            color: #1565c0;
-            font-size: 24px;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .schedule-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-        }
-
-        .stat-number {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            opacity: 0.9;
         }
     </style>
 </head>
@@ -447,17 +373,9 @@
                 <!-- Schedule Generation -->
                 <div class="section">
                     <h3>📊 Generate Schedule</h3>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                        <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
-                            🔄 Generate Optimized Schedule
-                        </button>
-                        <button class="btn btn-warning" onclick="startNewCycle()" style="font-size: 16px; padding: 12px 30px;">
-                            📅 Start New 2-Week Cycle
-                        </button>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 14px; color: #6c757d;">
-                        <strong>Current Period:</strong> <span id="currentPeriod">June 1-14, 2025</span>
-                    </div>
+                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
+                        🔄 Generate Optimized Schedule
+                    </button>
                     <div id="scheduleOutput">
                         <!-- Generated schedule will be displayed here -->
                     </div>
@@ -531,7 +449,6 @@
                         localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
                         localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
                         localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                        localStorage.setItem('currentCycleStart', data.currentCycleStart || new Date(2025, 5, 1).getTime().toString());
                     }
                 } catch (error) {
                     console.error('Failed to load from server');
@@ -541,13 +458,7 @@
             // Load from local storage as fallback
             workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
             
-            // Initialize cycle start date if not set
-            if (!localStorage.getItem('currentCycleStart')) {
-                localStorage.setItem('currentCycleStart', new Date(2025, 5, 1).getTime().toString());
-            }
-            
             updateDisplay();
-            updateCurrentPeriodDisplay();
         }
 
         async function saveData() {
@@ -556,7 +467,6 @@
                 approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
                 preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
                 lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                currentCycleStart: localStorage.getItem('currentCycleStart') || new Date(2025, 5, 1).getTime().toString(),
                 lastUpdate: Date.now()
             };
 
@@ -793,23 +703,9 @@
 
         function displaySchedule(schedule) {
             let html = `
-                <div class="schedule-header">
-                    <h4>📊 לוח משמרות שנוצר</h4>
-                    <div class="schedule-stats">
-                        <div class="stat-item">
-                            <div class="stat-number">${schedule.coverage.toFixed(1)}%</div>
-                            <div class="stat-label">כיסוי משמרות</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${schedule.totalAssignedShifts}</div>
-                            <div class="stat-label">משמרות מאוישות</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${schedule.workers ? schedule.workers.length : 0}</div>
-                            <div class="stat-label">עובדים פעילים</div>
-                        </div>
-                    </div>
-                    <button class="btn" onclick="copyScheduleToExcel()" style="margin: 10px 0; font-size: 16px; padding: 12px 24px;">📋 העתק לאקסל</button>
+                <div style="margin-top: 30px;">
+                    <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
+                    <button class="btn" onclick="copyScheduleToExcel()" style="margin: 10px 0;">📋 העתק לאקסל</button>
                 </div>
             `;
 
@@ -822,13 +718,22 @@
             // Add color legend
             if (schedule.workers && schedule.workers.length > 0) {
                 html += `
-                    <div class="color-legend">
-                        <h5>🎨 מקרא צבעים לעובדים</h5>
-                        <div class="legend-items">
+                <div style="margin: 25px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 2px solid #dee2e6;">
+                    <h5 style="color: #495057; margin-bottom: 15px; text-align: center;">🎨 מקרא צבעים לעובדים</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px;">
                 `;
                 schedule.workers.forEach(worker => {
                     const color = getWorkerColor(worker, schedule.workers);
-                    html += `<div class="legend-item" style="background-color: ${color}; color: #000;">${worker}</div>`;
+                    html += `
+                        <div style="background: linear-gradient(135deg, ${color} 0%, ${adjustBrightness(color, -10)} 100%); 
+                                    color: #000; padding: 12px 16px; border-radius: 8px; font-weight: bold; 
+                                    text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+                                    border: 1px solid rgba(0,0,0,0.1); transition: transform 0.2s ease;"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                            ${worker}
+                        </div>
+                    `;
                 });
                 html += '</div></div>';
             }
@@ -837,6 +742,22 @@
             
             // Store for Excel export
             window.currentSchedule = schedule;
+        }
+
+        function adjustBrightness(hex, percent) {
+            // Remove the hash if it exists
+            hex = hex.replace('#', '');
+            
+            // Parse the hex color
+            const num = parseInt(hex, 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
         }
 
         function getWorkerColor(workerName, workers) {
@@ -855,19 +776,23 @@
         function createWeekTable(title, week, workers = []) {
             let html = `
                 <div style="margin: 30px 0;">
-                    <h5 style="color: #495057; font-size: 20px; margin-bottom: 15px; text-align: center; font-weight: 600;">${title}</h5>
+                    <h5 style="color: #495057; margin-bottom: 15px; font-size: 18px;">${title}</h5>
                     <table class="schedule-table">
                         <thead>
                             <tr>
-                                <th style="font-size: 15px;">משמרת</th>
+                                <th style="border-radius: 12px 0 0 0;">משמרת</th>
             `;
             
-            // Day headers (reversed for RTL)
-            for (let i = week.days.length - 1; i >= 0; i--) {
-                const day = week.days[i];
+            // Day headers (correct RTL order: Sunday to Saturday)
+            week.days.forEach((day, index) => {
                 const isPremium = day.dayShort === 'שישי' || day.dayShort === 'שבת';
-                html += `<th class="${isPremium ? 'premium' : ''}" style="font-size: 13px;">${day.dayShort}<br><small style="opacity: 0.8;">${day.dateStr}</small>${isPremium ? '<br><span style="font-size: 12px;">💰 פרמיום</span>' : ''}</th>`;
-            }
+                const isLast = index === week.days.length - 1;
+                const borderRadius = isLast ? '0 12px 0 0' : '0';
+                html += `<th class="${isPremium ? 'premium' : ''}" style="border-radius: ${borderRadius};">
+                    ${day.dayShort}<br><small style="font-size: 12px; opacity: 0.9;">${day.dateStr}</small>
+                    ${isPremium ? '<br><span style="font-size: 11px;">פרמיום</span>' : ''}
+                </th>`;
+            });
             
             html += '</tr></thead><tbody>';
             
@@ -878,21 +803,27 @@
                 { key: 'night', label: 'לילה', time: '23:00-07:00', icon: '🌙' }
             ];
             
-            shifts.forEach(shift => {
-                html += `<tr><td class="shift-label">${shift.icon} ${shift.label}<br><small style="opacity: 0.7;">${shift.time}</small></td>`;
+            shifts.forEach((shift, shiftIndex) => {
+                html += `<tr><td class="shift-label">
+                    ${shift.icon} <strong>${shift.label}</strong><br>
+                    <small style="font-size: 11px; opacity: 0.8;">${shift.time}</small>
+                </td>`;
                 
-                // Reverse order for RTL
-                for (let i = week.days.length - 1; i >= 0; i--) {
-                    const day = week.days[i];
+                // Correct RTL order: Sunday to Saturday
+                week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     
                     if (assignment) {
                         const workerColor = getWorkerColor(assignment, workers);
-                        html += `<td class="assigned" style="background-color: ${workerColor}; color: #000;">${assignment}</td>`;
+                        html += `<td class="assigned" style="background: linear-gradient(135deg, ${workerColor} 0%, ${adjustBrightness(workerColor, -10)} 100%);">
+                            <strong>${assignment}</strong>
+                        </td>`;
                     } else {
-                        html += `<td class="unassigned">לא מאויש</td>`;
+                        html += `<td class="unassigned">
+                            <span style="font-size: 12px;">לא מוקצה</span>
+                        </td>`;
                     }
-                }
+                });
                 
                 html += '</tr>';
             });
@@ -929,11 +860,10 @@
         function generateWeekExcelFormat(week) {
             let text = '';
             
-            // Headers (reversed for RTL) - shift column comes LAST for RTL Excel
-            for (let i = week.days.length - 1; i >= 0; i--) {
-                const day = week.days[i];
+            // Headers (correct RTL order) - shift column comes LAST for RTL Excel
+            week.days.forEach(day => {
                 text += `${day.dayShort} ${day.dateStr}\t`;
-            }
+            });
             text += 'משמרת\n'; // Shift column at the end for RTL
             
             // Shift rows with Hebrew names
@@ -944,68 +874,21 @@
             ];
             
             shifts.forEach(shift => {
-                // Reverse order for RTL - data comes first, then shift label
-                for (let i = week.days.length - 1; i >= 0; i--) {
-                    const day = week.days[i];
+                // Correct RTL order - data comes first, then shift label
+                week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     text += `${assignment || 'לא מוקצה'}\t`;
-                }
+                });
                 text += `${shift.label}\n`; // Shift label at the end
             });
             
             return text;
         }
 
-        function startNewCycle() {
-            if (confirm('🔄 Start a new 2-week cycle?\n\nThis will:\n• Archive current schedule\n• Clear all submissions\n• Move to next 2 weeks\n• Unlock preferences\n\nContinue?')) {
-                
-                // Archive current data if there's a schedule
-                if (window.currentSchedule) {
-                    const archive = {
-                        schedule: window.currentSchedule,
-                        submissions: [...workerSubmissions],
-                        period: document.getElementById('currentPeriod').textContent,
-                        archivedAt: new Date().toISOString()
-                    };
-                    
-                    const archives = JSON.parse(localStorage.getItem('scheduleArchives') || '[]');
-                    archives.push(archive);
-                    localStorage.setItem('scheduleArchives', JSON.stringify(archives));
-                }
-
-                // Move to next 2-week period
-                const currentStart = new Date(parseInt(localStorage.getItem('currentCycleStart')));
-                const nextStart = new Date(currentStart);
-                nextStart.setDate(currentStart.getDate() + 14); // Add 14 days
-                
-                localStorage.setItem('currentCycleStart', nextStart.getTime().toString());
-                
-                // Clear submissions and unlock preferences
-                workerSubmissions = [];
-                localStorage.setItem('preferencesLocked', 'false');
-                localStorage.removeItem('lockTimestamp');
-                
-                // Clear schedule output
-                document.getElementById('scheduleOutput').innerHTML = '';
-                window.currentSchedule = null;
-                
-                updateDisplay();
-                updateCurrentPeriodDisplay();
-                saveData();
-                
-                showAlert('🎉 New 2-week cycle started! Workers can now submit preferences for the new period.', 'success');
-            }
-        }
-
-        function updateCurrentPeriodDisplay() {
-            const cycleStart = new Date(parseInt(localStorage.getItem('currentCycleStart')));
-            const cycleEnd = new Date(cycleStart);
-            cycleEnd.setDate(cycleStart.getDate() + 13); // 14 days total (0-13)
-            
-            const startStr = cycleStart.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
-            const endStr = cycleEnd.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
-            
-            document.getElementById('currentPeriod').textContent = `${startStr} - ${endStr}`;
+        function updateDisplay() {
+            updateWorkersList();
+            updateLockStatus();
+            updateSubmissionsList();
         }
 
         function updateWorkersList() {
