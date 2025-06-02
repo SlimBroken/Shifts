@@ -601,6 +601,7 @@
                     totalShifts: 0,
                     nightShifts: 0,
                     weekendShifts: 0,
+                    premiumShifts: 0, // Track premium weekend shifts specifically
                     lastAssignedDay: -1,
                     lastShiftEnd: null // Track when worker's last shift ended
                 };
@@ -669,6 +670,12 @@
                             stats.totalShifts++;
                             if (shift === 'night') stats.nightShifts++;
                             if (day === 5 || day === 6) stats.weekendShifts++;
+                            
+                            // Track premium weekend shifts
+                            if (isPremiumWeekendShift(day, shift)) {
+                                stats.premiumShifts++;
+                            }
+                            
                             stats.lastAssignedDay = globalDay;
                             
                             // Calculate and store when this shift ends
@@ -751,7 +758,7 @@
         function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats) {
             let score = 100;
             
-            // Load balancing
+            // Load balancing - prefer workers with fewer total shifts
             score -= stats.totalShifts * 5;
             
             // Night shift distribution
@@ -759,7 +766,18 @@
                 score -= stats.nightShifts * 10;
             }
             
-            // Weekend consideration
+            // Premium weekend shifts distribution (Friday evening to Saturday evening)
+            const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
+            if (isPremiumShift) {
+                // Strongly prefer workers with fewer premium shifts for fair distribution
+                score -= stats.premiumShifts * 15;
+                // Bonus for workers who haven't had premium shifts yet
+                if (stats.premiumShifts === 0) {
+                    score += 25;
+                }
+            }
+            
+            // Regular weekend consideration
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 score -= stats.weekendShifts * 8;
             }
@@ -770,6 +788,18 @@
             }
             
             return score + Math.random() * 5;
+        }
+
+        function isPremiumWeekendShift(dayOfWeek, shift) {
+            // Premium shifts: Friday evening, Friday night, Saturday morning, Saturday evening
+            // (Friday evening to Saturday evening = premium period)
+            if (dayOfWeek === 5 && (shift === 'evening' || shift === 'night')) {
+                return true; // Friday evening and night
+            }
+            if (dayOfWeek === 6 && (shift === 'morning' || shift === 'evening')) {
+                return true; // Saturday morning and evening
+            }
+            return false;
         }
 
         function displaySchedule(schedule) {
