@@ -19,14 +19,12 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             overflow: hidden;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .header {
@@ -34,7 +32,6 @@
             color: white;
             padding: 30px;
             text-align: center;
-            position: relative;
         }
 
         .header h1 {
@@ -64,10 +61,6 @@
             transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
-        }
-
         .btn-success {
             background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
         }
@@ -80,34 +73,132 @@
             background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
         }
 
-        .workers-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
+        .password-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
         }
 
-        .worker-card {
+        .password-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .password-input input {
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 250px;
+        }
+
+        .section {
             background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+
+        .section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .worker-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .worker-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .worker-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .worker-tag {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .worker-tag button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .lock-status {
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .lock-status.locked {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .lock-status.unlocked {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .submissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .submission-card {
+            background: white;
             padding: 20px;
             border-radius: 10px;
             border: 1px solid #dee2e6;
             transition: transform 0.2s ease;
         }
 
-        .worker-card:hover {
+        .submission-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
 
-        .worker-card h3 {
-            color: #495057;
-            margin-bottom: 10px;
-        }
-
-        .worker-card.approved {
+        .submission-card.approved {
             border-color: #28a745;
             background: #f8fff9;
+        }
+
+        .submission-card h4 {
+            color: #495057;
+            margin-bottom: 10px;
         }
 
         .alert {
@@ -135,116 +226,55 @@
             border: 1px solid #ffeaa7;
         }
 
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .hidden {
+            display: none;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin: 20px 0;
         }
 
-        .stat-card {
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        .schedule-table th {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .schedule-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
             text-align: center;
         }
 
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 5px;
+        .schedule-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
         }
 
-        .admin-actions {
+        .schedule-table .shift-label {
             background: #e9ecef;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-
-        .password-section {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .password-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .password-input input {
-            padding: 8px 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .lock-control {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .lock-status {
-            margin: 15px 0;
-            padding: 15px;
-            border-radius: 5px;
             font-weight: bold;
         }
 
-        .lock-status.locked {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .lock-status.unlocked {
+        .schedule-table .assigned {
             background: #d4edda;
-            border: 1px solid #c3e6cb;
             color: #155724;
         }
 
-        .sync-status {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .sync-status.connected {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-        }
-
-        .sync-status.disconnected {
+        .schedule-table .unassigned {
             background: #f8d7da;
-            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
 
-        .server-info {
-            background: #e7f3ff;
-            border: 1px solid #b8daff;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-
-        .hidden {
-            display: none;
+        .schedule-table .premium {
+            background: rgba(255,193,7,0.3);
         }
     </style>
 </head>
@@ -252,801 +282,289 @@
     <div class="container">
         <div class="header">
             <h1>🔧 Admin Dashboard</h1>
-            <p>Server-Based Shift Schedule Manager</p>
+            <p>Shift Schedule Manager</p>
         </div>
 
         <div class="content">
-            <!-- Simple Password Protection -->
-            <div id="passwordSection" class="password-section">
+            <!-- Login Section -->
+            <div id="loginSection" class="password-section">
                 <h3>🔒 Admin Access Required</h3>
                 <p>Enter the admin password to access the dashboard:</p>
                 <div class="password-input">
                     <input type="password" id="adminPassword" placeholder="Enter admin password">
-                    <button class="btn" onclick="checkPassword()">Access Dashboard</button>
+                    <button class="btn" onclick="login()">Login</button>
                 </div>
-                <small>Default password: admin123 (change this in production!)</small>
+                <small>Default password: admin123</small>
             </div>
 
-            <div id="adminContent" class="hidden">
-                <!-- Server Connection Status -->
-                <div id="serverInfo" class="server-info">
-                    <h4>🖥️ Server Connection Status</h4>
-                    <div id="connectionStatus">
-                        🔄 Testing server connection...
+            <!-- Main Dashboard -->
+            <div id="dashboard" class="hidden">
+                <!-- Worker Management -->
+                <div class="section">
+                    <h3>👥 Worker Access Management</h3>
+                    <div class="worker-input">
+                        <input type="text" id="workerNameInput" placeholder="Enter worker name">
+                        <button class="btn btn-success" onclick="addWorker()">Add Worker</button>
+                        <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
                     </div>
-                </div>
-
-                <!-- Sync Status Display -->
-                <div id="syncStatusDisplay" class="sync-status">
-                    <h4>🔄 Data Synchronization Status</h4>
-                    <div id="syncStatusContent">
-                        <div>🔄 Initializing sync...</div>
-                    </div>
-                </div>
-
-                <!-- Statistics -->
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalSubmissions">0</div>
-                        <div>Total Submissions</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pendingApprovals">0</div>
-                        <div>Pending Approvals</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="approvedWorkersCount">0</div>
-                        <div>Approved Workers</div>
+                    <div id="workersList" class="worker-tags">
+                        <!-- Workers will be displayed here -->
                     </div>
                 </div>
 
                 <!-- Preference Lock Control -->
-                <div class="lock-control">
+                <div class="section">
                     <h3>🔒 Preference Submission Control</h3>
-                    <p>Lock worker preferences during schedule generation to prevent changes.</p>
-                    
                     <div id="lockStatus" class="lock-status">
-                        <!-- Will be populated by JavaScript -->
+                        <!-- Lock status will be displayed here -->
                     </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <button class="btn" id="toggleLockBtn" onclick="togglePreferenceLock()">
-                            <!-- Text will be set by JavaScript -->
-                        </button>
-                        <small style="display: block; margin-top: 10px; color: #856404;">
-                            <strong>Tip:</strong> Lock preferences before generating schedules to ensure data consistency.
-                        </small>
-                    </div>
-                </div>
-
-                <!-- Admin Actions -->
-                <div class="admin-actions">
-                    <h3>Quick Actions</h3>
-                    <button class="btn btn-secondary" onclick="exportScheduleCSV()">📊 Export Schedule (CSV)</button>
-                    <button class="btn" onclick="copyScheduleToClipboard()">📋 Copy Excel Format</button>
-                    <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
-                    <button class="btn" onclick="manualSync()" id="syncBtn">🔄 Sync Now</button>
-                    <button class="btn" onclick="testServerConnection()" id="testBtn">🔍 Test Connection</button>
-                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
-                    
-                    <div id="syncResult" style="margin-top: 10px; font-size: 12px;">
-                        <!-- Sync results will be shown here -->
-                    </div>
-                </div>
-
-                <!-- Worker Access Management -->
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                    <h3>👥 Worker Access Management</h3>
-                    <p>Manage which workers can access the shift preference system.</p>
-                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 14px;">
-                        <strong>⚠️ Important:</strong> Only workers added to this list can submit shift preferences.
-                    </div>
-                    
-                    <div style="margin: 15px 0;">
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="text" id="newWorkerName" placeholder="Enter worker name" style="flex: 1; padding: 8px;">
-                            <button class="btn btn-success" onclick="addWorker()">Add Worker</button>
-                        </div>
-                    </div>
-
-                    <div id="approvedWorkersList">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-
-                    <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;">
-                        <h5>🔍 Test Access Control:</h5>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-                            <input type="text" id="testWorkerName" placeholder="Enter name to test" style="flex: 1; padding: 6px;">
-                            <button class="btn" onclick="testWorkerAccess()" style="padding: 6px 12px; font-size: 14px;">Test Access</button>
-                        </div>
-                        <div id="testResult" style="margin-top: 10px;"></div>
-                    </div>
+                    <button class="btn" id="lockToggleBtn" onclick="toggleLock()">
+                        <!-- Button text will be set by JavaScript -->
+                    </button>
                 </div>
 
                 <!-- Worker Submissions -->
-                <h3>Worker Submissions</h3>
-                <div id="workerSubmissions" class="workers-list">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-
-                <!-- Schedule Generation -->
-                <div style="margin: 30px 0; text-align: center;">
-                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
-                        🔄 Generate Optimized Schedule
-                    </button>
-                    <div id="generationCounter" style="margin-top: 10px; font-size: 14px; color: #6c757d;">
-                        <!-- Will show generation count after first generation -->
+                <div class="section">
+                    <h3>📝 Worker Submissions</h3>
+                    <div id="submissionsList" class="submissions-grid">
+                        <!-- Submissions will be displayed here -->
                     </div>
                 </div>
 
-                <!-- Generated Schedule -->
-                <h3>Generated Schedule</h3>
-                <div id="generatedSchedule">
-                    <div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>
+                <!-- Schedule Generation -->
+                <div class="section">
+                    <h3>📊 Generate Schedule</h3>
+                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
+                        🔄 Generate Optimized Schedule
+                    </button>
+                    <div id="scheduleOutput">
+                        <!-- Generated schedule will be displayed here -->
+                    </div>
                 </div>
+
+                <!-- Status Messages -->
+                <div id="statusMessages"></div>
             </div>
         </div>
     </div>
 
     <script>
+        const ADMIN_PASSWORD = 'admin123';
         let workerSubmissions = [];
-        let generatedScheduleData = null;
-        let currentGeneration = 0;
-        let totalPossibleGenerations = 0;
-        const ADMIN_PASSWORD = 'admin123'; // Change this in production!
-        
-        // Server-based configuration - no tokens needed in frontend!
-        const syncEnabled = true; // Server handles authentication
-        let lastSyncTime = null;
-        let syncIntervalId = null;
         let serverConnected = false;
 
-        // Initialize the application
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Admin Dashboard starting (Server-based)...');
-            
-            // Password enter key support
+            // Add enter key support for login
             document.getElementById('adminPassword').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    checkPassword();
+                    login();
                 }
             });
+
+            // Add enter key support for worker input
+            document.getElementById('workerNameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addWorker();
+                }
+            });
+
+            // Test server connection
+            testServerConnection();
         });
 
         async function testServerConnection() {
-            const testBtn = document.getElementById('testBtn');
-            testBtn.textContent = '🔄 Testing...';
-            testBtn.disabled = true;
-            
             try {
                 const response = await fetch('/api/test');
                 const result = await response.json();
-                
-                if (result.success) {
-                    updateConnectionStatus(`✅ Connected as ${result.user}`, 'success');
-                    serverConnected = true;
-                    showSyncResult('✅ Server connection successful', 'success');
-                } else {
-                    updateConnectionStatus('❌ Server connection failed: ' + result.error, 'error');
-                    serverConnected = false;
-                    showSyncResult('❌ Connection failed', 'error');
-                }
+                serverConnected = result.success;
             } catch (error) {
-                updateConnectionStatus('❌ Cannot reach server: ' + error.message, 'error');
                 serverConnected = false;
-                showSyncResult('❌ Server unreachable', 'error');
-            } finally {
-                testBtn.textContent = '🔍 Test Connection';
-                testBtn.disabled = false;
             }
         }
 
-        function updateConnectionStatus(message, type) {
-            const statusDiv = document.getElementById('connectionStatus');
-            const colors = {
-                success: 'green',
-                error: 'red',
-                info: 'blue',
-                warning: 'orange'
-            };
-            statusDiv.style.color = colors[type] || 'black';
-            statusDiv.innerHTML = message;
-        }
-
-        async function initialSync() {
-            console.log('🔄 Starting initial sync...');
-            updateSyncStatus('Connecting to server...', 'info');
-            
-            try {
-                // Test server connection first
-                await testServerConnection();
-                
-                if (serverConnected) {
-                    const success = await syncFromGitHub();
-                    if (success) {
-                        console.log('✅ Initial sync from server successful');
-                        updateSyncStatus('Connected to server - Data synchronized', 'success');
-                        
-                        // Auto-sync every 30 seconds
-                        if (syncIntervalId) clearInterval(syncIntervalId);
-                        syncIntervalId = setInterval(() => {
-                            console.log('⏰ Auto-sync triggered');
-                            syncFromGitHub();
-                        }, 30000);
-                    } else {
-                        console.log('⚠️ Server sync failed, loading local data');
-                        loadSubmissions();
-                        updateSyncStatus('Server sync failed - Using local data', 'warning');
-                    }
-                } else {
-                    loadSubmissions();
-                    updateSyncStatus('Server not available - Using local data', 'warning');
-                }
-            } catch (error) {
-                console.error('❌ Initial sync error:', error);
-                loadSubmissions();
-                updateSyncStatus('Sync error - Using local data only', 'error');
-            }
-        }
-
-        // Updated sync functions for server-based approach
-        async function syncToGitHub(data) {
-            if (!serverConnected) {
-                console.log('❌ Server not connected');
-                return false;
-            }
-            
-            try {
-                console.log('📤 Syncing data to server...');
-                
-                const response = await fetch('/api/data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ Data synced to server successfully');
-                    lastSyncTime = Date.now();
-                    localStorage.setItem('lastSyncTime', lastSyncTime.toString());
-                    updateSyncStatus('Last sync: ' + new Date().toLocaleTimeString(), 'success');
-                    showSyncResult('✅ Synced to server', 'success');
-                    return true;
-                } else {
-                    console.error('❌ Failed to sync to server:', result.error);
-                    updateSyncStatus('Upload failed: ' + result.error, 'error');
-                    showSyncResult('❌ Upload failed', 'error');
-                    return false;
-                }
-            } catch (error) {
-                console.error('❌ Sync to server error:', error);
-                updateSyncStatus('Upload error: ' + error.message, 'error');
-                showSyncResult('❌ Upload error', 'error');
-                return false;
-            }
-        }
-
-        async function syncFromGitHub() {
-            if (!serverConnected) {
-                console.log('❌ Server not connected');
-                return false;
-            }
-            
-            try {
-                console.log('📥 Syncing from server...');
-                
-                const response = await fetch('/api/data');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const data = result.data;
-                    console.log('📦 Server data received:', Object.keys(data));
-                    
-                    workerSubmissions = data.shiftSubmissions || [];
-                    localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
-                    localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                    localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                    localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                    localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
-                    
-                    lastSyncTime = Date.now();
-                    localStorage.setItem('lastSyncTime', lastSyncTime.toString());
-                    
-                    console.log('✅ Data updated from server');
-                    updateSyncStatus('Last sync: ' + new Date().toLocaleTimeString(), 'success');
-                    
-                    if (!document.getElementById('adminContent').classList.contains('hidden')) {
-                        updateAdminDashboard();
-                    }
-                    
-                    return true;
-                } else {
-                    console.error('❌ Server API error:', result.error);
-                    updateSyncStatus('Download failed: ' + result.error, 'error');
-                    return false;
-                }
-            } catch (error) {
-                console.error('❌ Failed to sync from server:', error);
-                updateSyncStatus('Download error: ' + error.message, 'error');
-                return false;
-            }
-        }
-
-        function updateSyncStatus(message, type) {
-            const statusDiv = document.getElementById('syncStatusDisplay');
-            const contentDiv = document.getElementById('syncStatusContent');
-            
-            let statusClass = 'sync-status';
-            let icon = '🔄';
-            
-            switch(type) {
-                case 'success':
-                    statusClass += ' connected';
-                    icon = '✅';
-                    break;
-                case 'error':
-                    statusClass += ' disconnected';
-                    icon = '❌';
-                    break;
-                case 'warning':
-                    statusClass += ' disconnected';
-                    icon = '⚠️';
-                    break;
-                default:
-                    icon = '🔄';
-            }
-            
-            statusDiv.className = statusClass;
-            
-            const timeStr = new Date().toLocaleTimeString();
-            contentDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>${icon} ${message}</span>
-                    <small>${timeStr}</small>
-                </div>
-                <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">
-                    Server-based sync | Auto-sync every 30s
-                </div>
-            `;
-        }
-
-        function showSyncResult(message, type) {
-            const resultDiv = document.getElementById('syncResult');
-            const className = type === 'success' ? 'color: green' : 'color: red';
-            resultDiv.innerHTML = `<div style="${className}; font-weight: bold;">${message}</div>`;
-            
-            setTimeout(() => {
-                resultDiv.innerHTML = '';
-            }, 3000);
-        }
-
-        function checkPassword() {
+        function login() {
             const password = document.getElementById('adminPassword').value;
             if (password === ADMIN_PASSWORD) {
-                document.getElementById('passwordSection').classList.add('hidden');
-                document.getElementById('adminContent').classList.remove('hidden');
-                
-                // Initialize everything after login
-                initialSync();
-                updateAdminDashboard();
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadData();
             } else {
-                alert('Incorrect password. Please try again.');
+                showAlert('Incorrect password. Please try again.', 'warning');
                 document.getElementById('adminPassword').value = '';
             }
         }
 
-        // PART 1 ENDS HERE - CONTINUE WITH PART 2
-    function loadSubmissions() {
-            const stored = localStorage.getItem('shiftSubmissions');
-            workerSubmissions = stored ? JSON.parse(stored) : [];
-            console.log('📁 Loaded submissions from localStorage:', workerSubmissions.length);
+        async function loadData() {
+            if (serverConnected) {
+                try {
+                    const response = await fetch('/api/data');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const data = result.data;
+                        workerSubmissions = data.shiftSubmissions || [];
+                        
+                        // Update local storage
+                        localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                        localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                        localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                        localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                    }
+                } catch (error) {
+                    console.error('Failed to load from server');
+                }
+            }
+
+            // Load from local storage as fallback
+            workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+            
+            updateDisplay();
         }
 
-        function saveSubmissions() {
+        async function saveData() {
+            const data = {
+                shiftSubmissions: workerSubmissions,
+                approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                lastUpdate: Date.now()
+            };
+
+            // Save locally
             localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
             localStorage.setItem('lastUpdate', Date.now().toString());
-            
-            if (serverConnected) {
-                // Create the data object to sync
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-        }
 
-        function refreshData() {
+            // Save to server if connected
             if (serverConnected) {
-                syncFromGitHub().then(() => {
-                    updateAdminDashboard();
-                    showAlert('Data refreshed from server!', 'success');
-                });
-            } else {
-                loadSubmissions();
-                updateAdminDashboard();
-                showAlert('Data refreshed from local storage!', 'success');
-            }
-        }
-
-        async function manualSync() {
-            if (!serverConnected) {
-                showAlert('Server is not connected. Please test connection first.', 'warning');
-                return;
-            }
-            
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.textContent = '🔄 Syncing...';
-            syncBtn.disabled = true;
-            
-            try {
-                updateSyncStatus('Manual sync in progress...', 'info');
-                
-                const downloadSuccess = await syncFromGitHub();
-                
-                // Create data to upload
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                
-                const uploadSuccess = await syncToGitHub(dataToSync);
-                
-                if (downloadSuccess && uploadSuccess) {
-                    showAlert('✅ Manual sync completed successfully!', 'success');
-                    updateSyncStatus('Manual sync completed', 'success');
-                } else if (uploadSuccess) {
-                    showAlert('⚠️ Upload successful, download had issues', 'warning');
-                } else if (downloadSuccess) {
-                    showAlert('⚠️ Download successful, upload had issues', 'warning');
-                } else {
-                    showAlert('❌ Manual sync failed', 'danger');
+                try {
+                    await fetch('/api/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } catch (error) {
+                    console.error('Failed to save to server');
                 }
-                
-                updateAdminDashboard();
-            } catch (error) {
-                showAlert('❌ Sync error: ' + error.message, 'danger');
-                console.error('Manual sync error:', error);
-            } finally {
-                syncBtn.textContent = '🔄 Sync Now';
-                syncBtn.disabled = false;
             }
-        }
-
-        function updateAdminDashboard() {
-            document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
-            document.getElementById('pendingApprovals').textContent = 
-                workerSubmissions.filter(s => !s.approved).length;
-            
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            document.getElementById('approvedWorkersCount').textContent = approvedWorkers.length;
-
-            displayWorkerSubmissions();
-            displayApprovedWorkers();
-            updateLockStatus();
-        }
-
-        function togglePreferenceLock() {
-            const isCurrentlyLocked = localStorage.getItem('preferencesLocked') === 'true';
-            const newLockState = !isCurrentlyLocked;
-            
-            localStorage.setItem('preferencesLocked', newLockState.toString());
-            localStorage.setItem('lockTimestamp', Date.now().toString());
-            localStorage.setItem('lockSetBy', 'admin');
-            localStorage.setItem('lastUpdate', Date.now().toString());
-            
-            updateLockStatus();
-            
-            if (serverConnected) {
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: newLockState,
-                    lockTimestamp: localStorage.getItem('lockTimestamp'),
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-            
-            if (newLockState) {
-                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
-            } else {
-                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
-            }
-        }
-
-        function updateLockStatus() {
-            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
-            const lockTimestamp = localStorage.getItem('lockTimestamp');
-            const lockStatusDiv = document.getElementById('lockStatus');
-            const toggleBtn = document.getElementById('toggleLockBtn');
-            
-            if (isLocked) {
-                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
-                lockStatusDiv.className = 'lock-status locked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔒 PREFERENCES LOCKED</strong><br>
-                    <small>Locked since: ${lockTime}</small><br>
-                    <small>Workers cannot submit or modify preferences while locked.</small>
-                `;
-                toggleBtn.textContent = '🔓 Unlock Preferences';
-                toggleBtn.className = 'btn btn-success';
-            } else {
-                lockStatusDiv.className = 'lock-status unlocked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
-                    <small>Workers can submit and modify their preferences.</small>
-                `;
-                toggleBtn.textContent = '🔒 Lock Preferences';
-                toggleBtn.className = 'btn btn-warning';
-            }
-        }
-
-        function displayApprovedWorkers() {
-            const container = document.getElementById('approvedWorkersList');
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            
-            if (approvedWorkers.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
-                        <strong>⚠️ No approved workers!</strong><br>
-                        Workers cannot access the system until you add their names to the approved list.<br>
-                        <small>Add worker names above to allow them to submit shift preferences.</small>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
-            
-            approvedWorkers.forEach(workerName => {
-                html += `
-                    <div style="background: white; padding: 10px 15px; border-radius: 5px; border: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-weight: 500;">${workerName}</span>
-                        <button onclick="removeWorker('${workerName.replace(/'/g, "\\'")}')" 
-                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
-                            ✕
-                        </button>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            html += '<div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 12px; color: #155724;">';
-            html += '<strong>✅ Access Control Active:</strong> Only these workers can submit shift preferences. Workers must enter their exact name (case-insensitive) to access the system.';
-            html += '</div>';
-
-            container.innerHTML = html;
         }
 
         function addWorker() {
-            const newWorkerName = document.getElementById('newWorkerName').value.trim();
+            const input = document.getElementById('workerNameInput');
+            const workerName = input.value.trim();
             
-            if (!newWorkerName) {
+            if (!workerName) {
                 showAlert('Please enter a worker name.', 'warning');
                 return;
             }
 
             const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
             
-            const existsAlready = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === newWorkerName.toLowerCase().trim()
-            );
-
-            if (existsAlready) {
-                showAlert('Worker name already exists in the approved list.', 'warning');
+            if (approvedWorkers.some(name => name.toLowerCase() === workerName.toLowerCase())) {
+                showAlert('Worker already exists.', 'warning');
                 return;
             }
 
-            approvedWorkers.push(newWorkerName);
+            approvedWorkers.push(workerName);
             localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-            localStorage.setItem('lastUpdate', Date.now().toString());
             
-            if (serverConnected) {
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: approvedWorkers,
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-            
-            document.getElementById('newWorkerName').value = '';
-            displayApprovedWorkers();
-            updateAdminDashboard();
-            
-            showAlert(`Worker "${newWorkerName}" added successfully! They can now access the worker page.`, 'success');
+            input.value = '';
+            updateDisplay();
+            saveData();
+            showAlert(`Worker "${workerName}" added successfully!`, 'success');
         }
 
         function removeWorker(workerName) {
-            if (confirm(`Are you sure you want to remove "${workerName}" from the approved workers list?`)) {
+            if (confirm(`Remove "${workerName}" from approved workers?`)) {
                 let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                
                 approvedWorkers = approvedWorkers.filter(name => name !== workerName);
                 localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
-                localStorage.setItem('lastUpdate', Date.now().toString());
                 
-                if (serverConnected) {
-                    const dataToSync = {
-                        shiftSubmissions: workerSubmissions,
-                        approvedWorkers: approvedWorkers,
-                        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                        lastUpdate: Date.now()
-                    };
-                    syncToGitHub(dataToSync);
-                }
-                
-                displayApprovedWorkers();
-                updateAdminDashboard();
-                
-                showAlert(`Worker "${workerName}" removed successfully! They can no longer access the worker page.`, 'success');
+                updateDisplay();
+                saveData();
+                showAlert(`Worker "${workerName}" removed.`, 'success');
             }
         }
 
-        function testWorkerAccess() {
-            const testName = document.getElementById('testWorkerName').value.trim();
-            const resultDiv = document.getElementById('testResult');
+        function toggleLock() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const newState = !isLocked;
             
-            if (!testName) {
-                resultDiv.innerHTML = '<div style="color: red; font-size: 12px;">Please enter a name to test.</div>';
-                return;
-            }
-
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            const isApproved = approvedWorkers.some(name => 
-                name.toLowerCase().trim() === testName.toLowerCase().trim()
-            );
-
-            if (isApproved) {
-                resultDiv.innerHTML = `<div style="color: green; font-size: 12px;">✅ "${testName}" would be GRANTED access to the worker page.</div>`;
-            } else {
-                resultDiv.innerHTML = `<div style="color: red; font-size: 12px;">❌ "${testName}" would be DENIED access to the worker page.</div>`;
-            }
-        }
-
-        function displayWorkerSubmissions() {
-            const container = document.getElementById('workerSubmissions');
+            localStorage.setItem('preferencesLocked', newState.toString());
+            localStorage.setItem('lockTimestamp', Date.now().toString());
             
-            if (workerSubmissions.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">No worker submissions yet. Share the worker link to collect preferences.</div>';
-                return;
-            }
-
-            let html = '';
-            workerSubmissions.forEach(submission => {
-                const availableShifts = Object.values(submission.preferences)
-                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
-
-                html += `
-                    <div class="worker-card ${submission.approved ? 'approved' : ''}">
-                        <h3>${submission.name} ${submission.approved ? '✅ Approved' : '⏳ Pending'}</h3>
-                        <p><strong>Available Shifts:</strong> ${availableShifts}/42 total</p>
-                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
-                        
-                        <div style="margin-top: 15px;">
-                            <button class="btn ${submission.approved ? 'btn-secondary' : 'btn-success'}" 
-                                    onclick="toggleApproval(${submission.id})">
-                                ${submission.approved ? '✓ Approved' : 'Approve'}
-                            </button>
-                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
+            updateDisplay();
+            saveData();
+            
+            const message = newState ? 'Preferences locked!' : 'Preferences unlocked!';
+            showAlert(message, newState ? 'warning' : 'success');
         }
 
         function toggleApproval(submissionId) {
             const submission = workerSubmissions.find(s => s.id === submissionId);
             if (submission) {
                 submission.approved = !submission.approved;
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'} successfully!`, 'success');
+                updateDisplay();
+                saveData();
+                showAlert(`${submission.name} ${submission.approved ? 'approved' : 'unapproved'}!`, 'success');
             }
         }
 
         function removeSubmission(submissionId) {
             const submission = workerSubmissions.find(s => s.id === submissionId);
-            if (submission && confirm(`Are you sure you want to remove ${submission.name}'s submission?`)) {
+            if (submission && confirm(`Remove ${submission.name}'s submission?`)) {
                 workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
-                saveSubmissions();
-                updateAdminDashboard();
-                showAlert('Submission removed successfully!', 'success');
+                updateDisplay();
+                saveData();
+                showAlert('Submission removed.', 'success');
             }
         }
 
-        // Schedule Generation Algorithm
+        function refreshData() {
+            loadData();
+            showAlert('Data refreshed!', 'info');
+        }
+
         function generateSchedule() {
-            console.log('🔄 Starting schedule generation...');
-            
-            // Get approved submissions only
             const approvedSubmissions = workerSubmissions.filter(s => s.approved);
             
             if (approvedSubmissions.length === 0) {
-                showAlert('❌ No approved worker submissions found. Please approve some submissions first.', 'warning');
+                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
                 return;
             }
 
             // Lock preferences during generation
-            if (localStorage.getItem('preferencesLocked') !== 'true') {
-                localStorage.setItem('preferencesLocked', 'true');
-                localStorage.setItem('lockTimestamp', Date.now().toString());
-                updateLockStatus();
-                showAlert('🔒 Preferences locked for schedule generation...', 'info');
-            }
+            localStorage.setItem('preferencesLocked', 'true');
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            updateDisplay();
 
-            try {
-                // Generate optimized schedule
-                const schedule = generateOptimizedSchedule(approvedSubmissions);
-                
-                if (schedule) {
-                    generatedScheduleData = schedule;
-                    currentGeneration++;
-                    displayGeneratedSchedule(schedule);
-                    
-                    showAlert('✅ Schedule generated successfully! Data is ready for Excel export.', 'success');
-                    
-                    // Update generation counter
-                    const counterDiv = document.getElementById('generationCounter');
-                    counterDiv.innerHTML = `
-                        <div style="color: #28a745; font-weight: bold;">
-                            📊 Generation #${currentGeneration} completed successfully<br>
-                            <small>Coverage: ${schedule.coverage.toFixed(1)}% | Workers: ${schedule.stats.totalWorkers} | Total Shifts: ${schedule.stats.totalAssignedShifts}</small>
-                        </div>
-                    `;
-                } else {
-                    showAlert('❌ Failed to generate schedule. Please check worker availability.', 'danger');
-                }
-            } catch (error) {
-                console.error('Schedule generation error:', error);
-                showAlert('❌ Error generating schedule: ' + error.message, 'danger');
-            }
+            const schedule = generateOptimizedSchedule(approvedSubmissions);
+            displaySchedule(schedule);
+            
+            showAlert('Schedule generated successfully!', 'success');
         }
 
         function generateOptimizedSchedule(submissions) {
-            console.log('🧮 Running schedule optimization algorithm...');
-            
             const workers = submissions.map(s => ({
                 name: s.name,
-                preferences: s.preferences,
-                notes: s.notes || ''
+                preferences: s.preferences
             }));
 
-            // Initialize schedule structure
             const schedule = {
                 week1: initializeWeek(0),
                 week2: initializeWeek(7)
             };
 
-            // Track worker assignments for fairness
             const workerStats = {};
             workers.forEach(worker => {
                 workerStats[worker.name] = {
                     totalShifts: 0,
                     nightShifts: 0,
                     weekendShifts: 0,
-                    consecutiveDays: 0,
                     lastAssignedDay: -1
                 };
             });
 
-            // Generate assignments for each week
             let totalCoverage = 0;
             let totalPossibleShifts = 0;
 
@@ -1059,37 +577,25 @@
                     ['morning', 'evening', 'night'].forEach(shift => {
                         totalPossibleShifts++;
                         
-                        // Find available workers for this shift
                         const availableWorkers = workers.filter(worker => 
                             worker.preferences[globalDay] && worker.preferences[globalDay][shift]
                         );
 
                         if (availableWorkers.length > 0) {
-                            // Score workers based on various factors
+                            // Score workers for fair distribution
                             const scoredWorkers = availableWorkers.map(worker => ({
                                 worker: worker,
                                 score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name])
                             })).sort((a, b) => b.score - a.score);
 
-                            // Assign best available worker
                             const bestWorker = scoredWorkers[0].worker;
-                            week.days[day].shifts[shift] = {
-                                worker: bestWorker.name,
-                                notes: bestWorker.notes
-                            };
+                            week.days[day].shifts[shift] = bestWorker.name;
 
-                            // Update worker stats
+                            // Update stats
                             const stats = workerStats[bestWorker.name];
                             stats.totalShifts++;
                             if (shift === 'night') stats.nightShifts++;
-                            if (day === 5 || day === 6) stats.weekendShifts++; // Friday/Saturday
-                            
-                            // Track consecutive days
-                            if (stats.lastAssignedDay === globalDay - 1) {
-                                stats.consecutiveDays++;
-                            } else {
-                                stats.consecutiveDays = 1;
-                            }
+                            if (day === 5 || day === 6) stats.weekendShifts++;
                             stats.lastAssignedDay = globalDay;
 
                             totalCoverage++;
@@ -1098,35 +604,23 @@
                 }
             });
 
-            // Calculate final statistics
-            const finalSchedule = {
+            return {
                 ...schedule,
                 coverage: (totalCoverage / totalPossibleShifts) * 100,
-                stats: {
-                    totalWorkers: workers.length,
-                    totalAssignedShifts: totalCoverage,
-                    totalPossibleShifts: totalPossibleShifts,
-                    workerStats: workerStats
-                },
-                generatedAt: new Date().toISOString(),
-                generationNumber: currentGeneration + 1
+                totalAssignedShifts: totalCoverage,
+                totalPossibleShifts: totalPossibleShifts
             };
-
-            console.log('📊 Schedule generated with', totalCoverage, 'of', totalPossibleShifts, 'shifts covered');
-            return finalSchedule;
         }
 
         function initializeWeek(startDay) {
             const week = { days: [] };
-            const startDate = new Date(2025, 5, 1 + startDay); // June 1st + offset
+            const startDate = new Date(2025, 5, 1 + startDay);
             
             for (let i = 0; i < 7; i++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + i);
                 
                 week.days.push({
-                    date: currentDate,
-                    dayName: currentDate.toLocaleDateString('en-US', { weekday: 'long' }),
                     dayShort: currentDate.toLocaleDateString('en-US', { weekday: 'short' }),
                     dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
                     shifts: {
@@ -1140,84 +634,64 @@
             return week;
         }
 
-        function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, workerStats) {
-            let score = 100; // Base score
+        function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats) {
+            let score = 100;
             
-            // Prefer workers with fewer total shifts (load balancing)
-            score -= workerStats.totalShifts * 5;
+            // Load balancing
+            score -= stats.totalShifts * 5;
             
-            // Avoid too many consecutive days (worker wellbeing)
-            if (workerStats.consecutiveDays >= 3) {
-                score -= 30;
-            }
-            
-            // Distribute night shifts fairly
+            // Night shift distribution
             if (shift === 'night') {
-                score -= workerStats.nightShifts * 10;
+                score -= stats.nightShifts * 10;
             }
             
-            // Weekend shift considerations (Friday/Saturday)
+            // Weekend consideration
             if (dayOfWeek === 5 || dayOfWeek === 6) {
-                score -= workerStats.weekendShifts * 8;
+                score -= stats.weekendShifts * 8;
             }
             
-            // Avoid 888 patterns (8hr shifts back-to-back-to-back)
-            if (workerStats.consecutiveDays >= 2) {
+            // Avoid consecutive days
+            if (stats.lastAssignedDay === globalDay - 1) {
                 score -= 20;
             }
             
-            // Small random factor to break ties
-            score += Math.random() * 5;
-            
-            return score;
+            return score + Math.random() * 5;
         }
 
-        function displayGeneratedSchedule(schedule) {
-            const container = document.getElementById('generatedSchedule');
-            
+        function displaySchedule(schedule) {
             let html = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>📊 Generated Schedule</h3>
-                    <div>
-                        <button class="btn btn-success" onclick="copyScheduleToClipboard()">📋 Copy Excel Format</button>
-                        <button class="btn btn-secondary" onclick="exportScheduleCSV()">📊 Export CSV</button>
-                    </div>
-                </div>
-                
-                <div class="alert alert-info">
-                    <strong>📈 Schedule Statistics:</strong><br>
-                    Coverage: ${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)<br>
-                    Workers: ${schedule.stats.totalWorkers} | Generated: ${new Date(schedule.generatedAt).toLocaleString()}
+                <div style="margin-top: 30px;">
+                    <h4>📊 Generated Schedule (Coverage: ${schedule.coverage.toFixed(1)}%)</h4>
+                    <button class="btn" onclick="copyScheduleToExcel()" style="margin: 10px 0;">📋 Copy Excel Format</button>
                 </div>
             `;
 
             // Week 1
             html += createWeekTable('Week 1 (June 1-7, 2025)', schedule.week1);
             
-            // Week 2  
+            // Week 2
             html += createWeekTable('Week 2 (June 8-14, 2025)', schedule.week2);
 
-            // Worker Statistics
-            html += createWorkerStatsTable(schedule.stats.workerStats);
+            document.getElementById('scheduleOutput').innerHTML = html;
             
-            container.innerHTML = html;
+            // Store for Excel export
+            window.currentSchedule = schedule;
         }
 
-        function createWeekTable(weekTitle, week) {
+        function createWeekTable(title, week) {
             let html = `
-                <div style="margin: 30px 0;">
-                    <h4>${weekTitle}</h4>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <thead style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
-                                <tr>
-                                    <th style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Shift</th>
+                <div style="margin: 20px 0;">
+                    <h5>${title}</h5>
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Shift</th>
             `;
             
             // Day headers
             week.days.forEach(day => {
                 const isPremium = day.dayShort === 'Fri' || day.dayShort === 'Sat';
-                html += `<th style="padding: 12px; border: 1px solid #ddd; text-align: center; ${isPremium ? 'background: rgba(255,193,7,0.3);' : ''}">${day.dayShort}<br><small>${day.dateStr}</small>${isPremium ? '<br>💰' : ''}</th>`;
+                html += `<th class="${isPremium ? 'premium' : ''}">${day.dayShort}<br>${day.dateStr}${isPremium ? '<br>💰' : ''}</th>`;
             });
             
             html += '</tr></thead><tbody>';
@@ -1229,145 +703,56 @@
                 { key: 'night', label: 'Night (23:00-07:00)', icon: '🌙' }
             ];
             
-            shifts.forEach((shift, shiftIndex) => {
-                html += `<tr style="background: ${shiftIndex % 2 === 0 ? '#f8f9fa' : 'white'};">`;
-                html += `<td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #e9ecef;">${shift.icon} ${shift.label}</td>`;
+            shifts.forEach(shift => {
+                html += `<tr><td class="shift-label">${shift.icon} ${shift.label}</td>`;
                 
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
-                    const cellContent = assignment ? 
-                        `<strong>${assignment.worker}</strong>${assignment.notes ? `<br><small style="color: #6c757d;">${assignment.notes}</small>` : ''}` : 
-                        '<span style="color: #6c757d;">Unassigned</span>';
-                    
-                    const cellStyle = assignment ? 
-                        'background: #d4edda; color: #155724;' : 
-                        'background: #f8d7da; color: #721c24;';
-                    
-                    html += `<td style="padding: 12px; border: 1px solid #ddd; text-align: center; ${cellStyle}">${cellContent}</td>`;
+                    const cellClass = assignment ? 'assigned' : 'unassigned';
+                    const cellContent = assignment || 'Unassigned';
+                    html += `<td class="${cellClass}">${cellContent}</td>`;
                 });
                 
                 html += '</tr>';
             });
             
-            html += '</tbody></table></div></div>';
+            html += '</tbody></table></div>';
             return html;
         }
 
-        function createWorkerStatsTable(workerStats) {
-            let html = `
-                <div style="margin: 30px 0;">
-                    <h4>👥 Worker Statistics</h4>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <thead style="background: #6c757d; color: white;">
-                                <tr>
-                                    <th style="padding: 12px; border: 1px solid #ddd;">Worker Name</th>
-                                    <th style="padding: 12px; border: 1px solid #ddd;">Total Shifts</th>
-                                    <th style="padding: 12px; border: 1px solid #ddd;">Night Shifts</th>
-                                    <th style="padding: 12px; border: 1px solid #ddd;">Weekend Shifts</th>
-                                    <th style="padding: 12px; border: 1px solid #ddd;">Load Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-            
-            const workers = Object.entries(workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
-            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
-            
-            workers.forEach(([name, stats], index) => {
-                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) : 0;
-                const balanceColor = loadBalance > 120 ? '#dc3545' : loadBalance < 80 ? '#fd7e14' : '#28a745';
-                
-                html += `
-                    <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">${name}</td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.totalShifts}</td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.nightShifts}</td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${stats.weekendShifts}</td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: ${balanceColor}; font-weight: bold;">${loadBalance}%</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
-                        <strong>Load Balance:</strong> Percentage relative to average shifts per worker. 
-                        <span style="color: #28a745;">80-120% is ideal</span>, 
-                        <span style="color: #fd7e14;">&lt;80% underutilized</span>, 
-                        <span style="color: #dc3545;">&gt;120% overloaded</span>
-                    </div>
-                </div>
-            `;
-            
-            return html;
-        }
-
-        function copyScheduleToClipboard() {
-            if (!generatedScheduleData) {
-                showAlert('❌ No schedule generated yet. Please generate a schedule first.', 'warning');
+        function copyScheduleToExcel() {
+            if (!window.currentSchedule) {
+                showAlert('No schedule to copy!', 'warning');
                 return;
             }
 
-            const excelFormat = generateExcelFormat(generatedScheduleData);
-            
-            navigator.clipboard.writeText(excelFormat).then(() => {
-                showAlert('✅ Schedule copied to clipboard in Excel format! You can now paste it directly into Excel.', 'success');
-            }).catch(err => {
-                console.error('Failed to copy to clipboard:', err);
-                // Fallback: show the text in a modal/alert
-                const textArea = document.createElement('textarea');
-                textArea.value = excelFormat;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showAlert('✅ Schedule copied to clipboard! (Fallback method)', 'success');
-            });
-        }
-
-        function generateExcelFormat(schedule) {
-            let excelText = '';
-            
-            // Title and metadata
-            excelText += `SHIFT SCHEDULE - Generated ${new Date(schedule.generatedAt).toLocaleDateString()}\n`;
-            excelText += `Coverage: ${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)\n\n`;
+            let excelText = `SHIFT SCHEDULE - Generated ${new Date().toLocaleDateString()}\n`;
+            excelText += `Coverage: ${window.currentSchedule.coverage.toFixed(1)}%\n\n`;
             
             // Week 1
             excelText += 'WEEK 1 (June 1-7, 2025)\n';
-            excelText += generateWeekExcelFormat(schedule.week1);
+            excelText += generateWeekExcelFormat(window.currentSchedule.week1);
             excelText += '\n';
             
             // Week 2
             excelText += 'WEEK 2 (June 8-14, 2025)\n';
-            excelText += generateWeekExcelFormat(schedule.week2);
-            excelText += '\n';
-            
-            // Worker Statistics
-            excelText += 'WORKER STATISTICS\n';
-            excelText += 'Worker Name\tTotal Shifts\tNight Shifts\tWeekend Shifts\tLoad Balance\n';
-            
-            const workers = Object.entries(schedule.stats.workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
-            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
-            
-            workers.forEach(([name, stats]) => {
-                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) + '%' : '0%';
-                excelText += `${name}\t${stats.totalShifts}\t${stats.nightShifts}\t${stats.weekendShifts}\t${loadBalance}\n`;
+            excelText += generateWeekExcelFormat(window.currentSchedule.week2);
+
+            navigator.clipboard.writeText(excelText).then(() => {
+                showAlert('Schedule copied to clipboard! You can paste it directly into Excel.', 'success');
+            }).catch(() => {
+                showAlert('Copy failed. Please try again.', 'warning');
             });
-            
-            return excelText;
         }
 
-        function generateWeekCSVFormat(week) {
-            let weekText = '"Shift",';
+        function generateWeekExcelFormat(week) {
+            let text = 'Shift\t';
             
             // Headers
             week.days.forEach(day => {
-                weekText += `"${day.dayShort} ${day.dateStr}",`;
+                text += `${day.dayShort} ${day.dateStr}\t`;
             });
-            weekText += '\n';
+            text += '\n';
             
             // Shift rows
             const shifts = [
@@ -1377,160 +762,100 @@
             ];
             
             shifts.forEach(shift => {
-                weekText += `"${shift.label}",`;
+                text += `${shift.label}\t`;
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
-                    weekText += `"${assignment ? assignment.worker : 'Unassigned'}",`;
+                    text += `${assignment || 'Unassigned'}\t`;
                 });
-                weekText += '\n';
+                text += '\n';
             });
             
-            return weekText;
+            return text;
         }
 
-        function clearAllData() {
-            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
-                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
-                    workerSubmissions = [];
-                    generatedScheduleData = null;
-                    currentGeneration = 0;
-                    totalPossibleGenerations = 0;
-                    
-                    localStorage.removeItem('approvedWorkers');
-                    localStorage.removeItem('preferencesLocked');
-                    localStorage.removeItem('lockTimestamp');
-                    
-                    saveSubmissions();
-                    updateAdminDashboard();
-                    
-                    document.getElementById('generatedSchedule').innerHTML = 
-                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
-                    
-                    showAlert('All data has been cleared, including approved worker names.', 'success');
-                }
+        function updateDisplay() {
+            updateWorkersList();
+            updateLockStatus();
+            updateSubmissionsList();
+        }
+
+        function updateWorkersList() {
+            const workers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            const container = document.getElementById('workersList');
+            
+            if (workers.length === 0) {
+                container.innerHTML = '<p style="color: #856404;">No approved workers yet.</p>';
+                return;
+            }
+
+            container.innerHTML = workers.map(worker => `
+                <div class="worker-tag">
+                    <span>${worker}</span>
+                    <button onclick="removeWorker('${worker}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function updateLockStatus() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const lockTimestamp = localStorage.getItem('lockTimestamp');
+            const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
+            
+            const statusDiv = document.getElementById('lockStatus');
+            const toggleBtn = document.getElementById('lockToggleBtn');
+            
+            if (isLocked) {
+                statusDiv.className = 'lock-status locked';
+                statusDiv.innerHTML = `🔒 PREFERENCES LOCKED<br><small>Locked since: ${lockTime}</small>`;
+                toggleBtn.textContent = '🔓 Unlock Preferences';
+                toggleBtn.className = 'btn btn-success';
+            } else {
+                statusDiv.className = 'lock-status unlocked';
+                statusDiv.innerHTML = '🔓 PREFERENCES UNLOCKED<br><small>Workers can submit preferences</small>';
+                toggleBtn.textContent = '🔒 Lock Preferences';
+                toggleBtn.className = 'btn btn-warning';
             }
         }
 
-        function showAlert(message, type = 'info') {
-            const alertClass = `alert-${type}`;
+        function updateSubmissionsList() {
+            const container = document.getElementById('submissionsList');
+            
+            if (workerSubmissions.length === 0) {
+                container.innerHTML = '<p style="color: #0c5460;">No worker submissions yet.</p>';
+                return;
+            }
+
+            container.innerHTML = workerSubmissions.map(submission => {
+                const availableShifts = Object.values(submission.preferences)
+                    .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
+
+                return `
+                    <div class="submission-card ${submission.approved ? 'approved' : ''}">
+                        <h4>${submission.name} ${submission.approved ? '✅' : '⏳'}</h4>
+                        <p><strong>Available Shifts:</strong> ${availableShifts}/42</p>
+                        <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
+                        <div style="margin-top: 15px;">
+                            <button class="btn ${submission.approved ? '' : 'btn-success'}" onclick="toggleApproval(${submission.id})">
+                                ${submission.approved ? '✓ Approved' : 'Approve'}
+                            </button>
+                            <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showAlert(message, type) {
             const alertDiv = document.createElement('div');
-            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.className = `alert alert-${type}`;
             alertDiv.innerHTML = message;
             
-            const content = document.querySelector('.content');
-            content.insertBefore(alertDiv, content.firstChild);
+            const container = document.getElementById('statusMessages');
+            container.appendChild(alertDiv);
             
             setTimeout(() => {
                 alertDiv.remove();
             }, 5000);
-        }
-
-        // Initialize with Enter key support
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                const newWorkerInput = document.getElementById('newWorkerName');
-                if (newWorkerInput) {
-                    newWorkerInput.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            addWorker();
-                        }
-                    });
-                }
-            }, 100);
-        });
-
-        // Cleanup interval on page unload
-        window.addEventListener('beforeunload', function() {
-            if (syncIntervalId) {
-                clearInterval(syncIntervalId);
-            }
-        });});
-
-        function generateWeekExcelFormat(week) {
-            let weekText = 'Shift\t';
-            
-            // Headers
-            week.days.forEach(day => {
-                weekText += `${day.dayShort} ${day.dateStr}\t`;
-            });
-            weekText += '\n';
-            
-            // Shift rows
-            const shifts = [
-                { key: 'morning', label: 'Morning (07:00-15:00)' },
-                { key: 'evening', label: 'Evening (15:00-23:00)' },
-                { key: 'night', label: 'Night (23:00-07:00)' }
-            ];
-            
-            shifts.forEach(shift => {
-                weekText += `${shift.label}\t`;
-                week.days.forEach(day => {
-                    const assignment = day.shifts[shift.key];
-                    weekText += `${assignment ? assignment.worker : 'Unassigned'}\t`;
-                });
-                weekText += '\n';
-            });
-            
-            return weekText;
-        }
-
-        function exportScheduleCSV() {
-            if (!generatedScheduleData) {
-                showAlert('❌ No schedule generated yet. Please generate a schedule first.', 'warning');
-                return;
-            }
-
-            const csvContent = generateCSVFormat(generatedScheduleData);
-            
-            // Create and download CSV file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `shift_schedule_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showAlert('✅ Schedule exported as CSV file!', 'success');
-            } else {
-                showAlert('❌ CSV export not supported in this browser.', 'warning');
-            }
-        }
-
-        function generateCSVFormat(schedule) {
-            let csvContent = '';
-            
-            // Metadata
-            csvContent += `"SHIFT SCHEDULE","Generated ${new Date(schedule.generatedAt).toLocaleDateString()}"\n`;
-            csvContent += `"Coverage","${schedule.coverage.toFixed(1)}% (${schedule.stats.totalAssignedShifts}/${schedule.stats.totalPossibleShifts} shifts)"\n\n`;
-            
-            // Week 1
-            csvContent += '"WEEK 1 (June 1-7, 2025)"\n';
-            csvContent += generateWeekCSVFormat(schedule.week1);
-            csvContent += '\n';
-            
-            // Week 2
-            csvContent += '"WEEK 2 (June 8-14, 2025)"\n';
-            csvContent += generateWeekCSVFormat(schedule.week2);
-            csvContent += '\n';
-            
-            // Worker Statistics
-            csvContent += '"WORKER STATISTICS"\n';
-            csvContent += '"Worker Name","Total Shifts","Night Shifts","Weekend Shifts","Load Balance"\n';
-            
-            const workers = Object.entries(schedule.stats.workerStats).sort((a, b) => b[1].totalShifts - a[1].totalShifts);
-            const avgShifts = workers.reduce((sum, [name, stats]) => sum + stats.totalShifts, 0) / workers.length;
-            
-            workers.forEach(([name, stats]) => {
-                const loadBalance = avgShifts > 0 ? ((stats.totalShifts / avgShifts) * 100).toFixed(0) + '%' : '0%';
-                csvContent += `"${name}","${stats.totalShifts}","${stats.nightShifts}","${stats.weekendShifts}","${loadBalance}"\n`;
-            });
-            
-            return csvContent;
         }
     </script>
 </body>
