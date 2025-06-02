@@ -1050,7 +1050,7 @@
             try {
                 showAlert('🔄 Generating optimized schedule...', 'info');
                 
-                const schedule = generateOptimizedSchedule(approvedSubmissions);
+                const schedule = generateOptimizedScheduleWithRules(approvedSubmissions);
                 
                 if (schedule) {
                     generatedScheduleData = schedule;
@@ -1071,7 +1071,7 @@
             }
         }
 
-        function generateOptimizedSchedule(approvedSubmissions) {
+        function generateOptimizedScheduleWithRules(approvedSubmissions) {
             console.log('📊 Generating schedule for', approvedSubmissions.length, 'approved workers');
             
             const workers = approvedSubmissions.map(s => ({
