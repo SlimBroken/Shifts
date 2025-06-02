@@ -1071,6 +1071,48 @@
             }
         }
 
+        // Schedule generation functions with ground rules
+        function generateSchedule() {
+            console.log('🔄 Starting schedule generation...');
+            
+            // Get approved submissions only
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('❌ No approved worker submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            // Lock preferences during generation
+            if (localStorage.getItem('preferencesLocked') !== 'true') {
+                showAlert('🔒 Locking preferences during schedule generation...', 'info');
+                togglePreferenceLock();
+            }
+
+            try {
+                showAlert('🔄 Generating optimized schedule...', 'info');
+                
+                const schedule = generateOptimizedScheduleWithRules(approvedSubmissions);
+                
+                if (schedule) {
+                    generatedScheduleData = schedule;
+                    currentGeneration++;
+                    displayGeneratedSchedule(schedule);
+                    
+                    // Update generation counter
+                    const counterDiv = document.getElementById('generationCounter');
+                    counterDiv.textContent = `Generation #${currentGeneration} completed at ${new Date().toLocaleString()}`;
+                    
+                    showAlert(`✅ Schedule generated successfully! Assigned ${schedule.totalAssignments} shifts across ${schedule.days.length} days.`, 'success');
+                } else {
+                    showAlert('❌ Failed to generate schedule. Please check worker availability.', 'danger');
+                }
+            } catch (error) {
+                console.error('Schedule generation error:', error);
+                showAlert('❌ Error generating schedule: ' + error.message, 'danger');
+            }
+        }
+
         function generateOptimizedScheduleWithRules(approvedSubmissions) {
             console.log('📊 Generating schedule for', approvedSubmissions.length, 'approved workers');
             
