@@ -860,16 +860,15 @@
         function generateWeekExcelFormat(week) {
             let text = '';
             
-            // Headers in EXACT same order as admin table: shift column first (leftmost), then days left to right
-            text += 'משמרת\t';
-            
-            // Days in same order as admin table (ראשון to שבת, left to right)
-            week.days.forEach(day => {
+            // Headers in OPPOSITE order: days right to left, then shift column at the end
+            // Start with Saturday and go backwards to Sunday
+            for (let i = week.days.length - 1; i >= 0; i--) {
+                const day = week.days[i];
                 text += `${day.dayShort} ${day.dateStr}\t`;
-            });
-            text += '\n';
+            }
+            text += 'משמרת\n'; // Shift column at the end (rightmost)
             
-            // Shift rows in exact same order as admin table
+            // Shift rows with Hebrew names
             const shifts = [
                 { key: 'morning', label: 'בוקר (07:00-15:00)' },
                 { key: 'evening', label: 'ערב (15:00-23:00)' },
@@ -877,15 +876,15 @@
             ];
             
             shifts.forEach(shift => {
-                // Shift label first (same position as admin table)
-                text += `${shift.label}\t`;
-                
-                // Worker assignments in same order as admin table
-                week.days.forEach(day => {
+                // Worker assignments in reverse order (Saturday to Sunday)
+                for (let i = week.days.length - 1; i >= 0; i--) {
+                    const day = week.days[i];
                     const assignment = day.shifts[shift.key];
                     text += `${assignment || 'לא מוקצה'}\t`;
-                });
-                text += '\n';
+                }
+                
+                // Shift label at the end (rightmost position)
+                text += `${shift.label}\n`;
             });
             
             return text;
