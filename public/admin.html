@@ -1079,8 +1079,13 @@
                 preferences: s.preferences,
                 notes: s.notes,
                 totalAssignments: 0,
-                consecutiveShifts: 0,
-                lastShiftDay: -1
+                weeklyAssignments: [0, 0], // Week 1 (days 0-6), Week 2 (days 7-13)
+                premiumShifts: 0,
+                morningShiftsWeek1: 0,
+                morningShiftsWeek2: 0,
+                lastShiftDay: -1,
+                lastShiftType: null,
+                assignedShifts: [] // Track all assigned shifts: [{day, type}, ...]
             }));
 
             const schedule = {
@@ -1088,6 +1093,7 @@
                 totalAssignments: 0,
                 unfilledShifts: 0,
                 workerStats: {},
+                ruleViolations: [],
                 generatedAt: new Date().toISOString()
             };
 
@@ -1098,8 +1104,12 @@
                     morningShifts: 0,
                     eveningShifts: 0,
                     nightShifts: 0,
-                    weekendShifts: 0,
-                    consecutiveDays: 0
+                    premiumShifts: 0,
+                    week1Shifts: 0,
+                    week2Shifts: 0,
+                    week1Mornings: 0,
+                    week2Mornings: 0,
+                    ruleViolations: []
                 };
             });
 
@@ -1114,10 +1124,11 @@
                     day: day,
                     date: currentDate.toLocaleDateString('en-GB'),
                     dayName: currentDate.toLocaleDateString('en-US', { weekday: 'short' }),
+                    week: Math.floor(day / 7) + 1,
                     isWeekend: day === 5 || day === 6 || day === 12 || day === 13, // Weekend premium days
                     shifts: {
-                        morning: { assigned: null, available: [], premium: false },
-                        evening: { assigned: null, available: [], premium: day === 5 || day === 12 }, // Friday evenings
+                        morning: { assigned: null, available: [], premium: day === 5 || day === 6 || day === 12 || day === 13 },
+                        evening: { assigned: null, available: [], premium: day === 5 || day === 6 || day === 12 || day === 13 },
                         night: { assigned: null, available: [], premium: false }
                     }
                 };
@@ -1137,38 +1148,26 @@
                     }
                 });
 
-                // Assign shifts using optimization algorithm
-                assignShiftsForDay(daySchedule, workers, day);
+                // Assign shifts using rule-based optimization algorithm
+                assignShiftsForDay(daySchedule, workers, day, schedule);
                 schedule.days.push(daySchedule);
             }
 
-            // Calculate final statistics
-            schedule.days.forEach(day => {
-                ['morning', 'evening', 'night'].forEach(shiftType => {
-                    if (day.shifts[shiftType].assigned) {
-                        schedule.totalAssignments++;
-                        const workerName = day.shifts[shiftType].assigned;
-                        schedule.workerStats[workerName].totalShifts++;
-                        schedule.workerStats[workerName][shiftType + 'Shifts']++;
-                        if (day.isWeekend) {
-                            schedule.workerStats[workerName].weekendShifts++;
-                        }
-                    } else {
-                        schedule.unfilledShifts++;
-                    }
-                });
-            });
+            // Calculate final statistics and check rule compliance
+            calculateFinalStatistics(schedule, workers);
+            checkRuleCompliance(schedule, workers);
 
             console.log('📈 Schedule generated:', {
                 totalAssignments: schedule.totalAssignments,
                 unfilledShifts: schedule.unfilledShifts,
-                workers: workers.length
+                workers: workers.length,
+                ruleViolations: schedule.ruleViolations.length
             });
 
             return schedule;
         }
 
-        function assignShiftsForDay(daySchedule, workers, dayIndex) {
+        function assignShiftsForDay(daySchedule, workers, dayIndex, schedule) {
             const shifts = ['morning', 'evening', 'night'];
             
             shifts.forEach(shiftType => {
@@ -1178,12 +1177,23 @@
                     return; // No workers available for this shift
                 }
 
-                // Score each available worker
-                const workerScores = availableWorkers.map(workerName => {
+                // Filter workers who can legally work this shift
+                const eligibleWorkers = availableWorkers.filter(workerName => {
+                    const worker = workers.find(w => w.name === workerName);
+                    return canWorkerTakeShift(worker, dayIndex, shiftType, schedule);
+                });
+
+                if (eligibleWorkers.length === 0) {
+                    console.warn(`⚠️ No eligible workers for ${shiftType} shift on day ${dayIndex}`);
+                    return; // No eligible workers after rule checking
+                }
+
+                // Score each eligible worker
+                const workerScores = eligibleWorkers.map(workerName => {
                     const worker = workers.find(w => w.name === workerName);
                     return {
                         name: workerName,
-                        score: calculateWorkerScore(worker, dayIndex, shiftType, daySchedule.isWeekend)
+                        score: calculateWorkerScore(worker, dayIndex, shiftType, daySchedule.shifts[shiftType].premium)
                     };
                 });
 
@@ -1193,42 +1203,179 @@
                 const selectedWorker = workerScores[0];
                 daySchedule.shifts[shiftType].assigned = selectedWorker.name;
                 
-                // Update worker stats
+                // Update worker assignments
                 const worker = workers.find(w => w.name === selectedWorker.name);
-                worker.totalAssignments++;
-                worker.lastShiftDay = dayIndex;
+                assignShiftToWorker(worker, dayIndex, shiftType, daySchedule.shifts[shiftType].premium);
             });
         }
 
-        function calculateWorkerScore(worker, dayIndex, shiftType, isWeekend) {
-            let score = 100; // Base score
+        function canWorkerTakeShift(worker, dayIndex, shiftType, schedule) {
+            // Rule 1: 8-hour gap between shifts (no consecutive shifts)
+            if (!checkEightHourRule(worker, dayIndex, shiftType)) {
+                return false;
+            }
+
+            // Rule 2: Maximum 6 shifts per week
+            const currentWeek = Math.floor(dayIndex / 7);
+            if (worker.weeklyAssignments[currentWeek] >= 6) {
+                return false;
+            }
+
+            return true;
+        }
+
+        function checkEightHourRule(worker, dayIndex, shiftType) {
+            // Check if worker has a shift that would violate 8-hour rule
+            for (const shift of worker.assignedShifts) {
+                const timeBetween = calculateTimeBetweenShifts(shift.day, shift.type, dayIndex, shiftType);
+                if (timeBetween < 8) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function calculateTimeBetweenShifts(day1, type1, day2, type2) {
+            // Shift end times: morning=15, evening=23, night=7(next day)
+            const shiftEndTimes = { morning: 15, evening: 23, night: 7 };
+            const shiftStartTimes = { morning: 7, evening: 15, night: 23 };
             
-            // Prefer workers with fewer total assignments (load balancing)
-            score -= worker.totalAssignments * 10;
-            
-            // Avoid consecutive days (prevent burnout)
-            if (worker.lastShiftDay === dayIndex - 1) {
-                score -= 30;
+            let end1 = day1 * 24 + shiftEndTimes[type1];
+            if (type1 === 'night') {
+                end1 += 24; // Night shift ends next day
             }
             
-            // Slight preference for weekend shifts (premium pay)
-            if (isWeekend) {
-                score += 5;
+            const start2 = day2 * 24 + shiftStartTimes[type2];
+            
+            return start2 - end1;
+        }
+
+        function assignShiftToWorker(worker, dayIndex, shiftType, isPremium) {
+            worker.totalAssignments++;
+            const currentWeek = Math.floor(dayIndex / 7);
+            worker.weeklyAssignments[currentWeek]++;
+            
+            if (isPremium) {
+                worker.premiumShifts++;
             }
             
-            // Avoid giving same worker too many shifts
-            if (worker.totalAssignments >= 8) {
-                score -= 20;
+            if (shiftType === 'morning') {
+                if (currentWeek === 0) {
+                    worker.morningShiftsWeek1++;
+                } else {
+                    worker.morningShiftsWeek2++;
+                }
             }
             
-            // Add some randomization to avoid patterns
-            score += Math.random() * 10;
+            worker.lastShiftDay = dayIndex;
+            worker.lastShiftType = shiftType;
+            worker.assignedShifts.push({ day: dayIndex, type: shiftType });
+        }
+
+        function calculateWorkerScore(worker, dayIndex, shiftType, isPremium) {
+            let score = 1000; // Higher base score for better precision
+            
+            // Rule 2: Prefer workers with fewer weekly shifts (max 6 per week)
+            const currentWeek = Math.floor(dayIndex / 7);
+            const weeklyShifts = worker.weeklyAssignments[currentWeek];
+            score -= weeklyShifts * 100; // Strong penalty for many weekly shifts
+            
+            // Rule 3: Strongly prefer workers without morning shifts this week for morning shifts
+            if (shiftType === 'morning') {
+                const morningShiftsThisWeek = currentWeek === 0 ? worker.morningShiftsWeek1 : worker.morningShiftsWeek2;
+                if (morningShiftsThisWeek === 0) {
+                    score += 200; // Strong bonus for workers without morning shifts
+                } else {
+                    score -= morningShiftsThisWeek * 150; // Penalty for workers with morning shifts
+                }
+            }
+            
+            // Rule 4: Premium shift distribution (Friday evening through Saturday evening)
+            if (isPremium) {
+                // Prefer workers with fewer premium shifts for fair distribution
+                score -= worker.premiumShifts * 80;
+                score += 50; // Small bonus for premium shifts to ensure they get filled
+            }
+            
+            // General load balancing - prefer workers with fewer total shifts
+            score -= worker.totalAssignments * 50;
+            
+            // Avoid overloading workers
+            if (worker.totalAssignments >= 10) {
+                score -= 300; // Heavy penalty for workers with many shifts
+            }
+            
+            // Small randomization to break ties
+            score += Math.random() * 20;
             
             return score;
         }
 
+        function calculateFinalStatistics(schedule, workers) {
+            schedule.days.forEach(day => {
+                ['morning', 'evening', 'night'].forEach(shiftType => {
+                    if (day.shifts[shiftType].assigned) {
+                        schedule.totalAssignments++;
+                        const workerName = day.shifts[shiftType].assigned;
+                        const stats = schedule.workerStats[workerName];
+                        
+                        stats.totalShifts++;
+                        stats[shiftType + 'Shifts']++;
+                        
+                        if (day.shifts[shiftType].premium) {
+                            stats.premiumShifts++;
+                        }
+                        
+                        if (day.week === 1) {
+                            stats.week1Shifts++;
+                            if (shiftType === 'morning') stats.week1Mornings++;
+                        } else {
+                            stats.week2Shifts++;
+                            if (shiftType === 'morning') stats.week2Mornings++;
+                        }
+                    } else {
+                        schedule.unfilledShifts++;
+                    }
+                });
+            });
+        }
+
+        function checkRuleCompliance(schedule, workers) {
+            workers.forEach(worker => {
+                const stats = schedule.workerStats[worker.name];
+                
+                // Check Rule 2: Maximum 6 shifts per week
+                if (stats.week1Shifts > 6) {
+                    const violation = `${worker.name}: ${stats.week1Shifts} shifts in week 1 (max 6)`;
+                    schedule.ruleViolations.push(violation);
+                    stats.ruleViolations.push('Week 1: ' + stats.week1Shifts + ' shifts (max 6)');
+                }
+                if (stats.week2Shifts > 6) {
+                    const violation = `${worker.name}: ${stats.week2Shifts} shifts in week 2 (max 6)`;
+                    schedule.ruleViolations.push(violation);
+                    stats.ruleViolations.push('Week 2: ' + stats.week2Shifts + ' shifts (max 6)');
+                }
+                
+                // Check Rule 3: At least 1 morning shift per week (if they have any shifts)
+                if (stats.week1Shifts > 0 && stats.week1Mornings === 0) {
+                    const violation = `${worker.name}: No morning shifts in week 1`;
+                    schedule.ruleViolations.push(violation);
+                    stats.ruleViolations.push('Week 1: No morning shifts');
+                }
+                if (stats.week2Shifts > 0 && stats.week2Mornings === 0) {
+                    const violation = `${worker.name}: No morning shifts in week 2`;
+                    schedule.ruleViolations.push(violation);
+                    stats.ruleViolations.push('Week 2: No morning shifts');
+                }
+            });
+        }
+
         function displayGeneratedSchedule(schedule) {
             const container = document.getElementById('generatedSchedule');
+            
+            // Rule compliance summary
+            let ruleComplianceClass = schedule.ruleViolations.length === 0 ? 'success' : 'warning';
+            let ruleComplianceIcon = schedule.ruleViolations.length === 0 ? '✅' : '⚠️';
             
             let html = `
                 <div style="background: #e8f5e8; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
@@ -1238,6 +1385,17 @@
                         <div><strong>Unfilled Shifts:</strong> ${schedule.unfilledShifts}</div>
                         <div><strong>Coverage:</strong> ${Math.round((schedule.totalAssignments / (schedule.totalAssignments + schedule.unfilledShifts)) * 100)}%</div>
                         <div><strong>Generated:</strong> ${new Date(schedule.generatedAt).toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div style="background: ${schedule.ruleViolations.length === 0 ? '#d4edda' : '#fff3cd'}; border: 1px solid ${schedule.ruleViolations.length === 0 ? '#c3e6cb' : '#ffeaa7'}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <h4>${ruleComplianceIcon} Rule Compliance</h4>
+                    ${schedule.ruleViolations.length === 0 ? 
+                        '<div style="color: #155724;"><strong>✅ All scheduling rules followed!</strong></div>' :
+                        `<div style="color: #856404;"><strong>⚠️ ${schedule.ruleViolations.length} rule violations detected:</strong><ul style="margin: 10px 0 0 20px;">${schedule.ruleViolations.map(v => `<li>${v}</li>`).join('')}</ul></div>`
+                    }
+                    <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
+                        <strong>Rules:</strong> 1) 8-hour gap between shifts | 2) Max 6 shifts/week | 3) Min 1 morning/week | 4) Fair premium distribution
                     </div>
                 </div>
             `;
@@ -1265,7 +1423,8 @@
                 html += `
                     <td style="text-align: left; font-weight: bold;">
                         ${day.dayName} ${day.date}
-                        ${day.isWeekend ? '<br><small style="color: #856404;">💰 Premium</small>' : ''}
+                        <br><small style="color: #6c757d;">Week ${day.week}</small>
+                        ${day.isWeekend ? '<br><small style="color: #856404;">💰 Premium Period</small>' : ''}
                     </td>
                 `;
                 
@@ -1296,8 +1455,98 @@
                 </div>
             `;
 
-            // Worker statistics
             html += `
+                <div class="schedule-container">
+                    <h4>👥 Worker Statistics</h4>
+                    <div class="worker-stats">
+            `;
+
+            Object.entries(schedule.workerStats).forEach(([workerName, stats]) => {
+                html += `
+                    <div class="worker-stat-card">
+                        <h5 style="margin-bottom: 10px; color: #495057;">${workerName}</h5>
+                        <div style="font-size: 12px; line-height: 1.4;">
+                            <div><strong>Total Shifts:</strong> ${stats.totalShifts}</div>
+                            <div><strong>Morning:</strong> ${stats.morningShifts} | <strong>Evening:</strong> ${stats.eveningShifts} | <strong>Night:</strong> ${stats.nightShifts}</div>
+                            <div><strong>Weekend Shifts:</strong> ${stats.weekendShifts}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        } with rule compliance
+            html += `
+                <div class="schedule-container">
+                    <h4>👥 Worker Statistics & Rule Compliance</h4>
+                    <div class="worker-stats">
+            `;
+
+            Object.entries(schedule.workerStats).forEach(([workerName, stats]) => {
+                const hasViolations = stats.ruleViolations.length > 0;
+                const cardStyle = hasViolations ? 'border: 2px solid #ffc107; background: #fff3cd;' : '';
+                
+                html += `
+                    <div class="worker-stat-card" style="${cardStyle}">
+                        <h5 style="margin-bottom: 10px; color: #495057;">
+                            ${workerName} ${hasViolations ? '⚠️' : '✅'}
+                        </h5>
+                        <div style="font-size: 12px; line-height: 1.6;">
+                            <div><strong>Total Shifts:</strong> ${stats.totalShifts}</div>
+                            <div><strong>Week 1:</strong> ${stats.week1Shifts} shifts (${stats.week1Mornings} morning)</div>
+                            <div><strong>Week 2:</strong> ${stats.week2Shifts} shifts (${stats.week2Mornings} morning)</div>
+                            <div><strong>Premium Shifts:</strong> ${stats.premiumShifts} 💰</div>
+                            <div><strong>By Type:</strong> M:${stats.morningShifts} | E:${stats.eveningShifts} | N:${stats.nightShifts}</div>
+                            ${hasViolations ? 
+                                `<div style="color: #856404; margin-top: 8px; font-weight: bold;">
+                                    <div>⚠️ Violations:</div>
+                                    <ul style="margin: 4px 0 0 16px;">
+                                        ${stats.ruleViolations.map(v => `<li>${v}</li>`).join('')}
+                                    </ul>
+                                </div>` : 
+                                '<div style="color: #155724; margin-top: 8px; font-weight: bold;">✅ All rules followed</div>'
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            // Premium shift distribution analysis
+            const premiumDistribution = Object.entries(schedule.workerStats)
+                .map(([name, stats]) => ({ name, premiumShifts: stats.premiumShifts }))
+                .sort((a, b) => b.premiumShifts - a.premiumShifts);
+
+            html += `
+                <div class="schedule-container">
+                    <h4>💰 Premium Shift Distribution (Friday Evening → Saturday Evening)</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            ${premiumDistribution.map(worker => 
+                                `<div style="background: white; padding: 10px; border-radius: 3px; text-align: center;">
+                                    <strong>${worker.name}</strong><br>
+                                    <span style="font-size: 18px; color: #ffc107;">${worker.premiumShifts} 💰</span>
+                                </div>`
+                            ).join('')}
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #6c757d; text-align: center;">
+                            Goal: Equal distribution of premium shifts across all workers
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }html += `
                 <div class="schedule-container">
                     <h4>👥 Worker Statistics</h4>
                     <div class="worker-stats">
