@@ -858,9 +858,12 @@
         }
 
         function generateWeekExcelFormat(week) {
-            let text = 'משמרת\t';
+            let text = '';
             
-            // Headers in correct visual order (RTL): Sunday to Saturday
+            // Headers in correct RTL order: shifts column FIRST (rightmost), then days right to left
+            text += 'משמרת\t'; // Shift column at the beginning (rightmost in RTL)
+            
+            // Days from right to left: ראשון to שבת
             week.days.forEach(day => {
                 text += `${day.dayShort} ${day.dateStr}\t`;
             });
@@ -874,8 +877,10 @@
             ];
             
             shifts.forEach(shift => {
+                // Shift label first (rightmost column in RTL)
                 text += `${shift.label}\t`;
-                // Data in same order as visual table: Sunday to Saturday
+                
+                // Then worker assignments from right to left (ראשון to שבת)
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     text += `${assignment || 'לא מוקצה'}\t`;
