@@ -601,12 +601,20 @@
                     totalShifts: 0,
                     nightShifts: 0,
                     weekendShifts: 0,
-                    lastAssignedDay: -1
+                    lastAssignedDay: -1,
+                    lastShiftEnd: null // Track when worker's last shift ended
                 };
             });
 
             let totalCoverage = 0;
             let totalPossibleShifts = 0;
+
+            // Define shift times for 8-hour break calculation
+            const shiftTimes = {
+                morning: { start: 7, end: 15 },   // 07:00-15:00
+                evening: { start: 15, end: 23 },  // 15:00-23:00  
+                night: { start: 23, end: 7 }     // 23:00-07:00 (next day)
+            };
 
             [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
                 const weekStartDay = weekIndex * 7;
@@ -617,9 +625,26 @@
                     ['morning', 'evening', 'night'].forEach(shift => {
                         totalPossibleShifts++;
                         
-                        const availableWorkers = workers.filter(worker => 
-                            worker.preferences[globalDay] && worker.preferences[globalDay][shift]
-                        );
+                        const availableWorkers = workers.filter(worker => {
+                            // Check if worker is available for this shift
+                            if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
+                                return false;
+                            }
+
+                            // Check 8-hour break rule
+                            const workerStat = workerStats[worker.name];
+                            if (workerStat.lastShiftEnd !== null) {
+                                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                                
+                                // Must have at least 8 hours break
+                                if (hoursSinceLastShift < 8) {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+                        });
 
                         if (availableWorkers.length > 0) {
                             // Score workers for fair distribution
@@ -631,12 +656,15 @@
                             const bestWorker = scoredWorkers[0].worker;
                             week.days[day].shifts[shift] = bestWorker.name;
 
-                            // Update stats
+                            // Update stats including last shift end time
                             const stats = workerStats[bestWorker.name];
                             stats.totalShifts++;
                             if (shift === 'night') stats.nightShifts++;
                             if (day === 5 || day === 6) stats.weekendShifts++;
                             stats.lastAssignedDay = globalDay;
+                            
+                            // Calculate and store when this shift ends
+                            stats.lastShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
 
                             totalCoverage++;
                         }
@@ -650,6 +678,41 @@
                 totalAssignedShifts: totalCoverage,
                 totalPossibleShifts: totalPossibleShifts
             };
+        }
+
+        function calculateShiftStartTime(globalDay, shift, shiftTimes) {
+            const baseDate = new Date(2025, 5, 1); // June 1st, 2025
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const startHour = shiftTimes[shift].start;
+            
+            // Handle night shift that starts on one day and ends on the next
+            if (shift === 'night') {
+                shiftDate.setHours(startHour, 0, 0, 0);
+            } else {
+                shiftDate.setHours(startHour, 0, 0, 0);
+            }
+            
+            return shiftDate.getTime();
+        }
+
+        function calculateShiftEndTime(globalDay, shift, shiftTimes) {
+            const baseDate = new Date(2025, 5, 1); // June 1st, 2025
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const endHour = shiftTimes[shift].end;
+            
+            // Handle night shift that ends on the next day
+            if (shift === 'night') {
+                shiftDate.setDate(shiftDate.getDate() + 1); // Next day
+                shiftDate.setHours(endHour, 0, 0, 0);
+            } else {
+                shiftDate.setHours(endHour, 0, 0, 0);
+            }
+            
+            return shiftDate.getTime();
         }
 
         function initializeWeek(startDay) {
@@ -699,72 +762,6 @@
             }
             
             return score + Math.random() * 5;
-        }
-
-        function canWorkerTakeShift(worker, shift, globalDay, currentSchedule) {
-            // Check 8-hour break rule - worker cannot work consecutive shifts
-            
-            // Get the previous shift (8 hours earlier)
-            const previousShiftDay = globalDay;
-            const previousShift = getPreviousShift(shift);
-            
-            // Get the next shift (8 hours later) 
-            const nextShiftDay = globalDay;
-            const nextShift = getNextShift(shift);
-            
-            // Check previous shift on same day
-            if (previousShift) {
-                const week = globalDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
-                const dayIndex = globalDay % 7;
-                
-                if (week.days[dayIndex].shifts[previousShift] === worker.name) {
-                    return false; // Cannot work consecutive shifts
-                }
-            }
-            
-            // Check next shift on same day  
-            if (nextShift) {
-                const week = globalDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
-                const dayIndex = globalDay % 7;
-                
-                if (week.days[dayIndex].shifts[nextShift] === worker.name) {
-                    return false; // Cannot work consecutive shifts
-                }
-            }
-            
-            // Check night shift to morning shift across days (most critical)
-            if (shift === 'morning' && globalDay > 0) {
-                // Check if worker worked night shift previous day
-                const prevDay = globalDay - 1;
-                const prevWeek = prevDay < 7 ? currentSchedule.week1 : currentSchedule.week2;
-                const prevDayIndex = prevDay % 7;
-                
-                if (prevWeek.days[prevDayIndex] && prevWeek.days[prevDayIndex].shifts.night === worker.name) {
-                    return false; // Cannot work morning after night shift
-                }
-            }
-            
-            return true; // Worker can take this shift
-        }
-
-        function getPreviousShift(currentShift) {
-            const shiftOrder = ['morning', 'evening', 'night'];
-            const currentIndex = shiftOrder.indexOf(currentShift);
-            
-            if (currentIndex > 0) {
-                return shiftOrder[currentIndex - 1];
-            }
-            return null; // No previous shift on same day
-        }
-
-        function getNextShift(currentShift) {
-            const shiftOrder = ['morning', 'evening', 'night'];
-            const currentIndex = shiftOrder.indexOf(currentShift);
-            
-            if (currentIndex < shiftOrder.length - 1) {
-                return shiftOrder[currentIndex + 1];
-            }
-            return null; // No next shift on same day
         }
 
         function displaySchedule(schedule) {
