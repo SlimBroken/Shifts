@@ -761,12 +761,14 @@
         }
 
         function getWorkerColor(workerName, workers) {
-            // Predefined beautiful colors for workers
+            // Predefined beautiful colors for workers (NO BLUE COLORS)
             const colors = [
-                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-                '#F8C471', '#82E0AA', '#F1948A', '#85C5FF', '#B19CD9',
-                '#FFB347', '#87CEEB', '#DEB887', '#F0E68C', '#FFE4E1'
+                '#FF6B6B', '#4ECDC4', '#96CEB4', '#FFEAA7', '#DDA0DD', 
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#F8C471', '#82E0AA', 
+                '#F1948A', '#B19CD9', '#FFB347', '#DEB887', '#F0E68C', 
+                '#FFE4E1', '#FFA07A', '#98FB98', '#F5DEB3', '#FFB6C1',
+                '#DA70D6', '#FF69B4', '#32CD32', '#FFD700', '#FF4500',
+                '#DC143C', '#00CED1', '#9370DB', '#FF1493', '#00FF7F'
             ];
             
             const workerIndex = workers.indexOf(workerName);
