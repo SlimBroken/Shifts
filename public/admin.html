@@ -653,7 +653,163 @@
                 // Create the data object to sync
                 const dataToSync = {
                     shiftSubmissions: workerSubmissions,
-                    approvedWorkers.forEach(workerName => {
+                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                    lastUpdate: Date.now()
+                };
+                syncToGitHub(dataToSync);
+            }
+        }
+
+        function refreshData() {
+            if (serverConnected) {
+                syncFromGitHub().then(() => {
+                    updateAdminDashboard();
+                    showAlert('Data refreshed from server!', 'success');
+                });
+            } else {
+                loadSubmissions();
+                updateAdminDashboard();
+                showAlert('Data refreshed from local storage!', 'success');
+            }
+        }
+
+        async function manualSync() {
+            if (!serverConnected) {
+                showAlert('Server is not connected. Please test connection first.', 'warning');
+                return;
+            }
+            
+            const syncBtn = document.getElementById('syncBtn');
+            syncBtn.textContent = '🔄 Syncing...';
+            syncBtn.disabled = true;
+            
+            try {
+                updateSyncStatus('Manual sync in progress...', 'info');
+                
+                const downloadSuccess = await syncFromGitHub();
+                
+                // Create data to upload
+                const dataToSync = {
+                    shiftSubmissions: workerSubmissions,
+                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+                    lastUpdate: Date.now()
+                };
+                
+                const uploadSuccess = await syncToGitHub(dataToSync);
+                
+                if (downloadSuccess && uploadSuccess) {
+                    showAlert('✅ Manual sync completed successfully!', 'success');
+                    updateSyncStatus('Manual sync completed', 'success');
+                } else if (uploadSuccess) {
+                    showAlert('⚠️ Upload successful, download had issues', 'warning');
+                } else if (downloadSuccess) {
+                    showAlert('⚠️ Download successful, upload had issues', 'warning');
+                } else {
+                    showAlert('❌ Manual sync failed', 'danger');
+                }
+                
+                updateAdminDashboard();
+            } catch (error) {
+                showAlert('❌ Sync error: ' + error.message, 'danger');
+                console.error('Manual sync error:', error);
+            } finally {
+                syncBtn.textContent = '🔄 Sync Now';
+                syncBtn.disabled = false;
+            }
+        }
+
+        function updateAdminDashboard() {
+            document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
+            document.getElementById('pendingApprovals').textContent = 
+                workerSubmissions.filter(s => !s.approved).length;
+            
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            document.getElementById('approvedWorkersCount').textContent = approvedWorkers.length;
+
+            displayWorkerSubmissions();
+            displayApprovedWorkers();
+            updateLockStatus();
+        }
+
+        function togglePreferenceLock() {
+            const isCurrentlyLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const newLockState = !isCurrentlyLocked;
+            
+            localStorage.setItem('preferencesLocked', newLockState.toString());
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            localStorage.setItem('lockSetBy', 'admin');
+            localStorage.setItem('lastUpdate', Date.now().toString());
+            
+            updateLockStatus();
+            
+            if (serverConnected) {
+                const dataToSync = {
+                    shiftSubmissions: workerSubmissions,
+                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+                    preferencesLocked: newLockState,
+                    lockTimestamp: localStorage.getItem('lockTimestamp'),
+                    lastUpdate: Date.now()
+                };
+                syncToGitHub(dataToSync);
+            }
+            
+            if (newLockState) {
+                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
+            } else {
+                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
+            }
+        }
+
+        function updateLockStatus() {
+            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+            const lockTimestamp = localStorage.getItem('lockTimestamp');
+            const lockStatusDiv = document.getElementById('lockStatus');
+            const toggleBtn = document.getElementById('toggleLockBtn');
+            
+            if (isLocked) {
+                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
+                lockStatusDiv.className = 'lock-status locked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔒 PREFERENCES LOCKED</strong><br>
+                    <small>Locked since: ${lockTime}</small><br>
+                    <small>Workers cannot submit or modify preferences while locked.</small>
+                `;
+                toggleBtn.textContent = '🔓 Unlock Preferences';
+                toggleBtn.className = 'btn btn-success';
+            } else {
+                lockStatusDiv.className = 'lock-status unlocked';
+                lockStatusDiv.innerHTML = `
+                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
+                    <small>Workers can submit and modify their preferences.</small>
+                `;
+                toggleBtn.textContent = '🔒 Lock Preferences';
+                toggleBtn.className = 'btn btn-warning';
+            }
+        }
+
+        function displayApprovedWorkers() {
+            const container = document.getElementById('approvedWorkersList');
+            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+            
+            if (approvedWorkers.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+                        <strong>⚠️ No approved workers!</strong><br>
+                        Workers cannot access the system until you add their names to the approved list.<br>
+                        <small>Add worker names above to allow them to submit shift preferences.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
+            
+            approvedWorkers.forEach(workerName => {
                 html += `
                     <div style="background: white; padding: 10px 15px; border-radius: 5px; border: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px;">
                         <span style="font-weight: 500;">${workerName}</span>
@@ -1203,7 +1359,91 @@
             return excelText;
         }
 
-        function generateWeekExcelFormat(week) {
+        function generateWeekCSVFormat(week) {
+            let weekText = '"Shift",';
+            
+            // Headers
+            week.days.forEach(day => {
+                weekText += `"${day.dayShort} ${day.dateStr}",`;
+            });
+            weekText += '\n';
+            
+            // Shift rows
+            const shifts = [
+                { key: 'morning', label: 'Morning (07:00-15:00)' },
+                { key: 'evening', label: 'Evening (15:00-23:00)' },
+                { key: 'night', label: 'Night (23:00-07:00)' }
+            ];
+            
+            shifts.forEach(shift => {
+                weekText += `"${shift.label}",`;
+                week.days.forEach(day => {
+                    const assignment = day.shifts[shift.key];
+                    weekText += `"${assignment ? assignment.worker : 'Unassigned'}",`;
+                });
+                weekText += '\n';
+            });
+            
+            return weekText;
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
+                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
+                    workerSubmissions = [];
+                    generatedScheduleData = null;
+                    currentGeneration = 0;
+                    totalPossibleGenerations = 0;
+                    
+                    localStorage.removeItem('approvedWorkers');
+                    localStorage.removeItem('preferencesLocked');
+                    localStorage.removeItem('lockTimestamp');
+                    
+                    saveSubmissions();
+                    updateAdminDashboard();
+                    
+                    document.getElementById('generatedSchedule').innerHTML = 
+                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
+                    
+                    showAlert('All data has been cleared, including approved worker names.', 'success');
+                }
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertClass = `alert-${type}`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.innerHTML = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize with Enter key support
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const newWorkerInput = document.getElementById('newWorkerName');
+                if (newWorkerInput) {
+                    newWorkerInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            addWorker();
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        // Cleanup interval on page unload
+        window.addEventListener('beforeunload', function() {
+            if (syncIntervalId) {
+                clearInterval(syncIntervalId);
+            }
+        });ExcelFormat(week) {
             let weekText = 'Shift\t';
             
             // Headers
@@ -1290,247 +1530,7 @@
             return csvContent;
         }
 
-        function generateWeekCSVFormat(week) {
-            let weekText = '"Shift",';
-            
-            // Headers
-            week.days.forEach(day => {
-                weekText += `"${day.dayShort} ${day.dateStr}",`;
-            });
-            weekText += '\n';
-            
-            // Shift rows
-            const shifts = [
-                { key: 'morning', label: 'Morning (07:00-15:00)' },
-                { key: 'evening', label: 'Evening (15:00-23:00)' },
-                { key: 'night', label: 'Night (23:00-07:00)' }
-            ];
-            
-            shifts.forEach(shift => {
-                weekText += `"${shift.label}",`;
-                week.days.forEach(day => {
-                    const assignment = day.shifts[shift.key];
-                    weekText += `"${assignment ? assignment.worker : 'Unassigned'}",`;
-                });
-                weekText += '\n';
-            });
-            
-            return weekText;
-        }
-
-        function clearAllData() {
-            if (confirm('⚠️ Are you sure you want to clear ALL data? This will remove all worker submissions, generated schedules, AND approved worker names. This action cannot be undone.')) {
-                if (confirm('This is your final warning. ALL data including approved worker names will be permanently deleted. Continue?')) {
-                    workerSubmissions = [];
-                    generatedScheduleData = null;
-                    currentGeneration = 0;
-                    totalPossibleGenerations = 0;
-                    
-                    localStorage.removeItem('approvedWorkers');
-                    localStorage.removeItem('preferencesLocked');
-                    localStorage.removeItem('lockTimestamp');
-                    
-                    saveSubmissions();
-                    updateAdminDashboard();
-                    
-                    document.getElementById('generatedSchedule').innerHTML = 
-                        '<div class="alert alert-info">No schedule generated yet. Click "Generate Optimized Schedule" to create one.</div>';
-                    
-                    showAlert('All data has been cleared, including approved worker names.', 'success');
-                }
-            }
-        }
-
-        function showAlert(message, type = 'info') {
-            const alertClass = `alert-${type}`;
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert ${alertClass}`;
-            alertDiv.innerHTML = message;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(alertDiv, content.firstChild);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
-        }
-
-        // Initialize with Enter key support
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                const newWorkerInput = document.getElementById('newWorkerName');
-                if (newWorkerInput) {
-                    newWorkerInput.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            addWorker();
-                        }
-                    });
-                }
-            }, 100);
-        });
-
-        // Cleanup interval on page unload
-        window.addEventListener('beforeunload', function() {
-            if (syncIntervalId) {
-                clearInterval(syncIntervalId);
-            }
-        });
+        function generateWeek
     </script>
 </body>
-</html>: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-        }
-
-        function refreshData() {
-            if (serverConnected) {
-                syncFromGitHub().then(() => {
-                    updateAdminDashboard();
-                    showAlert('Data refreshed from server!', 'success');
-                });
-            } else {
-                loadSubmissions();
-                updateAdminDashboard();
-                showAlert('Data refreshed from local storage!', 'success');
-            }
-        }
-
-        async function manualSync() {
-            if (!serverConnected) {
-                showAlert('Server is not connected. Please test connection first.', 'warning');
-                return;
-            }
-            
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.textContent = '🔄 Syncing...';
-            syncBtn.disabled = true;
-            
-            try {
-                updateSyncStatus('Manual sync in progress...', 'info');
-                
-                const downloadSuccess = await syncFromGitHub();
-                
-                // Create data to upload
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-                
-                const uploadSuccess = await syncToGitHub(dataToSync);
-                
-                if (downloadSuccess && uploadSuccess) {
-                    showAlert('✅ Manual sync completed successfully!', 'success');
-                    updateSyncStatus('Manual sync completed', 'success');
-                } else if (uploadSuccess) {
-                    showAlert('⚠️ Upload successful, download had issues', 'warning');
-                } else if (downloadSuccess) {
-                    showAlert('⚠️ Download successful, upload had issues', 'warning');
-                } else {
-                    showAlert('❌ Manual sync failed', 'danger');
-                }
-                
-                updateAdminDashboard();
-            } catch (error) {
-                showAlert('❌ Sync error: ' + error.message, 'danger');
-                console.error('Manual sync error:', error);
-            } finally {
-                syncBtn.textContent = '🔄 Sync Now';
-                syncBtn.disabled = false;
-            }
-        }
-
-        function updateAdminDashboard() {
-            document.getElementById('totalSubmissions').textContent = workerSubmissions.length;
-            document.getElementById('pendingApprovals').textContent = 
-                workerSubmissions.filter(s => !s.approved).length;
-            
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            document.getElementById('approvedWorkersCount').textContent = approvedWorkers.length;
-
-            displayWorkerSubmissions();
-            displayApprovedWorkers();
-            updateLockStatus();
-        }
-
-        function togglePreferenceLock() {
-            const isCurrentlyLocked = localStorage.getItem('preferencesLocked') === 'true';
-            const newLockState = !isCurrentlyLocked;
-            
-            localStorage.setItem('preferencesLocked', newLockState.toString());
-            localStorage.setItem('lockTimestamp', Date.now().toString());
-            localStorage.setItem('lockSetBy', 'admin');
-            localStorage.setItem('lastUpdate', Date.now().toString());
-            
-            updateLockStatus();
-            
-            if (serverConnected) {
-                const dataToSync = {
-                    shiftSubmissions: workerSubmissions,
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: newLockState,
-                    lockTimestamp: localStorage.getItem('lockTimestamp'),
-                    lastUpdate: Date.now()
-                };
-                syncToGitHub(dataToSync);
-            }
-            
-            if (newLockState) {
-                showAlert('🔒 Preferences locked! Workers can no longer submit or modify their preferences.', 'warning');
-            } else {
-                showAlert('🔓 Preferences unlocked! Workers can now submit and modify their preferences.', 'success');
-            }
-        }
-
-        function updateLockStatus() {
-            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
-            const lockTimestamp = localStorage.getItem('lockTimestamp');
-            const lockStatusDiv = document.getElementById('lockStatus');
-            const toggleBtn = document.getElementById('toggleLockBtn');
-            
-            if (isLocked) {
-                const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
-                lockStatusDiv.className = 'lock-status locked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔒 PREFERENCES LOCKED</strong><br>
-                    <small>Locked since: ${lockTime}</small><br>
-                    <small>Workers cannot submit or modify preferences while locked.</small>
-                `;
-                toggleBtn.textContent = '🔓 Unlock Preferences';
-                toggleBtn.className = 'btn btn-success';
-            } else {
-                lockStatusDiv.className = 'lock-status unlocked';
-                lockStatusDiv.innerHTML = `
-                    <strong>🔓 PREFERENCES UNLOCKED</strong><br>
-                    <small>Workers can submit and modify their preferences.</small>
-                `;
-                toggleBtn.textContent = '🔒 Lock Preferences';
-                toggleBtn.className = 'btn btn-warning';
-            }
-        }
-
-        function displayApprovedWorkers() {
-            const container = document.getElementById('approvedWorkersList');
-            const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-            
-            if (approvedWorkers.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-warning" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
-                        <strong>⚠️ No approved workers!</strong><br>
-                        Workers cannot access the system until you add their names to the approved list.<br>
-                        <small>Add worker names above to allow them to submit shift preferences.</small>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '<h4>Approved Workers (' + approvedWorkers.length + '):</h4>';
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
-            
-            approvedWorkers
+</html>
