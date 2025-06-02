@@ -631,6 +631,14 @@
                                 return false;
                             }
 
+                            // Check if worker already has a shift on this day
+                            const currentDayShifts = week.days[day].shifts;
+                            if (currentDayShifts.morning === worker.name || 
+                                currentDayShifts.evening === worker.name || 
+                                currentDayShifts.night === worker.name) {
+                                return false;
+                            }
+
                             // Check 8-hour break rule
                             const workerStat = workerStats[worker.name];
                             if (workerStat.lastShiftEnd !== null) {
