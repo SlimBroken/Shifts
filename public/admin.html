@@ -238,6 +238,7 @@
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin: 20px 0;
+            direction: rtl;
         }
 
         .schedule-table th {
@@ -246,6 +247,7 @@
             padding: 12px;
             border: 1px solid #ddd;
             font-weight: bold;
+            text-align: center;
         }
 
         .schedule-table td {
@@ -616,12 +618,15 @@
             const week = { days: [] };
             const startDate = new Date(2025, 5, 1 + startDay);
             
+            // Hebrew day names
+            const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+            
             for (let i = 0; i < 7; i++) {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + i);
                 
                 week.days.push({
-                    dayShort: currentDate.toLocaleDateString('en-US', { weekday: 'short' }),
+                    dayShort: hebrewDays[currentDate.getDay()],
                     dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
                     shifts: {
                         morning: null,
@@ -661,16 +666,16 @@
         function displaySchedule(schedule) {
             let html = `
                 <div style="margin-top: 30px;">
-                    <h4>📊 Generated Schedule (Coverage: ${schedule.coverage.toFixed(1)}%)</h4>
-                    <button class="btn" onclick="copyScheduleToExcel()" style="margin: 10px 0;">📋 Copy Excel Format</button>
+                    <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
+                    <button class="btn" onclick="copyScheduleToExcel()" style="margin: 10px 0;">📋 העתק לאקסל</button>
                 </div>
             `;
 
             // Week 1
-            html += createWeekTable('Week 1 (June 1-7, 2025)', schedule.week1);
+            html += createWeekTable('שבוע 1 (1-7 ביוני, 2025)', schedule.week1);
             
             // Week 2
-            html += createWeekTable('Week 2 (June 8-14, 2025)', schedule.week2);
+            html += createWeekTable('שבוע 2 (8-14 ביוני, 2025)', schedule.week2);
 
             document.getElementById('scheduleOutput').innerHTML = html;
             
@@ -685,33 +690,36 @@
                     <table class="schedule-table">
                         <thead>
                             <tr>
-                                <th>Shift</th>
+                                <th>משמרת</th>
             `;
             
-            // Day headers
-            week.days.forEach(day => {
-                const isPremium = day.dayShort === 'Fri' || day.dayShort === 'Sat';
+            // Day headers (reversed for RTL)
+            for (let i = week.days.length - 1; i >= 0; i--) {
+                const day = week.days[i];
+                const isPremium = day.dayShort === 'שישי' || day.dayShort === 'שבת';
                 html += `<th class="${isPremium ? 'premium' : ''}">${day.dayShort}<br>${day.dateStr}${isPremium ? '<br>💰' : ''}</th>`;
-            });
+            }
             
             html += '</tr></thead><tbody>';
             
-            // Shift rows
+            // Shift rows with Hebrew names
             const shifts = [
-                { key: 'morning', label: 'Morning (07:00-15:00)', icon: '🌅' },
-                { key: 'evening', label: 'Evening (15:00-23:00)', icon: '🌆' },
-                { key: 'night', label: 'Night (23:00-07:00)', icon: '🌙' }
+                { key: 'morning', label: 'בוקר (07:00-15:00)', icon: '🌅' },
+                { key: 'evening', label: 'ערב (15:00-23:00)', icon: '🌆' },
+                { key: 'night', label: 'לילה (23:00-07:00)', icon: '🌙' }
             ];
             
             shifts.forEach(shift => {
                 html += `<tr><td class="shift-label">${shift.icon} ${shift.label}</td>`;
                 
-                week.days.forEach(day => {
+                // Reverse order for RTL
+                for (let i = week.days.length - 1; i >= 0; i--) {
+                    const day = week.days[i];
                     const assignment = day.shifts[shift.key];
                     const cellClass = assignment ? 'assigned' : 'unassigned';
-                    const cellContent = assignment || 'Unassigned';
+                    const cellContent = assignment || 'לא מוקצה';
                     html += `<td class="${cellClass}">${cellContent}</td>`;
-                });
+                }
                 
                 html += '</tr>';
             });
@@ -726,16 +734,16 @@
                 return;
             }
 
-            let excelText = `SHIFT SCHEDULE - Generated ${new Date().toLocaleDateString()}\n`;
-            excelText += `Coverage: ${window.currentSchedule.coverage.toFixed(1)}%\n\n`;
+            let excelText = `לוח משמרות - נוצר ${new Date().toLocaleDateString('he-IL')}\n`;
+            excelText += `כיסוי: ${window.currentSchedule.coverage.toFixed(1)}%\n\n`;
             
             // Week 1
-            excelText += 'WEEK 1 (June 1-7, 2025)\n';
+            excelText += 'שבוע 1 (1-7 ביוני, 2025)\n';
             excelText += generateWeekExcelFormat(window.currentSchedule.week1);
             excelText += '\n';
             
             // Week 2
-            excelText += 'WEEK 2 (June 8-14, 2025)\n';
+            excelText += 'שבוע 2 (8-14 ביוני, 2025)\n';
             excelText += generateWeekExcelFormat(window.currentSchedule.week2);
 
             navigator.clipboard.writeText(excelText).then(() => {
@@ -746,27 +754,30 @@
         }
 
         function generateWeekExcelFormat(week) {
-            let text = 'Shift\t';
+            let text = 'משמרת\t';
             
-            // Headers
-            week.days.forEach(day => {
+            // Headers (reversed for RTL)
+            for (let i = week.days.length - 1; i >= 0; i--) {
+                const day = week.days[i];
                 text += `${day.dayShort} ${day.dateStr}\t`;
-            });
+            }
             text += '\n';
             
-            // Shift rows
+            // Shift rows with Hebrew names
             const shifts = [
-                { key: 'morning', label: 'Morning (07:00-15:00)' },
-                { key: 'evening', label: 'Evening (15:00-23:00)' },
-                { key: 'night', label: 'Night (23:00-07:00)' }
+                { key: 'morning', label: 'בוקר (07:00-15:00)' },
+                { key: 'evening', label: 'ערב (15:00-23:00)' },
+                { key: 'night', label: 'לילה (23:00-07:00)' }
             ];
             
             shifts.forEach(shift => {
                 text += `${shift.label}\t`;
-                week.days.forEach(day => {
+                // Reverse order for RTL
+                for (let i = week.days.length - 1; i >= 0; i--) {
+                    const day = week.days[i];
                     const assignment = day.shifts[shift.key];
-                    text += `${assignment || 'Unassigned'}\t`;
-                });
+                    text += `${assignment || 'לא מוקצה'}\t`;
+                }
                 text += '\n';
             });
             
