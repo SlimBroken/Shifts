@@ -600,9 +600,9 @@
                 workerStats[worker.name] = {
                     totalShifts: 0,
                     nightShifts: 0,
+                    morningShifts: 0, // Track morning shifts specifically
                     weekendShifts: 0,
                     premiumShifts: 0, // Track premium weekend shifts specifically
-                    morningShiftsThisWeek: 0, // Track morning shifts per week
                     lastAssignedDay: -1,
                     lastShiftEnd: null // Track when worker's last shift ended
                 };
@@ -621,84 +621,10 @@
             [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
                 const weekStartDay = weekIndex * 7;
                 
-                // Reset morning shift counters for each week
-                workers.forEach(worker => {
-                    workerStats[worker.name].morningShiftsThisWeek = 0;
-                });
-                
-                // First pass: Ensure every worker gets at least 1 morning shift this week
-                const morningShiftsToAssign = [];
-                for (let day = 0; day < 7; day++) {
-                    const globalDay = weekStartDay + day;
-                    morningShiftsToAssign.push({ day, globalDay });
-                }
-                
-                // Assign morning shifts with priority for workers who don't have one yet
-                morningShiftsToAssign.forEach(({ day, globalDay }) => {
-                    const availableWorkers = workers.filter(worker => {
-                        // Check basic availability
-                        if (!worker.preferences[globalDay] || !worker.preferences[globalDay].morning) {
-                            return false;
-                        }
-                        
-                        // Check if worker already has a shift on this day
-                        const currentDayShifts = week.days[day].shifts;
-                        if (currentDayShifts.morning === worker.name || 
-                            currentDayShifts.evening === worker.name || 
-                            currentDayShifts.night === worker.name) {
-                            return false;
-                        }
-                        
-                        // Check 8-hour break rule
-                        const workerStat = workerStats[worker.name];
-                        if (workerStat.lastShiftEnd !== null) {
-                            const currentShiftStart = calculateShiftStartTime(globalDay, 'morning', shiftTimes);
-                            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-                            if (hoursSinceLastShift < 8) {
-                                return false;
-                            }
-                        }
-                        
-                        return true;
-                    });
-                    
-                    if (availableWorkers.length > 0) {
-                        // Prioritize workers who don't have a morning shift this week yet
-                        const workersWithoutMorning = availableWorkers.filter(worker => 
-                            workerStats[worker.name].morningShiftsThisWeek === 0
-                        );
-                        
-                        const candidateWorkers = workersWithoutMorning.length > 0 ? workersWithoutMorning : availableWorkers;
-                        
-                        // Score and select best worker
-                        const scoredWorkers = candidateWorkers.map(worker => ({
-                            worker: worker,
-                            score: calculateWorkerScore(worker, 'morning', day, globalDay, workerStats[worker.name])
-                        })).sort((a, b) => b.score - a.score);
-                        
-                        const bestWorker = scoredWorkers[0].worker;
-                        week.days[day].shifts.morning = bestWorker.name;
-                        
-                        // Update stats
-                        const stats = workerStats[bestWorker.name];
-                        stats.totalShifts++;
-                        stats.morningShiftsThisWeek++;
-                        if (day === 5 || day === 6) stats.weekendShifts++;
-                        if (isPremiumWeekendShift(day, 'morning')) {
-                            stats.premiumShifts++;
-                        }
-                        stats.lastAssignedDay = globalDay;
-                        stats.lastShiftEnd = calculateShiftEndTime(globalDay, 'morning', shiftTimes);
-                        
-                        totalCoverage++;
-                    }
-                });
-                
-                // Second pass: Assign remaining shifts (evening and night)
                 for (let day = 0; day < 7; day++) {
                     const globalDay = weekStartDay + day;
                     
-                    ['evening', 'night'].forEach(shift => {
+                    ['morning', 'evening', 'night'].forEach(shift => {
                         totalPossibleShifts++;
                         
                         const availableWorkers = workers.filter(worker => {
@@ -734,7 +660,7 @@
                             // Score workers for fair distribution
                             const scoredWorkers = availableWorkers.map(worker => ({
                                 worker: worker,
-                                score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name])
+                                score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
                             })).sort((a, b) => b.score - a.score);
 
                             const bestWorker = scoredWorkers[0].worker;
@@ -744,6 +670,7 @@
                             const stats = workerStats[bestWorker.name];
                             stats.totalShifts++;
                             if (shift === 'night') stats.nightShifts++;
+                            if (shift === 'morning') stats.morningShifts++;
                             if (day === 5 || day === 6) stats.weekendShifts++;
                             
                             // Track premium weekend shifts
@@ -760,9 +687,6 @@
                         }
                     });
                 }
-                
-                // Add morning shifts to total count (they were counted in first pass)
-                totalPossibleShifts += 7; // 7 morning shifts per week
             });
 
             return {
@@ -833,15 +757,36 @@
             return week;
         }
 
-        function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats) {
+        function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
             let score = 100;
             
             // Load balancing - prefer workers with fewer total shifts
             score -= stats.totalShifts * 5;
             
-            // Night shift distribution
+            // Morning shift priority - ensure everyone gets at least one morning shift
+            if (shift === 'morning') {
+                if (stats.morningShifts === 0) {
+                    score += 40; // High bonus for workers with no morning shifts yet
+                } else {
+                    score -= stats.morningShifts * 8; // Reduce priority for workers with many morning shifts
+                }
+            }
+            
+            // Night shift distribution - minimize but ensure fair sharing
             if (shift === 'night') {
-                score -= stats.nightShifts * 10;
+                // Give strong preference to workers with fewer night shifts
+                score -= stats.nightShifts * 20; // Heavy penalty for workers with many night shifts
+                
+                // Bonus for workers who haven't done night shifts yet
+                if (stats.nightShifts === 0) {
+                    score += 15;
+                }
+                
+                // Check if this worker has significantly fewer night shifts than others
+                const avgNightShifts = Object.values(allWorkerStats).reduce((sum, s) => sum + s.nightShifts, 0) / Object.keys(allWorkerStats).length;
+                if (stats.nightShifts < avgNightShifts) {
+                    score += 10; // Bonus for below-average night shift workers
+                }
             }
             
             // Premium weekend shifts distribution (Friday evening to Saturday evening)
@@ -929,11 +874,15 @@
             // Count shifts for each worker in this week
             const workerShiftCounts = {};
             const workerPremiumCounts = {};
+            const workerMorningCounts = {};
+            const workerNightCounts = {};
             
             // Initialize counts
             workers.forEach(worker => {
                 workerShiftCounts[worker] = 0;
                 workerPremiumCounts[worker] = 0;
+                workerMorningCounts[worker] = 0;
+                workerNightCounts[worker] = 0;
             });
             
             // Count shifts for each day and shift type
@@ -942,6 +891,13 @@
                     const assignedWorker = day.shifts[shiftType];
                     if (assignedWorker && workers.includes(assignedWorker)) {
                         workerShiftCounts[assignedWorker]++;
+                        
+                        if (shiftType === 'morning') {
+                            workerMorningCounts[assignedWorker]++;
+                        }
+                        if (shiftType === 'night') {
+                            workerNightCounts[assignedWorker]++;
+                        }
                         
                         // Count premium shifts (Friday evening to Saturday evening)
                         if (isPremiumWeekendShift(dayIndex, shiftType)) {
@@ -954,7 +910,7 @@
             let html = `
                 <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f1f3f4 0%, #e8eaf6 100%); border-radius: 10px; border: 2px solid #c5cae9;">
                     <h5 style="color: #3f51b5; margin-bottom: 15px; text-align: center;">📈 סיכום משמרות ${weekTitle}</h5>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
             `;
 
             // Sort workers by total shifts for this week (descending)
@@ -963,7 +919,8 @@
             sortedWorkers.forEach(worker => {
                 const totalShifts = workerShiftCounts[worker];
                 const premiumShifts = workerPremiumCounts[worker];
-                const morningShifts = countMorningShifts(week, worker);
+                const morningShifts = workerMorningCounts[worker];
+                const nightShifts = workerNightCounts[worker];
                 const workerColor = getWorkerColor(worker, workers);
                 
                 html += `
@@ -972,18 +929,31 @@
                          onmouseover="this.style.transform='translateY(-2px)'" 
                          onmouseout="this.style.transform='translateY(0)'">
                         <div style="font-weight: bold; color: #333; margin-bottom: 8px; font-size: 16px;">${worker}</div>
-                        <div style="color: #666; font-size: 14px;">
+                        <div style="color: #666; font-size: 13px;">
                             <div style="margin-bottom: 4px;">
                                 <span style="color: #1976d2;">📊 סה"כ משמרות:</span> 
                                 <strong style="color: #1976d2;">${totalShifts}</strong>
                             </div>
-                            <div style="margin-bottom: 4px;">
-                                <span style="color: #ff9800;">🌅 משמרות בוקר:</span> 
-                                <strong style="color: #ff9800;">${morningShifts}</strong>
-                            </div>
+                            ${morningShifts > 0 ? `
+                                <div style="margin-bottom: 4px; color: #f57c00;">
+                                    <span>🌅 בוקר:</span> 
+                                    <strong>${morningShifts}</strong>
+                                </div>
+                            ` : `
+                                <div style="margin-bottom: 4px; color: #e91e63;">
+                                    <span>🌅 בוקר:</span> 
+                                    <strong style="color: #e91e63;">0 ⚠️</strong>
+                                </div>
+                            `}
+                            ${nightShifts > 0 ? `
+                                <div style="margin-bottom: 4px; color: #673ab7;">
+                                    <span>🌙 לילה:</span> 
+                                    <strong>${nightShifts}</strong>
+                                </div>
+                            ` : ''}
                             ${premiumShifts > 0 ? `
                                 <div style="color: #f57c00;">
-                                    <span>💰 משמרות פרמיום:</span> 
+                                    <span>💰 פרמיום:</span> 
                                     <strong>${premiumShifts}</strong>
                                 </div>
                             ` : ''}
@@ -994,16 +964,6 @@
 
             html += '</div></div>';
             return html;
-        }
-
-        function countMorningShifts(week, worker) {
-            let count = 0;
-            week.days.forEach(day => {
-                if (day.shifts.morning === worker) {
-                    count++;
-                }
-            });
-            return count;
         }
 
         function adjustBrightness(hex, percent) {
