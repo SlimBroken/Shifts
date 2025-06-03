@@ -1399,7 +1399,7 @@
             return colors[workerIndex % colors.length];
         }
 
-      function createWeekTable(title, week, workers = []) {
+function createWeekTable(title, week, workers = []) {
             let html = `
                 <div style="margin: 30px 0;">
                     <h5 style="color: #495057; margin-bottom: 15px; font-size: 18px;">${title}</h5>
@@ -1439,7 +1439,7 @@
                 </td>`;
                 
                 // Worker assignments for each day
-                week.days.forEach(day => {
+                week.days.forEach((day, dayIndex) => {
                     const assignment = day.shifts[shift.key];
                     
                     if (assignment) {
@@ -1448,9 +1448,24 @@
                             ${assignment}
                         </td>`;
                     } else {
-                        html += `<td style="border: 1px solid #333; padding: 12px; text-align: center; height: 50px; background: #f8f9fa; font-style: italic; color: #999;">
-                            לא מוקצה
-                        </td>`;
+                        // Find potential workers for this empty shift
+                        const potentialWorkers = findPotentialWorkers(title, dayIndex, shift.key, workers);
+                        
+                        if (potentialWorkers.length > 0) {
+                            const potentialText = potentialWorkers.slice(0, 3).join(', '); // Show max 3 names
+                            const moreText = potentialWorkers.length > 3 ? `\n+${potentialWorkers.length - 3} more` : '';
+                            
+                            html += `<td style="border: 1px solid #333; padding: 8px; text-align: center; height: 50px; background: #fff9c4; font-size: 11px; color: #856404; line-height: 1.2;">
+                                <div style="font-weight: bold; margin-bottom: 3px;">לא מוקצה</div>
+                                <div style="font-size: 10px;">💡 Available:</div>
+                                <div style="font-size: 10px;">${potentialText}${moreText}</div>
+                            </td>`;
+                        } else {
+                            html += `<td style="border: 1px solid #333; padding: 12px; text-align: center; height: 50px; background: #f8d7da; font-style: italic; color: #721c24; font-size: 12px;">
+                                <div>לא מוקצה</div>
+                                <div style="font-size: 10px; margin-top: 3px;">❌ No available workers</div>
+                            </td>`;
+                        }
                     }
                 });
                 
@@ -1459,6 +1474,60 @@
             
             html += '</tbody></table></div>';
             return html;
+        }
+
+        function findPotentialWorkers(weekTitle, dayIndex, shiftType, workers) {
+            // Determine which week and global day we're looking at
+            const isWeek1 = weekTitle.includes('שבוע 1');
+            const weekNumber = isWeek1 ? 0 : 1;
+            const globalDay = (weekNumber * 7) + dayIndex;
+            
+            // Get all submissions to check availability
+            const submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+            const approvedSubmissions = submissions.filter(s => s.approved);
+            
+            const potentialWorkers = [];
+            
+            approvedSubmissions.forEach(submission => {
+                const worker = submission;
+                
+                // Check if worker is available for this shift
+                if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shiftType]) {
+                    return; // Not available
+                }
+                
+                // Check if worker already has a shift on this day
+                const schedule = window.currentSchedule;
+                if (!schedule) return;
+                
+                const week = isWeek1 ? schedule.week1 : schedule.week2;
+                if (!week || !week.days[dayIndex]) return;
+                
+                const dayShifts = week.days[dayIndex].shifts;
+                if (dayShifts.morning === worker.name || 
+                    dayShifts.evening === worker.name || 
+                    dayShifts.night === worker.name) {
+                    return; // Already has a shift this day
+                }
+                
+                // For night shifts, check 2-per-week constraint
+                if (shiftType === 'night') {
+                    let nightCount = 0;
+                    week.days.forEach(d => {
+                        if (d.shifts.night === worker.name) {
+                            nightCount++;
+                        }
+                    });
+                    if (nightCount >= 2) {
+                        return; // Already has 2 night shifts this week
+                    }
+                }
+                
+                // Worker is potentially available
+                potentialWorkers.push(worker.name);
+            });
+            
+            return potentialWorkers;
         }
 
         function copyScheduleToExcel() {
