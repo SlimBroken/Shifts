@@ -1096,56 +1096,54 @@
             return colors[workerIndex % colors.length];
         }
 
-        function createWeekTable(title, week, workers = []) {
+      function createWeekTable(title, week, workers = []) {
             let html = `
                 <div style="margin: 30px 0;">
                     <h5 style="color: #495057; margin-bottom: 15px; font-size: 18px;">${title}</h5>
-                    <table class="schedule-table">
+                    <table style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #000; font-family: Arial, sans-serif;">
                         <thead>
                             <tr>
-                                <th style="border-radius: 12px 0 0 0;">משמרת</th>
             `;
             
+            // Day headers with dates (right to left for Hebrew)
             week.days.forEach((day, index) => {
-                const isPremium = day.dayShort === 'שישי' || day.dayShort === 'שבת';
-                const isLast = index === week.days.length - 1;
-                const borderRadius = isLast ? '0 12px 0 0' : '0';
-                html += `<th class="${isPremium ? 'premium' : ''}" style="border-radius: ${borderRadius};">
-                    ${day.dayShort}<br><small style="font-size: 12px; opacity: 0.9;">${day.dateStr}</small>
+                html += `<th style="border: 1px solid #000; padding: 8px; text-align: center; background: #f5f5f5; font-weight: bold;">
+                    ${day.dateStr}<br>${day.dayShort}
                 </th>`;
             });
             
             html += '</tr></thead><tbody>';
             
+            // Shift rows
             const shifts = [
-                { key: 'morning', label: 'בוקר', time: '07:00-15:00', icon: '🌅' },
-                { key: 'evening', label: 'ערב', time: '15:00-23:00', icon: '🌆' },
-                { key: 'night', label: 'לילה', time: '23:00-07:00', icon: '🌙' }
+                { key: 'morning', label: 'בוקר' },
+                { key: 'evening', label: 'צהריים' },
+                { key: 'night', label: 'לילה' }
             ];
             
-            shifts.forEach((shift, shiftIndex) => {
-                html += `<tr><td class="shift-label">
-                    ${shift.icon} <strong>${shift.label}</strong><br>
-                    <small style="font-size: 11px; opacity: 0.8;">${shift.time}</small>
-                </td>`;
+            shifts.forEach((shift) => {
+                html += '<tr>';
                 
+                // Worker assignments for each day
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     
-                    if (assignment) {
-                        const workerColor = getWorkerColor(assignment, workers);
-                        html += `<td class="assigned" style="background: linear-gradient(135deg, ${workerColor} 0%, ${adjustBrightness(workerColor, -10)} 100%);">
-                            <strong>${assignment}</strong>
-                        </td>`;
-                    } else {
-                        html += `<td class="unassigned">
-                            <span style="font-size: 12px;">לא מוקצה</span>
-                        </td>`;
-                    }
+                    html += `<td style="border: 1px solid #000; padding: 12px; text-align: center; height: 40px;">
+                        ${assignment ? `<strong>${assignment}</strong>` : ''}
+                    </td>`;
                 });
                 
                 html += '</tr>';
             });
+            
+            // Add shift labels row at the bottom
+            html += '<tr>';
+            shifts.forEach(shift => {
+                html += `<td style="border: 1px solid #000; padding: 8px; text-align: center; background: #f5f5f5; font-weight: bold;">
+                    ${shift.label}
+                </td>`;
+            });
+            html += '</tr>';
             
             html += '</tbody></table></div>';
             return html;
