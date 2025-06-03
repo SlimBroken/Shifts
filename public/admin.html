@@ -834,10 +834,11 @@
             totalCoverage += additionalFilled;
             console.log('📈 Final coverage after filling empty shifts:', (totalCoverage / totalPossibleShifts) * 100 + '%');
 
-            // Clean up global variable
-            delete window.currentScheduleBeingGenerated;
+           // Clean up global variable
+           delete window.currentScheduleBeingGenerated;
 
-            return {
+           return {
+               
                 ...schedule,
                 coverage: (totalCoverage / totalPossibleShifts) * 100,
                 totalAssignedShifts: totalCoverage,
