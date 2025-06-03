@@ -920,16 +920,35 @@
                 }
             }
             
-            score -= stats.totalShifts * 5;
-            
+            // CRITICAL: Morning shift distribution - ensure everyone gets at least 1 per week
             if (shift === 'morning') {
-                if (stats.morningShifts === 0) {
-                    score += 40;
+                const currentWeek = Math.floor(globalDay / 7);
+                const morningShiftsThisWeek = countMorningShiftsInWeek(worker.name, currentWeek);
+                
+                // HIGHEST PRIORITY: Workers with 0 morning shifts this week
+                if (morningShiftsThisWeek === 0) {
+                    score += 1000; // Extremely high bonus
+                    
+                    // Extra bonus if we're later in the week (urgency increases)
+                    const dayInWeek = globalDay % 7;
+                    if (dayInWeek >= 4) { // Thursday onwards
+                        score += 500; // Even higher priority
+                    }
                 } else {
-                    score -= stats.morningShifts * 8;
+                    // Heavily penalize workers who already have morning shifts this week
+                    score -= morningShiftsThisWeek * 300;
+                }
+                
+                // Also consider overall morning shift balance
+                if (stats.morningShifts === 0) {
+                    score += 200; // High bonus for workers with no morning shifts overall
                 }
             }
             
+            // Load balancing - prefer workers with fewer total shifts
+            score -= stats.totalShifts * 5;
+            
+            // Premium weekend shifts distribution (Friday evening to Saturday evening)
             const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
             if (isPremiumShift) {
                 score -= stats.premiumShifts * 15;
@@ -938,10 +957,12 @@
                 }
             }
             
+            // Regular weekend consideration
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 score -= stats.weekendShifts * 8;
             }
             
+            // Avoid consecutive days
             if (stats.lastAssignedDay === globalDay - 1) {
                 score -= 20;
             }
@@ -978,50 +999,105 @@
             
             return nightShiftCount;
         }
-
+        
+        function countMorningShiftsInWeek(workerName, weekNumber) {
+            let week;
+            if (weekNumber === 0) {
+                week = window.currentScheduleBeingGenerated?.week1;
+            } else if (weekNumber === 1) {
+                week = window.currentScheduleBeingGenerated?.week2;
+            }
+            
+            if (!week) return 0;
+            
+            let morningShiftCount = 0;
+            week.days.forEach(day => {
+                if (day.shifts.morning === workerName) {
+                    morningShiftCount++;
+                }
+            });
+            
+            return morningShiftCount;
+        }
         function logNightShiftDistribution(schedule) {
-            console.log('=== NIGHT SHIFT DISTRIBUTION ANALYSIS ===');
+            console.log('=== SHIFT DISTRIBUTION ANALYSIS ===');
             
             const workers = schedule.workers;
-            const nightShiftCounts = {};
+            const shiftCounts = {};
             
+            // Initialize counts
             workers.forEach(worker => {
-                nightShiftCounts[worker] = { week1: 0, week2: 0, total: 0 };
+                shiftCounts[worker] = { 
+                    night: { week1: 0, week2: 0, total: 0 },
+                    morning: { week1: 0, week2: 0, total: 0 }
+                };
             });
             
+            // Count week 1
             schedule.week1.days.forEach((day, dayIndex) => {
                 if (day.shifts.night && workers.includes(day.shifts.night)) {
-                    nightShiftCounts[day.shifts.night].week1++;
-                    nightShiftCounts[day.shifts.night].total++;
+                    shiftCounts[day.shifts.night].night.week1++;
+                    shiftCounts[day.shifts.night].night.total++;
+                }
+                if (day.shifts.morning && workers.includes(day.shifts.morning)) {
+                    shiftCounts[day.shifts.morning].morning.week1++;
+                    shiftCounts[day.shifts.morning].morning.total++;
                 }
             });
             
+            // Count week 2
             schedule.week2.days.forEach((day, dayIndex) => {
                 if (day.shifts.night && workers.includes(day.shifts.night)) {
-                    nightShiftCounts[day.shifts.night].week2++;
-                    nightShiftCounts[day.shifts.night].total++;
+                    shiftCounts[day.shifts.night].night.week2++;
+                    shiftCounts[day.shifts.night].night.total++;
+                }
+                if (day.shifts.morning && workers.includes(day.shifts.morning)) {
+                    shiftCounts[day.shifts.morning].morning.week2++;
+                    shiftCounts[day.shifts.morning].morning.total++;
                 }
             });
             
+            // Log results
+            console.log('📊 NIGHT SHIFTS:');
             workers.forEach(worker => {
-                const counts = nightShiftCounts[worker];
+                const counts = shiftCounts[worker].night;
                 const week1Status = counts.week1 <= 2 ? '✅' : '❌';
                 const week2Status = counts.week2 <= 2 ? '✅' : '❌';
-                console.log(`${worker}: Week1=${counts.week1}${week1Status} Week2=${counts.week2}${week2Status} Total=${counts.total}`);
+                console.log(`  ${worker}: Week1=${counts.week1}${week1Status} Week2=${counts.week2}${week2Status} Total=${counts.total}`);
             });
             
-            const violations = workers.filter(worker => 
-                nightShiftCounts[worker].week1 > 2 || nightShiftCounts[worker].week2 > 2
+            console.log('🌅 MORNING SHIFTS:');
+            workers.forEach(worker => {
+                const counts = shiftCounts[worker].morning;
+                const week1Status = counts.week1 >= 1 ? '✅' : '❌';
+                const week2Status = counts.week2 >= 1 ? '✅' : '❌';
+                console.log(`  ${worker}: Week1=${counts.week1}${week1Status} Week2=${counts.week2}${week2Status} Total=${counts.total}`);
+            });
+            
+            // Check violations
+            const nightViolations = workers.filter(worker => 
+                shiftCounts[worker].night.week1 > 2 || shiftCounts[worker].night.week2 > 2
             );
             
-            if (violations.length > 0) {
-                console.log('⚠️ VIOLATIONS DETECTED:', violations);
+            const morningViolations = workers.filter(worker => 
+                shiftCounts[worker].morning.week1 === 0 || shiftCounts[worker].morning.week2 === 0
+            );
+            
+            if (nightViolations.length > 0) {
+                console.log('⚠️ NIGHT SHIFT VIOLATIONS:', nightViolations);
             } else {
                 console.log('✅ All workers have ≤2 night shifts per week');
             }
             
+            if (morningViolations.length > 0) {
+                console.log('⚠️ MISSING MORNING SHIFTS:', morningViolations);
+            } else {
+                console.log('✅ All workers have ≥1 morning shift per week');
+            }
+            
             console.log('=======================================');
-            return nightShiftCounts;
+            return shiftCounts;
+        }
         }
         function fillEmptyShifts(schedule, workers, workerStats) {
             console.log('🔍 ATTEMPTING TO FILL EMPTY SHIFTS...');
