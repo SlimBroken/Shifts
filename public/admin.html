@@ -1100,50 +1100,59 @@
             let html = `
                 <div style="margin: 30px 0;">
                     <h5 style="color: #495057; margin-bottom: 15px; font-size: 18px;">${title}</h5>
-                    <table style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #000; font-family: Arial, sans-serif;">
+                    <table style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #333; font-family: Arial, sans-serif; direction: rtl;">
                         <thead>
                             <tr>
+                                <th style="border: 1px solid #333; padding: 10px; text-align: center; background: #e8f4fd; font-weight: bold; min-width: 80px;">משמרת</th>
             `;
             
-            // Day headers with dates (right to left for Hebrew)
+            // Day headers - Sunday to Saturday (RTL)
             week.days.forEach((day, index) => {
-                html += `<th style="border: 1px solid #000; padding: 8px; text-align: center; background: #f5f5f5; font-weight: bold;">
-                    ${day.dateStr}<br>${day.dayShort}
+                const isPremium = day.dayShort === 'שישי' || day.dayShort === 'שבת';
+                const bgColor = isPremium ? '#fff3e0' : '#e8f4fd';
+                
+                html += `<th style="border: 1px solid #333; padding: 10px; text-align: center; background: ${bgColor}; font-weight: bold; min-width: 100px;">
+                    <div style="font-size: 14px; margin-bottom: 3px;">${day.dayShort}</div>
+                    <div style="font-size: 12px; color: #666;">${day.dateStr}</div>
                 </th>`;
             });
             
             html += '</tr></thead><tbody>';
             
-            // Shift rows
+            // Shift rows with Hebrew names and icons
             const shifts = [
-                { key: 'morning', label: 'בוקר' },
-                { key: 'evening', label: 'צהריים' },
-                { key: 'night', label: 'לילה' }
+                { key: 'morning', label: 'בוקר', time: '07-15', icon: '🌅' },
+                { key: 'evening', label: 'ערב', time: '15-23', icon: '🌆' },
+                { key: 'night', label: 'לילה', time: '23-07', icon: '🌙' }
             ];
             
-            shifts.forEach((shift) => {
+            shifts.forEach((shift, shiftIndex) => {
                 html += '<tr>';
+                
+                // Shift label column
+                html += `<td style="border: 1px solid #333; padding: 12px; text-align: center; background: #f8f9fa; font-weight: bold; font-size: 14px;">
+                    <div>${shift.icon} ${shift.label}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 2px;">${shift.time}</div>
+                </td>`;
                 
                 // Worker assignments for each day
                 week.days.forEach(day => {
                     const assignment = day.shifts[shift.key];
                     
-                    html += `<td style="border: 1px solid #000; padding: 12px; text-align: center; height: 40px;">
-                        ${assignment ? `<strong>${assignment}</strong>` : ''}
-                    </td>`;
+                    if (assignment) {
+                        const workerColor = getWorkerColor(assignment, workers);
+                        html += `<td style="border: 1px solid #333; padding: 12px; text-align: center; height: 50px; background: ${workerColor}; font-weight: bold; font-size: 14px;">
+                            ${assignment}
+                        </td>`;
+                    } else {
+                        html += `<td style="border: 1px solid #333; padding: 12px; text-align: center; height: 50px; background: #f8f9fa; font-style: italic; color: #999;">
+                            לא מוקצה
+                        </td>`;
+                    }
                 });
                 
                 html += '</tr>';
             });
-            
-            // Add shift labels row at the bottom
-            html += '<tr>';
-            shifts.forEach(shift => {
-                html += `<td style="border: 1px solid #000; padding: 8px; text-align: center; background: #f5f5f5; font-weight: bold;">
-                    ${shift.label}
-                </td>`;
-            });
-            html += '</tr>';
             
             html += '</tbody></table></div>';
             return html;
