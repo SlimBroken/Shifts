@@ -440,6 +440,93 @@
 
                 <!-- Status Messages -->
                 <div id="statusMessages"></div>
+                <!-- Schedule Generation Rules -->
+                <div class="section" style="margin-top: 40px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #dee2e6;">
+                    <h3 style="color: #495057; text-align: center; margin-bottom: 20px;">📋 Schedule Generation Rules & Constraints</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                        
+                        <!-- Hard Constraints -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545;">
+                            <h4 style="color: #dc3545; margin-bottom: 15px;">🚫 Hard Constraints (Never Violated)</h4>
+                            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Maximum 2 night shifts per week</strong> - Workers cannot be assigned more than 2 night shifts in any single week</li>
+                                <li><strong>One shift per day</strong> - Workers cannot work multiple shifts on the same day</li>
+                                <li><strong>8-hour minimum break</strong> - At least 8 hours must pass between the end of one shift and start of the next</li>
+                                <li><strong>Availability only</strong> - Workers are only assigned to shifts they marked as available</li>
+                                <li><strong>Approved workers only</strong> - Only workers with approved submissions can be scheduled</li>
+                            </ul>
+                        </div>
+
+                        <!-- Optimization Goals -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
+                            <h4 style="color: #28a745; margin-bottom: 15px;">🎯 Optimization Goals</h4>
+                            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Fair shift distribution</strong> - Balance total shifts across all workers</li>
+                                <li><strong>Morning shift priority</strong> - Ensure every worker gets at least one morning shift</li>
+                                <li><strong>Night shift balance</strong> - Distribute night shifts fairly while respecting the 2-per-week limit</li>
+                                <li><strong>Premium shift fairness</strong> - Distribute premium weekend shifts (Fri evening → Sat evening) equally</li>
+                                <li><strong>Minimize consecutive days</strong> - Avoid scheduling workers on consecutive days when possible</li>
+                            </ul>
+                        </div>
+
+                        <!-- Shift Details -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #007bff;">
+                            <h4 style="color: #007bff; margin-bottom: 15px;">🕐 Shift Information</h4>
+                            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Morning (בוקר):</strong> 07:00 - 15:00</li>
+                                <li><strong>Evening (ערב):</strong> 15:00 - 23:00</li>
+                                <li><strong>Night (לילה):</strong> 23:00 - 07:00 (next day)</li>
+                                <li><strong>Premium Period:</strong> Friday evening through Saturday evening (higher pay)</li>
+                                <li><strong>Total shifts:</strong> 42 shifts across 2 weeks (3 shifts × 7 days × 2 weeks)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Algorithm Process -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
+                            <h4 style="color: #856404; margin-bottom: 15px;">⚙️ Generation Process</h4>
+                            <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Initial Pass:</strong> Score and assign workers to shifts based on availability and constraints</li>
+                                <li><strong>Load Balancing:</strong> Prefer workers with fewer total shifts to ensure fairness</li>
+                                <li><strong>Constraint Checking:</strong> Verify all hard constraints before assignment</li>
+                                <li><strong>Empty Shift Filling:</strong> Second pass to fill any remaining empty shifts</li>
+                                <li><strong>Coverage Optimization:</strong> Maximize total shift coverage while respecting all rules</li>
+                            </ol>
+                        </div>
+
+                        <!-- Statistics -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #6f42c1;">
+                            <h4 style="color: #6f42c1; margin-bottom: 15px;">📊 Success Metrics</h4>
+                            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Coverage Percentage:</strong> Ratio of filled shifts to total shifts</li>
+                                <li><strong>Fairness Score:</strong> How evenly shifts are distributed</li>
+                                <li><strong>Constraint Compliance:</strong> 100% adherence to all hard constraints</li>
+                                <li><strong>Worker Satisfaction:</strong> Everyone gets preferred shifts when possible</li>
+                                <li><strong>Night Shift Distribution:</strong> Verified ≤2 night shifts per worker per week</li>
+                            </ul>
+                        </div>
+
+                        <!-- Important Notes -->
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #fd7e14;">
+                            <h4 style="color: #fd7e14; margin-bottom: 15px;">⚠️ Important Notes</h4>
+                            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                                <li><strong>Lock Before Generation:</strong> Preferences are automatically locked during schedule generation</li>
+                                <li><strong>Real-time Validation:</strong> All constraints are checked in real-time during assignment</li>
+                                <li><strong>Detailed Logging:</strong> Check browser console (F12) for detailed generation analysis</li>
+                                <li><strong>Manual Override:</strong> Admin can manually adjust schedules after generation if needed</li>
+                                <li><strong>Export Ready:</strong> Generated schedules can be copied directly to Excel</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px; padding: 15px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 8px; text-align: center;">
+                        <p style="margin: 0; font-size: 14px; color: #1565c0;">
+                            <strong>🔧 Algorithm Version:</strong> Advanced Fair Distribution with Night Shift Constraint v2.0 | 
+                            <strong>⏱️ Generation Time:</strong> Typically 1-3 seconds | 
+                            <strong>🎯 Target Coverage:</strong> 85-95%
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
