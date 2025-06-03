@@ -1,393 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Shift Schedule Manager</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
-        }
-
-        .password-section {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .password-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 15px;
-            justify-content: center;
-        }
-
-        .password-input input {
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 16px;
-            width: 250px;
-        }
-
-        .section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 1px solid #dee2e6;
-        }
-
-        .section h3 {
-            color: #495057;
-            margin-bottom: 15px;
-        }
-
-        .worker-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .worker-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .worker-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .worker-tag {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .worker-tag button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 2px 6px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .lock-status {
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .lock-status.locked {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .lock-status.unlocked {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .submissions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .submission-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #dee2e6;
-            transition: transform 0.2s ease;
-        }
-
-        .submission-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        .submission-card.approved {
-            border-color: #28a745;
-            background: #f8fff9;
-        }
-
-        .submission-card h4 {
-            color: #495057;
-            margin-bottom: 10px;
-        }
-
-        .alert {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            margin: 20px 0;
-            direction: rtl;
-            border: 2px solid #e3f2fd;
-        }
-
-        .schedule-table th {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white;
-            padding: 16px 12px;
-            border: none;
-            font-weight: bold;
-            text-align: center;
-            font-size: 14px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        .schedule-table th.premium {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white;
-            font-weight: bold;
-        }
-
-        .schedule-table td {
-            padding: 14px 10px;
-            border: 1px solid #e9ecef;
-            text-align: center;
-            font-size: 13px;
-            transition: all 0.2s ease;
-        }
-
-        .schedule-table tbody tr:hover {
-            background: rgba(79, 172, 254, 0.05);
-            transform: scale(1.01);
-        }
-
-        .schedule-table tbody tr:nth-child(even) {
-            background: rgba(248, 249, 250, 0.8);
-        }
-
-        .schedule-table .shift-label {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-weight: bold;
-            color: #495057;
-            border-right: 4px solid #4facfe;
-            font-size: 13px;
-        }
-
-        .schedule-table .assigned {
-            color: #000;
-            font-weight: bold;
-            border-radius: 6px;
-            margin: 2px;
-            padding: 8px 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .schedule-table .unassigned {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            font-style: italic;
-            border-radius: 6px;
-            margin: 2px;
-            padding: 8px 6px;
-        }
-
-        .schedule-table .premium {
-            position: relative;
-        }
-
-        .schedule-table .premium::after {
-            content: '💰';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            font-size: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🔧 Admin Dashboard</h1>
-            <p>Shift Schedule Manager</p>
-        </div>
-
-        <div class="content">
-            <!-- Login Section -->
-            <div id="loginSection" class="password-section">
-                <h3>🔒 Admin Access Required</h3>
-                <p>Enter the admin password to access the dashboard:</p>
-                <div class="password-input">
-                    <input type="password" id="adminPassword" placeholder="Enter admin password">
-                    <button class="btn" onclick="login()">Login</button>
-                </div>
-                <small>Default password: admin123</small>
-            </div>
-
-            <!-- Main Dashboard -->
-            <div id="dashboard" class="hidden">
-                <!-- Worker Management -->
-                <div class="section">
-                    <h3>👥 Worker Access Management</h3>
-                    <div class="worker-input">
-                        <input type="text" id="workerNameInput" placeholder="Enter worker name">
-                        <button class="btn btn-success" onclick="addWorker()">Add Worker</button>
-                        <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
-                    </div>
-                    <div id="workersList" class="worker-tags">
-                        <!-- Workers will be displayed here -->
-                    </div>
-                </div>
-
-                <!-- Preference Lock Control -->
-                <div class="section">
-                    <h3>🔒 Preference Submission Control</h3>
-                    <div id="lockStatus" class="lock-status">
-                        <!-- Lock status will be displayed here -->
-                    </div>
-                    <button class="btn" id="lockToggleBtn" onclick="toggleLock()">
-                        <!-- Button text will be set by JavaScript -->
-                    </button>
-                </div>
-
-                <!-- Worker Submissions -->
-                <div class="section">
-                    <h3>📝 Worker Submissions</h3>
-                    <div id="submissionsList" class="submissions-grid">
-                        <!-- Submissions will be displayed here -->
-                    </div>
-                </div>
-
-                <!-- Schedule Generation -->
-                <div class="section">
-                    <h3>📊 Generate Schedule</h3>
-                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
-                        🔄 Generate Optimized Schedule
-                    </button>
-                    <div id="scheduleOutput">
-                        <!-- Generated schedule will be displayed here -->
-                    </div>
-                </div>
-
-                <!-- Status Messages -->
-                <div id="statusMessages"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<script>
         const ADMIN_PASSWORD = 'admin123';
         let workerSubmissions = [];
         let serverConnected = false;
@@ -584,128 +195,128 @@
         }
 
         function generateOptimizedSchedule(submissions) {
-    const workers = submissions.map(s => ({
-        name: s.name,
-        preferences: s.preferences
-    }));
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
 
-    const schedule = {
-        week1: initializeWeek(0),
-        week2: initializeWeek(7),
-        workers: workers.map(w => w.name) // Store worker names for color assignment
-    };
+            const schedule = {
+                week1: initializeWeek(0),
+                week2: initializeWeek(7),
+                workers: workers.map(w => w.name) // Store worker names for color assignment
+            };
 
-    // Store schedule globally so helper functions can access it
-    window.currentScheduleBeingGenerated = schedule;
+            // Store schedule globally so helper functions can access it
+            window.currentScheduleBeingGenerated = schedule;
 
-    const workerStats = {};
-    workers.forEach(worker => {
-        workerStats[worker.name] = {
-            totalShifts: 0,
-            nightShifts: 0,
-            morningShifts: 0,
-            weekendShifts: 0,
-            premiumShifts: 0,
-            lastAssignedDay: -1,
-            lastShiftEnd: null
-        };
-    });
+            const workerStats = {};
+            workers.forEach(worker => {
+                workerStats[worker.name] = {
+                    totalShifts: 0,
+                    nightShifts: 0,
+                    morningShifts: 0,
+                    weekendShifts: 0,
+                    premiumShifts: 0,
+                    lastAssignedDay: -1,
+                    lastShiftEnd: null
+                };
+            });
 
-    let totalCoverage = 0;
-    let totalPossibleShifts = 0;
+            let totalCoverage = 0;
+            let totalPossibleShifts = 0;
 
-    // Define shift times for 8-hour break calculation
-    const shiftTimes = {
-        morning: { start: 7, end: 15 },
-        evening: { start: 15, end: 23 },
-        night: { start: 23, end: 7 }
-    };
+            // Define shift times for 8-hour break calculation
+            const shiftTimes = {
+                morning: { start: 7, end: 15 },
+                evening: { start: 15, end: 23 },
+                night: { start: 23, end: 7 }
+            };
 
-    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-        const weekStartDay = weekIndex * 7;
-        
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
-            
-            ['morning', 'evening', 'night'].forEach(shift => {
-                totalPossibleShifts++;
+            [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+                const weekStartDay = weekIndex * 7;
                 
-                const availableWorkers = workers.filter(worker => {
-                    // Check if worker is available for this shift
-                    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-                        return false;
-                    }
-
-                    // Check if worker already has a shift on this day
-                    const currentDayShifts = week.days[day].shifts;
-                    if (currentDayShifts.morning === worker.name || 
-                        currentDayShifts.evening === worker.name || 
-                        currentDayShifts.night === worker.name) {
-                        return false;
-                    }
-
-                    // Check 8-hour break rule
-                    const workerStat = workerStats[worker.name];
-                    if (workerStat.lastShiftEnd !== null) {
-                        const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-                        const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                for (let day = 0; day < 7; day++) {
+                    const globalDay = weekStartDay + day;
+                    
+                    ['morning', 'evening', 'night'].forEach(shift => {
+                        totalPossibleShifts++;
                         
-                        // Must have at least 8 hours break
-                        if (hoursSinceLastShift < 8) {
-                            return false;
+                        const availableWorkers = workers.filter(worker => {
+                            // Check if worker is available for this shift
+                            if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
+                                return false;
+                            }
+
+                            // Check if worker already has a shift on this day
+                            const currentDayShifts = week.days[day].shifts;
+                            if (currentDayShifts.morning === worker.name || 
+                                currentDayShifts.evening === worker.name || 
+                                currentDayShifts.night === worker.name) {
+                                return false;
+                            }
+
+                            // Check 8-hour break rule
+                            const workerStat = workerStats[worker.name];
+                            if (workerStat.lastShiftEnd !== null) {
+                                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                                
+                                // Must have at least 8 hours break
+                                if (hoursSinceLastShift < 8) {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+                        });
+
+                        if (availableWorkers.length > 0) {
+                            // Score workers for fair distribution
+                            const scoredWorkers = availableWorkers.map(worker => ({
+                                worker: worker,
+                                score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
+                            }))
+                            .filter(sw => sw.score > -500) // Filter out workers with impossible scores
+                            .sort((a, b) => b.score - a.score);
+
+                            if (scoredWorkers.length > 0) {
+                                const bestWorker = scoredWorkers[0].worker;
+                                week.days[day].shifts[shift] = bestWorker.name;
+
+                                // Update stats including last shift end time
+                                const stats = workerStats[bestWorker.name];
+                                stats.totalShifts++;
+                                if (shift === 'night') stats.nightShifts++;
+                                if (shift === 'morning') stats.morningShifts++;
+                                if (day === 5 || day === 6) stats.weekendShifts++;
+                                
+                                // Track premium weekend shifts
+                                if (isPremiumWeekendShift(day, shift)) {
+                                    stats.premiumShifts++;
+                                }
+                                
+                                stats.lastAssignedDay = globalDay;
+                                
+                                // Calculate and store when this shift ends
+                                stats.lastShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
+
+                                totalCoverage++;
+                            }
                         }
-                    }
-
-                    return true;
-                });
-
-                if (availableWorkers.length > 0) {
-                    // Score workers for fair distribution
-                    const scoredWorkers = availableWorkers.map(worker => ({
-                        worker: worker,
-                        score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
-                    }))
-                    .filter(sw => sw.score > -500) // Filter out workers with impossible scores
-                    .sort((a, b) => b.score - a.score);
-
-                    if (scoredWorkers.length > 0) {
-                        const bestWorker = scoredWorkers[0].worker;
-                        week.days[day].shifts[shift] = bestWorker.name;
-
-                        // Update stats including last shift end time
-                        const stats = workerStats[bestWorker.name];
-                        stats.totalShifts++;
-                        if (shift === 'night') stats.nightShifts++;
-                        if (shift === 'morning') stats.morningShifts++;
-                        if (day === 5 || day === 6) stats.weekendShifts++;
-                        
-                        // Track premium weekend shifts
-                        if (isPremiumWeekendShift(day, shift)) {
-                            stats.premiumShifts++;
-                        }
-                        
-                        stats.lastAssignedDay = globalDay;
-                        
-                        // Calculate and store when this shift ends
-                        stats.lastShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
-
-                        totalCoverage++;
-                    }
+                    });
                 }
             });
+
+            // Clean up global variable
+            delete window.currentScheduleBeingGenerated;
+
+            return {
+                ...schedule,
+                coverage: (totalCoverage / totalPossibleShifts) * 100,
+                totalAssignedShifts: totalCoverage,
+                totalPossibleShifts: totalPossibleShifts
+            };
         }
-    });
-
-    // Clean up global variable
-    delete window.currentScheduleBeingGenerated;
-
-    return {
-        ...schedule,
-        coverage: (totalCoverage / totalPossibleShifts) * 100,
-        totalAssignedShifts: totalCoverage,
-        totalPossibleShifts: totalPossibleShifts
-    };
-}
 
         function calculateShiftStartTime(globalDay, shift, shiftTimes) {
             const baseDate = new Date(2025, 5, 1); // June 1st, 2025
@@ -768,67 +379,67 @@
         }
 
         function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
-    let score = 100;
-    
-    // HARD CONSTRAINT: Maximum 2 night shifts per week
-    if (shift === 'night') {
-        const currentWeek = Math.floor(globalDay / 7);
-        const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
-        
-        // If worker already has 2 night shifts this week, completely exclude them
-        if (nightShiftsThisWeek >= 2) {
-            return -1000; // Impossible score - will never be selected
+            let score = 100;
+            
+            // HARD CONSTRAINT: Maximum 2 night shifts per week
+            if (shift === 'night') {
+                const currentWeek = Math.floor(globalDay / 7);
+                const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
+                
+                // If worker already has 2 night shifts this week, completely exclude them
+                if (nightShiftsThisWeek >= 2) {
+                    return -1000; // Impossible score - will never be selected
+                }
+                
+                // If worker has 1 night shift this week, heavily penalize to prefer others first
+                if (nightShiftsThisWeek === 1) {
+                    score -= 500; // Very heavy penalty but still possible if no other options
+                }
+                
+                // Prefer workers with fewer night shifts overall
+                score -= stats.nightShifts * 20;
+                
+                // Bonus for workers who haven't done night shifts yet
+                if (stats.nightShifts === 0) {
+                    score += 15;
+                }
+            }
+            
+            // Load balancing - prefer workers with fewer total shifts
+            score -= stats.totalShifts * 5;
+            
+            // Morning shift priority - ensure everyone gets at least one morning shift
+            if (shift === 'morning') {
+                if (stats.morningShifts === 0) {
+                    score += 40; // High bonus for workers with no morning shifts yet
+                } else {
+                    score -= stats.morningShifts * 8; // Reduce priority for workers with many morning shifts
+                }
+            }
+            
+            // Premium weekend shifts distribution (Friday evening to Saturday evening)
+            const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
+            if (isPremiumShift) {
+                // Strongly prefer workers with fewer premium shifts for fair distribution
+                score -= stats.premiumShifts * 15;
+                // Bonus for workers who haven't had premium shifts yet
+                if (stats.premiumShifts === 0) {
+                    score += 25;
+                }
+            }
+            
+            // Regular weekend consideration
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                score -= stats.weekendShifts * 8;
+            }
+            
+            // Avoid consecutive days
+            if (stats.lastAssignedDay === globalDay - 1) {
+                score -= 20;
+            }
+            
+            return score + Math.random() * 5;
         }
-        
-        // If worker has 1 night shift this week, heavily penalize to prefer others first
-        if (nightShiftsThisWeek === 1) {
-            score -= 500; // Very heavy penalty but still possible if no other options
-        }
-        
-        // Prefer workers with fewer night shifts overall
-        score -= stats.nightShifts * 20;
-        
-        // Bonus for workers who haven't done night shifts yet
-        if (stats.nightShifts === 0) {
-            score += 15;
-        }
-    }
-    
-    // Load balancing - prefer workers with fewer total shifts
-    score -= stats.totalShifts * 5;
-    
-    // Morning shift priority - ensure everyone gets at least one morning shift
-    if (shift === 'morning') {
-        if (stats.morningShifts === 0) {
-            score += 40; // High bonus for workers with no morning shifts yet
-        } else {
-            score -= stats.morningShifts * 8; // Reduce priority for workers with many morning shifts
-        }
-    }
-    
-    // Premium weekend shifts distribution (Friday evening to Saturday evening)
-    const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
-    if (isPremiumShift) {
-        // Strongly prefer workers with fewer premium shifts for fair distribution
-        score -= stats.premiumShifts * 15;
-        // Bonus for workers who haven't had premium shifts yet
-        if (stats.premiumShifts === 0) {
-            score += 25;
-        }
-    }
-    
-    // Regular weekend consideration
-    if (dayOfWeek === 5 || dayOfWeek === 6) {
-        score -= stats.weekendShifts * 8;
-    }
-    
-    // Avoid consecutive days
-    if (stats.lastAssignedDay === globalDay - 1) {
-        score -= 20;
-    }
-    
-    return score + Math.random() * 5;
-}
 
         function isPremiumWeekendShift(dayOfWeek, shift) {
             // Premium shifts: Friday evening, Friday night, Saturday morning, Saturday evening
@@ -841,7 +452,7 @@
             }
             return false;
         }
-/ ADD THE NEW FUNCTION HERE:
+
         function countNightShiftsInWeek(workerName, weekNumber) {
             // Get the appropriate week schedule
             let week;
@@ -863,7 +474,6 @@
             return nightShiftCount;
         }
 
-        // ADD THE LOGGING FUNCTION HERE TOO:
         function logNightShiftDistribution(schedule) {
             console.log('=== NIGHT SHIFT DISTRIBUTION ANALYSIS ===');
             
@@ -914,7 +524,6 @@
             return nightShiftCounts;
         }
 
-        function generateOptimizedSchedule(submissions) {
         function displaySchedule(schedule) {
             let html = `
                 <div style="margin-top: 30px;">
@@ -953,7 +562,10 @@
                 });
                 html += '</div></div>';
             }
+
+            // Log night shift distribution for debugging
             logNightShiftDistribution(schedule);
+
             document.getElementById('scheduleOutput').innerHTML = html;
             
             // Store for Excel export
@@ -1288,5 +900,3 @@
             }, 5000);
         }
     </script>
-</body>
-</html>
