@@ -1174,27 +1174,6 @@
             html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
 
             // Add color legend
-            if (schedule.workers && schedule.workers.length > 0) {
-                html += `
-                <div style="margin: 25px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 2px solid #dee2e6;">
-                    <h5 style="color: #495057; margin-bottom: 15px; text-align: center;">🎨 מקרא צבעים לעובדים</h5>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px;">
-                `;
-                schedule.workers.forEach(worker => {
-                    const color = getWorkerColor(worker, schedule.workers);
-                    html += `
-                        <div style="background: linear-gradient(135deg, ${color} 0%, ${adjustBrightness(color, -10)} 100%); 
-                                    color: #000; padding: 12px 16px; border-radius: 8px; font-weight: bold; 
-                                    text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-                                    border: 1px solid rgba(0,0,0,0.1); transition: transform 0.2s ease;"
-                             onmouseover="this.style.transform='scale(1.05)'" 
-                             onmouseout="this.style.transform='scale(1)'">
-                            ${worker}
-                        </div>
-                    `;
-                });
-                html += '</div></div>';
-            }
 
             // Log shift distribution for debugging
             logShiftDistribution(schedule);
