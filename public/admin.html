@@ -264,7 +264,68 @@
                         <!-- Workers will be displayed here -->
                     </div>
                 </div>
-
+                <!-- Schedule Period Management -->
+<div class="section">
+    <h3>📅 Schedule Period Management</h3>
+    
+    <!-- Current Period Display -->
+    <div id="currentPeriodDisplay" class="lock-status">
+        <div style="text-align: center;">
+            <strong>❌ No Active Period</strong><br>
+            <small>Workers cannot submit preferences until a new period is opened</small>
+        </div>
+    </div>
+    
+    <!-- New Period Creation -->
+    <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px solid #dee2e6;">
+        <h4 style="margin-bottom: 15px; color: #495057;">📅 Open New 2-Week Period</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end; margin-bottom: 15px;">
+            <div>
+                <label for="newPeriodStart" style="display: block; margin-bottom: 5px; font-weight: 600;">Start Date (Sunday):</label>
+                <input type="date" id="newPeriodStart" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px; width: 100%;">
+            </div>
+            
+            <div>
+                <label for="newPeriodEnd" style="display: block; margin-bottom: 5px; font-weight: 600;">End Date (Saturday):</label>
+                <input type="date" id="newPeriodEnd" readonly style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px; background: #f8f9fa; width: 100%;">
+            </div>
+            
+            <div>
+                <label for="periodLabel" style="display: block; margin-bottom: 5px; font-weight: 600;">Period Label:</label>
+                <input type="text" id="periodLabel" placeholder="e.g., June 15-28, 2025" style="padding: 8px; border: 1px solid #ced4da; border-radius: 4px; width: 100%;">
+            </div>
+            
+            <button class="btn btn-success" onclick="openNewPeriod()" style="height: 40px;">
+                🚀 Open New Period
+            </button>
+        </div>
+        
+        <!-- Quick Period Buttons -->
+        <div style="margin-top: 15px;">
+            <h5 style="margin-bottom: 10px; color: #666;">Quick Actions:</h5>
+            <button class="btn" onclick="setNextTwoWeeks()" style="margin-right: 10px;">📅 Next 2 Weeks</button>
+            <button class="btn" onclick="setSpecificDate('2025-06-15')" style="margin-right: 10px;">📅 June 15-28</button>
+            <button class="btn" onclick="setSpecificDate('2025-07-01')" style="margin-right: 10px;">📅 July 1-14</button>
+        </div>
+    </div>
+    
+    <!-- Advanced Options -->
+    <details style="margin-top: 15px;">
+        <summary style="cursor: pointer; font-weight: 600; color: #495057;">⚙️ Advanced Options</summary>
+        <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+            <label>
+                <input type="checkbox" id="archiveOldSubmissions" checked>
+                Archive old worker submissions when opening new period
+            </label>
+            <br><br>
+            <label>
+                <input type="checkbox" id="clearOldSchedules" checked>
+                Clear previously generated schedules
+            </label>
+        </div>
+    </details>
+</div>
                 <!-- Preference Lock Control -->
                 <div class="section">
                     <h3>🔒 Preference Submission Control</h3>
@@ -422,6 +483,181 @@
             }
         }
 
+        // Period Management Functions
+function initializePeriodManagement() {
+    document.getElementById('newPeriodStart').addEventListener('change', function() {
+        const startDate = new Date(this.value);
+        if (startDate) {
+            const dayOfWeek = startDate.getDay();
+            if (dayOfWeek !== 0) {
+                showAlert('⚠️ Start date should be a Sunday for proper week alignment.', 'warning');
+            }
+            
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 13);
+            
+            document.getElementById('newPeriodEnd').value = endDate.toISOString().split('T')[0];
+            
+            const startStr = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            const endStr = endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('periodLabel').value = `${startStr} - ${endStr}`;
+        }
+    });
+    
+    updateCurrentPeriodDisplay();
+}
+
+function updateCurrentPeriodDisplay() {
+    const currentPeriod = getCurrentPeriodConfig();
+    const displayDiv = document.getElementById('currentPeriodDisplay');
+    
+    if (currentPeriod && currentPeriod.isActive) {
+        displayDiv.className = 'lock-status unlocked';
+        displayDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>📅 Current Active Period:</strong> ${currentPeriod.label}<br>
+                    <small>📊 ${currentPeriod.startDate} to ${currentPeriod.endDate}</small>
+                </div>
+                <div>
+                    <button class="btn btn-danger" onclick="closePeriod()" style="padding: 8px 16px;">
+                        🔒 Close Period
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        displayDiv.className = 'lock-status locked';
+        displayDiv.innerHTML = `
+            <div style="text-align: center;">
+                <strong>❌ No Active Period</strong><br>
+                <small>Workers cannot submit preferences until a new period is opened</small>
+            </div>
+        `;
+    }
+}
+
+function getCurrentPeriodConfig() {
+    const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    return config.currentPeriod || null;
+}
+
+function setNextTwoWeeks() {
+    const today = new Date();
+    const nextSunday = new Date(today);
+    
+    const daysUntilSunday = (7 - today.getDay()) % 7;
+    nextSunday.setDate(today.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
+    
+    document.getElementById('newPeriodStart').value = nextSunday.toISOString().split('T')[0];
+    document.getElementById('newPeriodStart').dispatchEvent(new Event('change'));
+}
+
+function setSpecificDate(dateString) {
+    document.getElementById('newPeriodStart').value = dateString;
+    document.getElementById('newPeriodStart').dispatchEvent(new Event('change'));
+}
+
+async function openNewPeriod() {
+    const startDate = document.getElementById('newPeriodStart').value;
+    const endDate = document.getElementById('newPeriodEnd').value;
+    const label = document.getElementById('periodLabel').value;
+    
+    if (!startDate || !endDate || !label) {
+        showAlert('Please fill in all period details.', 'warning');
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff !== 13) {
+        showAlert('Period must be exactly 14 days (2 weeks).', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Open new period: ${label}?\n\nThis will:\n- Archive current submissions\n- Clear existing schedules\n- Allow workers to submit new preferences`)) {
+        return;
+    }
+    
+    const newPeriod = {
+        startDate: startDate,
+        endDate: endDate,
+        label: label,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        createdBy: 'Admin'
+    };
+    
+    let currentData = {
+        shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: false,
+        lockTimestamp: '',
+        scheduleConfig: {
+            currentPeriod: newPeriod,
+            history: JSON.parse(localStorage.getItem('scheduleConfig') || '{}').history || []
+        }
+    };
+    
+    if (document.getElementById('archiveOldSubmissions').checked && currentData.shiftSubmissions.length > 0) {
+        const archiveEntry = {
+            archivedAt: new Date().toISOString(),
+            periodLabel: getCurrentPeriodConfig()?.label || 'Previous Period',
+            submissions: [...currentData.shiftSubmissions]
+        };
+        currentData.scheduleConfig.history.unshift(archiveEntry);
+        
+        if (currentData.scheduleConfig.history.length > 10) {
+            currentData.scheduleConfig.history = currentData.scheduleConfig.history.slice(0, 10);
+        }
+        
+        currentData.shiftSubmissions = [];
+    }
+    
+    if (document.getElementById('clearOldSchedules').checked) {
+        document.getElementById('scheduleOutput').innerHTML = '';
+    }
+    
+    localStorage.setItem('scheduleConfig', JSON.stringify(currentData.scheduleConfig));
+    localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
+    localStorage.setItem('preferencesLocked', 'false');
+    localStorage.setItem('lockTimestamp', '');
+    
+    await saveData();
+    
+    updateCurrentPeriodDisplay();
+    updateDisplay();
+    
+    document.getElementById('newPeriodStart').value = '';
+    document.getElementById('newPeriodEnd').value = '';
+    document.getElementById('periodLabel').value = '';
+    
+    showAlert(`✅ New period opened: ${label}. Workers can now submit their preferences!`, 'success');
+}
+
+function closePeriod() {
+    if (!confirm('Close the current period?\n\nThis will prevent workers from submitting new preferences.')) {
+        return;
+    }
+    
+    const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    if (config.currentPeriod) {
+        config.currentPeriod.isActive = false;
+        config.currentPeriod.closedAt = new Date().toISOString();
+        localStorage.setItem('scheduleConfig', JSON.stringify(config));
+        
+        localStorage.setItem('preferencesLocked', 'true');
+        localStorage.setItem('lockTimestamp', Date.now().toString());
+        
+        saveData();
+        updateCurrentPeriodDisplay();
+        updateDisplay();
+        
+        showAlert('Period closed. Workers can no longer submit preferences.', 'info');
+    }
+}
         async function loadData() {
             if (serverConnected) {
                 try {
@@ -444,32 +680,34 @@
 
             workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
             updateDisplay();
+            initializePeriodManagement();
         }
 
         async function saveData() {
-            const data = {
-                shiftSubmissions: workerSubmissions,
-                approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                lastUpdate: Date.now()
-            };
+    const data = {
+        shiftSubmissions: workerSubmissions,
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+        scheduleConfig: JSON.parse(localStorage.getItem('scheduleConfig') || '{}'),
+        lastUpdate: Date.now()
+    };
 
-            localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
-            localStorage.setItem('lastUpdate', Date.now().toString());
+    localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+    localStorage.setItem('lastUpdate', Date.now().toString());
 
-            if (serverConnected) {
-                try {
-                    await fetch('/api/data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                } catch (error) {
-                    console.error('Failed to save to server');
-                }
-            }
+    if (serverConnected) {
+        try {
+            await fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch (error) {
+            console.error('Failed to save to server');
         }
+    }
+}
 
         function addWorker() {
             const input = document.getElementById('workerNameInput');
