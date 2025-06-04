@@ -659,29 +659,33 @@ function closePeriod() {
     }
 }
         async function loadData() {
-            if (serverConnected) {
-                try {
-                    const response = await fetch('/api/data');
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        const data = result.data;
-                        workerSubmissions = data.shiftSubmissions || [];
-                        
-                        localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
-                        localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                        localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                        localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                    }
-                } catch (error) {
-                    console.error('Failed to load from server');
-                }
+    if (serverConnected) {
+        try {
+            const response = await fetch('/api/data');
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                workerSubmissions = data.shiftSubmissions || [];
+                
+                // Update local storage with ALL data including scheduleConfig
+                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
             }
-
-            workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
-            updateDisplay();
-            initializePeriodManagement();
+        } catch (error) {
+            console.error('Failed to load from server');
         }
+    }
+
+    // Load from local storage as fallback
+    workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+    
+    updateDisplay();
+    initializePeriodManagement(); // Add this line
+}
 
         async function saveData() {
     const data = {
