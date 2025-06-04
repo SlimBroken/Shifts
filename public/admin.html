@@ -1698,33 +1698,40 @@ html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
     });
 }
 
-        function generateWeekExcelFormat(week) {
-            let text = '';
-            
-            for (let i = week.days.length - 1; i >= 0; i--) {
-                const day = week.days[i];
-                text += `${day.dayShort} ${day.dateStr}\t`;
-            }
-            text += 'משמרת\n';
-            
-            const shifts = [
-                { key: 'morning', label: 'בוקר (07:00-15:00)' },
-                { key: 'evening', label: 'ערב (15:00-23:00)' },
-                { key: 'night', label: 'לילה (23:00-07:00)' }
-            ];
-            
-            shifts.forEach(shift => {
-                for (let i = week.days.length - 1; i >= 0; i--) {
-                    const day = week.days[i];
-                    const assignment = day.shifts[shift.key];
-                    text += `${assignment || 'לא מוקצה'}\t`;
-                }
-                
-                text += `${shift.label}\n`;
-            });
-            
-            return text;
+function generateWeekExcelFormat(week) {
+    let text = '';
+    
+    // Header row - shift names first, then days (left to right)
+    text += 'משמרת\t';
+    for (let i = 0; i < week.days.length; i++) {
+        const day = week.days[i];
+        text += `${day.dayShort} ${day.dateStr}\t`;
+    }
+    text += '\n';
+    
+    // Shift rows (left to right)
+    const shifts = [
+        { key: 'morning', label: 'בוקר (07:00-15:00)' },
+        { key: 'evening', label: 'ערב (15:00-23:00)' },
+        { key: 'night', label: 'לילה (23:00-07:00)' }
+    ];
+    
+    shifts.forEach(shift => {
+        // Shift name first (leftmost column)
+        text += `${shift.label}\t`;
+        
+        // Then worker assignments for each day (left to right)
+        for (let i = 0; i < week.days.length; i++) {
+            const day = week.days[i];
+            const assignment = day.shifts[shift.key];
+            text += `${assignment || 'לא מוקצה'}\t`;
         }
+        
+        text += '\n';
+    });
+    
+    return text;
+}
 
         function updateDisplay() {
             updateWorkersList();
