@@ -694,14 +694,50 @@
                 }
             }
 
-            // Check 8-hour break rule
+            // ENHANCED 8-hour break rule - check against ALL previous shifts
             const workerStat = workerStats[worker.name];
-            if (workerStat && workerStat.lastShiftEnd !== null) {
+            if (workerStat) {
                 const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
                 
-                if (hoursSinceLastShift < 8) {
-                    return false;
+                // Check against the worker's last recorded shift end
+                if (workerStat.lastShiftEnd !== null) {
+                    const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                    
+                    if (hoursSinceLastShift < 8) {
+                        console.log(`❌ 8-hour violation: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                        return false;
+                    }
+                }
+
+                // ADDITIONAL CHECK: Look for any shifts in the previous day that might conflict
+                if (globalDay > 0) {
+                    const previousGlobalDay = globalDay - 1;
+                    const previousWeekIndex = Math.floor(previousGlobalDay / 7);
+                    const previousDayIndex = previousGlobalDay % 7;
+                    
+                    let previousWeek;
+                    if (previousWeekIndex === 0) {
+                        previousWeek = window.currentScheduleBeingGenerated?.week1;
+                    } else if (previousWeekIndex === 1) {
+                        previousWeek = window.currentScheduleBeingGenerated?.week2;
+                    }
+                    
+                    if (previousWeek && previousWeek.days[previousDayIndex]) {
+                        const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
+                        
+                        // Check if worker had any shift yesterday
+                        ['morning', 'evening', 'night'].forEach(prevShift => {
+                            if (previousDayShifts[prevShift] === worker.name) {
+                                const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
+                                const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
+                                
+                                if (hoursGap < 8) {
+                                    console.log(`❌ Consecutive shift violation: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
+                                    return false;
+                                }
+                            }
+                        });
+                    }
                 }
             }
 
@@ -722,7 +758,14 @@
             }
             
             stats.lastAssignedDay = globalDay;
-            stats.lastShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
+            
+            // CRITICAL: Always update the last shift end time
+            const shiftEndTime = calculateShiftEndTime(globalDay, shift, shiftTimes);
+            stats.lastShiftEnd = shiftEndTime;
+            
+            // Log for debugging
+            const endDate = new Date(shiftEndTime);
+            console.log(`✅ Assigned ${worker.name} to ${shift} on day ${globalDay}. Shift ends: ${endDate.toLocaleString()}`);
         }
 
         function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
@@ -798,7 +841,8 @@
         }
 
         function calculateShiftStartTime(globalDay, shift, shiftTimes) {
-            const baseDate = new Date(2025, 5, 1);
+            // Base date: June 1st, 2025 (Sunday)
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed
             const shiftDate = new Date(baseDate);
             shiftDate.setDate(baseDate.getDate() + globalDay);
             
@@ -809,16 +853,19 @@
         }
 
         function calculateShiftEndTime(globalDay, shift, shiftTimes) {
-            const baseDate = new Date(2025, 5, 1);
+            // Base date: June 1st, 2025 (Sunday)
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed
             const shiftDate = new Date(baseDate);
             shiftDate.setDate(baseDate.getDate() + globalDay);
             
             const endHour = shiftTimes[shift].end;
             
             if (shift === 'night') {
+                // Night shift ends the next day at 07:00
                 shiftDate.setDate(shiftDate.getDate() + 1);
                 shiftDate.setHours(endHour, 0, 0, 0);
             } else {
+                // Morning/Evening shifts end same day
                 shiftDate.setHours(endHour, 0, 0, 0);
             }
             
