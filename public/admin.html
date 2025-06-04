@@ -362,7 +362,7 @@
                 <!-- Schedule Generation Rules -->
                 <div class="section" style="margin-top: 40px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #dee2e6;">
                     <h3 style="color: #495057; text-align: center; margin-bottom: 20px;">📋 Schedule Generation Rules & Constraints</h3>
-                    
+                    <div id="scheduleRulesPeriodStatus" style="margin-bottom: 20px; padding: 15px; border-radius: 8px; text-align: center;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
                         <!-- Hard Constraints -->
                         <div style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545;">
@@ -482,7 +482,29 @@
                 document.getElementById('adminPassword').value = '';
             }
         }
-
+function updateScheduleRulesPeriodStatus() {
+    const statusDiv = document.getElementById('scheduleRulesPeriodStatus');
+    if (!statusDiv) return;
+    
+    const periodConfig = getCurrentPeriodConfig();
+    
+    if (periodConfig && periodConfig.isActive) {
+        statusDiv.innerHTML = `
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px;">
+                <strong style="color: #155724;">📅 Active Period: ${periodConfig.label}</strong><br>
+                <small style="color: #155724;">Schedules will be generated for ${periodConfig.startDate} to ${periodConfig.endDate}</small>
+            </div>
+        `;
+    } else {
+        statusDiv.innerHTML = `
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px;">
+                <strong style="color: #721c24;">❌ No Active Period</strong><br>
+                <small style="color: #721c24;">Please open a new 2-week period before generating schedules</small>
+            </div>
+        `;
+    }
+}
+        
         // Period Management Functions
 function initializePeriodManagement() {
     document.getElementById('newPeriodStart').addEventListener('change', function() {
@@ -535,6 +557,7 @@ function updateCurrentPeriodDisplay() {
             </div>
         `;
     }
+    updateScheduleRulesPeriodStatus();
 }
 
 function getCurrentPeriodConfig() {
@@ -790,30 +813,48 @@ function closePeriod() {
         }
 
         function generateSchedule() {
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
+    // Check if we have an active period
+    const periodConfig = getCurrentPeriodConfig();
+    if (!periodConfig || !periodConfig.isActive) {
+        showAlert('❌ Cannot generate schedule: No active period found. Please open a new 2-week period first.', 'warning');
+        return;
+    }
+    
+    const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+    
+    if (approvedSubmissions.length === 0) {
+        showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
+        return;
+    }
 
-            localStorage.setItem('preferencesLocked', 'true');
-            localStorage.setItem('lockTimestamp', Date.now().toString());
-            updateDisplay();
+    // Lock preferences during generation
+    localStorage.setItem('preferencesLocked', 'true');
+    localStorage.setItem('lockTimestamp', Date.now().toString());
+    updateDisplay();
 
-            const schedule = generateOptimizedSchedule(approvedSubmissions);
-            displaySchedule(schedule);
-            
-            showAlert('Schedule generated successfully!', 'success');
-        }
+    const schedule = generateOptimizedSchedule(approvedSubmissions);
+    
+    if (schedule) {
+        displaySchedule(schedule);
+        showAlert(`✅ Schedule generated successfully for ${periodConfig.label}!`, 'success');
+    }
+}
 
         function generateOptimizedSchedule(submissions) {
-            console.log('🚀 STARTING TRIPLE-PASS SCHEDULE GENERATION...');
-            
-            const workers = submissions.map(s => ({
-                name: s.name,
-                preferences: s.preferences
-            }));
+    // Validate that we have an active period
+    const periodConfig = getCurrentPeriodConfig();
+    if (!periodConfig || !periodConfig.isActive) {
+        showAlert('❌ Cannot generate schedule: No active period found. Please open a new period first.', 'danger');
+        return null;
+    }
+    
+    console.log('📅 Generating schedule for period:', periodConfig.label);
+    console.log('📊 Period dates:', periodConfig.startDate, 'to', periodConfig.endDate);
+    
+    const workers = submissions.map(s => ({
+        name: s.name,
+        preferences: s.preferences
+    }));
 
             const schedule = {
                 week1: initializeWeek(0),
@@ -1114,29 +1155,39 @@ function closePeriod() {
             return shiftDate.getTime();
         }
 
-        function initializeWeek(startDay) {
-            const week = { days: [] };
-            const startDate = new Date(2025, 5, 1 + startDay);
-            
-            const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-            
-            for (let i = 0; i < 7; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                
-                week.days.push({
-                    dayShort: hebrewDays[currentDate.getDay()],
-                    dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
-                    shifts: {
-                        morning: null,
-                        evening: null,
-                        night: null
-                    }
-                });
+        function initializeWeek(globalStartDay) {
+    const week = { days: [] };
+    
+    // Get the actual start date from current period
+    const periodConfig = getCurrentPeriodConfig();
+    if (!periodConfig) {
+        console.error('No active period found for schedule generation');
+        return week;
+    }
+    
+    const periodStartDate = new Date(periodConfig.startDate);
+    const startDate = new Date(periodStartDate);
+    startDate.setDate(periodStartDate.getDate() + globalStartDay);
+    
+    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        week.days.push({
+            dayShort: hebrewDays[currentDate.getDay()],
+            dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            shifts: {
+                morning: null,
+                evening: null,
+                night: null
             }
-            
-            return week;
-        }
+        });
+    }
+    
+    return week;
+}
 
         function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
             let score = 100;
@@ -1408,13 +1459,12 @@ function closePeriod() {
             `;
 
             // Week 1
-            html += createWeekTable('שבוע 1 (1-7 ביוני, 2025)', schedule.week1, schedule.workers);
-            html += createWeekStats('שבוע 1', schedule.week1, schedule.workers);
+html += createWeekTable(1, schedule.week1, schedule.workers);
+html += createWeekStats('שבוע 1', schedule.week1, schedule.workers);
             
-            // Week 2
-            html += createWeekTable('שבוע 2 (8-14 ביוני, 2025)', schedule.week2, schedule.workers);
-            html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
-
+           // Week 2
+html += createWeekTable(2, schedule.week2, schedule.workers);
+html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
             // Add color legend
 
             // Log shift distribution for debugging
@@ -1545,7 +1595,21 @@ function closePeriod() {
             return colors[workerIndex % colors.length];
         }
 
-        function createWeekTable(title, week, workers = []) {
+        function createWeekTable(weekNumber, week, workers = []) {
+    // Generate dynamic title based on actual dates
+    const periodConfig = getCurrentPeriodConfig();
+    let title = `Week ${weekNumber}`;
+    
+    if (periodConfig && week.days && week.days.length > 0) {
+        const firstDay = week.days[0];
+        const lastDay = week.days[week.days.length - 1];
+        
+        // Get the actual year from the period
+        const periodStartDate = new Date(periodConfig.startDate);
+        const year = periodStartDate.getFullYear();
+        
+        title = `שבוע ${weekNumber} (${firstDay.dateStr} - ${lastDay.dateStr}, ${year})`;
+    }
             let html = `
                 <div style="margin: 30px 0;">
                     <h5 style="color: #495057; margin-bottom: 15px; font-size: 18px;">${title}</h5>
@@ -1608,27 +1672,31 @@ function closePeriod() {
         }
 
         function copyScheduleToExcel() {
-            if (!window.currentSchedule) {
-                showAlert('No schedule to copy!', 'warning');
-                return;
-            }
+    if (!window.currentSchedule) {
+        showAlert('No schedule to copy!', 'warning');
+        return;
+    }
 
-            let excelText = `לוח משמרות - נוצר ${new Date().toLocaleDateString('he-IL')}\n`;
-            excelText += `כיסוי: ${window.currentSchedule.coverage.toFixed(1)}%\n\n`;
-            
-            excelText += 'שבוע 1 (1-7 ביוני, 2025)\n';
-            excelText += generateWeekExcelFormat(window.currentSchedule.week1);
-            excelText += '\n';
-            
-            excelText += 'שבוע 2 (8-14 ביוני, 2025)\n';
-            excelText += generateWeekExcelFormat(window.currentSchedule.week2);
+    const periodConfig = getCurrentPeriodConfig();
+    const periodLabel = periodConfig ? periodConfig.label : 'Unknown Period';
+    
+    let excelText = `לוח משמרות - ${periodLabel}\n`;
+    excelText += `נוצר ב${new Date().toLocaleDateString('he-IL')}\n`;
+    excelText += `כיסוי: ${window.currentSchedule.coverage.toFixed(1)}%\n\n`;
+    
+    excelText += 'שבוע 1\n';
+    excelText += generateWeekExcelFormat(window.currentSchedule.week1);
+    excelText += '\n';
+    
+    excelText += 'שבוע 2\n';
+    excelText += generateWeekExcelFormat(window.currentSchedule.week2);
 
-            navigator.clipboard.writeText(excelText).then(() => {
-                showAlert('Schedule copied to clipboard! You can paste it directly into Excel.', 'success');
-            }).catch(() => {
-                showAlert('Copy failed. Please try again.', 'warning');
-            });
-        }
+    navigator.clipboard.writeText(excelText).then(() => {
+        showAlert('Schedule copied to clipboard! You can paste it directly into Excel.', 'success');
+    }).catch(() => {
+        showAlert('Copy failed. Please try again.', 'warning');
+    });
+}
 
         function generateWeekExcelFormat(week) {
             let text = '';
