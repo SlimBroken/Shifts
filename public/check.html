@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worker Access Verification</title>
+    <title>Maccabi SOC - Worker Access Verification</title>
     <style>
         * {
             margin: 0;
@@ -12,150 +12,344 @@
         }
 
         body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #2c3e50;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e3a8a 50%, #2563eb 75%, #1e40af 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Security Network Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(30, 58, 138, 0.1) 0%, transparent 50%);
+            background-size: 100% 100%;
+            z-index: -1;
+        }
+
+        .security-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(59, 130, 246, 0.1) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(59, 130, 246, 0.1) 50%, transparent 51%);
+            background-size: 100px 100px;
+            z-index: -1;
+            opacity: 0.3;
+        }
 
         .container {
             max-width: 500px;
             width: 100%;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(59, 130, 246, 0.2);
             overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(59, 130, 246, 0.3);
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
             color: white;
-            padding: 30px;
+            padding: 40px 30px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+            50% { transform: rotate(180deg) scale(1.1); opacity: 0.2; }
+        }
+
+        .maccabi-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        .maccabi-shield {
+            width: 50px;
+            height: 55px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            clip-path: polygon(50% 0%, 0% 25%, 0% 75%, 50% 100%, 100% 75%, 100% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            letter-spacing: 1px;
         }
 
         .header h1 {
-            font-size: 2.5em;
+            font-size: 2.2em;
             margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .soc-subtitle {
+            font-size: 0.9em;
+            margin-top: 5px;
+            color: #bfdbfe;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
 
         .content {
             padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .server-status {
+            background: rgba(30, 58, 138, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 12px;
             text-align: center;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .server-status.connected {
+            background: rgba(22, 163, 74, 0.3);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #bbf7d0;
+        }
+
+        .server-status.disconnected {
+            background: rgba(220, 38, 38, 0.3);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fecaca;
+        }
+
+        .security-notice {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            color: #fef3c7;
+            backdrop-filter: blur(10px);
+        }
+
+        .security-notice strong {
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .instructions {
+            background: linear-gradient(135deg, rgba(219, 234, 254, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            color: #dbeafe;
+            backdrop-filter: blur(10px);
+        }
+
+        .instructions h3 {
+            color: #93c5fd;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instructions ul {
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            padding-left: 5px;
         }
 
         .form-group {
             margin-bottom: 25px;
-            text-align: left;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: #e2e8f0;
             font-size: 16px;
         }
 
         input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            padding: 15px 20px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
             font-size: 18px;
-            transition: border-color 0.3s ease;
+            background: rgba(30, 58, 138, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
         }
 
         input:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
         }
 
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
             color: white;
             padding: 15px 40px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 18px;
             font-weight: 600;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
             width: 100%;
             margin-top: 10px;
+            box-shadow: 
+                0 10px 20px rgba(30, 64, 175, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 
+                0 15px 30px rgba(30, 64, 175, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .btn:disabled {
-            background: #6c757d;
+            background: #6b7280;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .alert {
-            padding: 15px;
+            padding: 15px 20px;
             margin: 20px 0;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 500;
+            backdrop-filter: blur(10px);
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.4);
         }
 
         .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.4);
         }
 
         .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+            color: #dbeafe;
+            border: 1px solid rgba(59, 130, 246, 0.4);
         }
 
         .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .instructions {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-            text-align: left;
-        }
-
-        .instructions h3 {
-            color: #495057;
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            color: #fef3c7;
+            border: 1px solid rgba(251, 191, 36, 0.4);
         }
 
         .loading {
             display: none;
-            margin-top: 10px;
+            margin-top: 15px;
+            text-align: center;
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #007bff;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-top: 3px solid #3b82f6;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -163,83 +357,117 @@
             100% { transform: rotate(360deg); }
         }
 
-        .security-notice {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 14px;
+        .loading p {
+            color: #e2e8f0;
+            font-weight: 500;
         }
 
         .admin-contact {
-            background: #e7f3ff;
-            border: 1px solid #b8daff;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 14px;
-            text-align: left;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            color: #dbeafe;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-contact h4 {
+            color: #93c5fd;
+            margin-bottom: 10px;
+        }
+
+        .admin-contact ul {
+            margin-left: 20px;
+            line-height: 1.6;
         }
 
         .failed-attempts {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
             font-size: 12px;
-            color: #721c24;
+            color: #fecaca;
+            backdrop-filter: blur(10px);
         }
 
-        .server-status {
-            background: #e9ecef;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 12px;
-            text-align: center;
+        /* Security Icons Animation */
+        .security-icon {
+            display: inline-block;
+            animation: pulse 2s infinite;
         }
 
-        .server-status.connected {
-            background: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
-        .server-status.disconnected {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .maccabi-logo {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .maccabi-shield {
+                width: 45px;
+                height: 50px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="security-lines"></div>
+    
     <div class="container">
         <div class="header">
-            <h1>🔐 Worker Access</h1>
-            <p>Shift Scheduling System</p>
+            <div class="maccabi-logo">
+                <div class="maccabi-shield">מכבי</div>
+            </div>
+            <h1><span class="security-icon">🛡️</span> Worker Access Verification</h1>
+            <p>Secure Shift Scheduling System</p>
+            <div class="soc-subtitle">SOC OPERATIONS CENTER</div>
         </div>
 
         <div class="content">
             <!-- Server Connection Status -->
             <div id="serverStatus" class="server-status">
-                🔄 Checking server connection...
+                🔄 Establishing secure connection...
             </div>
 
             <div class="security-notice">
-                <strong>🔒 Secure Access</strong><br>
-                Only authorized workers can access the shift preference system. Enter your exact name as registered by the administrator.
+                <strong><span class="security-icon">🔒</span> SECURE ACCESS PROTOCOL</strong><br>
+                Only authorized personnel can access the shift preference system. Enter your exact name as registered by the SOC administrator.
             </div>
 
             <div class="instructions">
-                <h3>Access Verification</h3>
-                <p>Enter your name to verify access to the shift preference system. Only workers approved by the administrator can proceed.</p>
-                <ul style="margin-top: 10px; font-size: 14px;">
-                    <li>Use your full name as registered</li>
-                    <li>Name matching is case-insensitive</li>
-                    <li>Contact admin if you believe you should have access</li>
+                <h3><span class="security-icon">🛡️</span> Access Verification Protocol</h3>
+                <p>Enter your name to verify access to the shift preference system. Only workers approved by the SOC administrator can proceed.</p>
+                <ul style="margin-top: 15px; font-size: 14px;">
+                    <li><strong>Security Level:</strong> Authorized Personnel Only</li>
+                    <li><strong>Name Matching:</strong> Case-insensitive verification</li>
+                    <li><strong>Access Control:</strong> Real-time validation against approved list</li>
+                    <li><strong>Support:</strong> Contact SOC admin if access issues occur</li>
                 </ul>
             </div>
 
@@ -249,25 +477,25 @@
             </div>
 
             <button class="btn" id="verifyBtn" onclick="verifyAccess()">
-                Verify Access
+                <span class="security-icon">🔐</span> Verify Access
             </button>
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Verifying access...</p>
+                <p>Verifying credentials against SOC database...</p>
             </div>
 
             <div id="statusMessage"></div>
 
             <!-- Admin Contact Info (only shown on access denial) -->
             <div id="adminContact" class="admin-contact" style="display: none;">
-                <h4>Need Access?</h4>
+                <h4><span class="security-icon">📞</span> SOC Administrator Contact</h4>
                 <p>If you believe you should have access to this system:</p>
                 <ul>
-                    <li>Contact your administrator or supervisor</li>
-                    <li>Request to be added to the approved workers list</li>
+                    <li>Contact your SOC administrator or supervisor</li>
+                    <li>Request to be added to the authorized workers database</li>
                     <li>Ensure they use your exact full name when adding you</li>
-                    <li>Try again once you've been added to the system</li>
+                    <li>Retry access verification once you've been authorized</li>
                 </ul>
             </div>
 
@@ -284,7 +512,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Worker Access Verification starting (Server-based)...');
+            console.log('🚀 Maccabi SOC Worker Access Verification starting...');
             
             // Add enter key support
             document.getElementById('workerName').addEventListener('keypress', function(e) {
@@ -301,8 +529,8 @@
         });
 
         async function initializeSystem() {
-            console.log('🔄 Initializing worker access system...');
-            updateServerStatus('Connecting to server...', 'info');
+            console.log('🔄 Initializing SOC worker access system...');
+            updateServerStatus('Establishing secure connection to SOC database...', 'info');
             
             try {
                 // Test server connection
@@ -310,36 +538,36 @@
                 const testResult = await testResponse.json();
                 
                 if (testResult.success) {
-                    console.log('✅ Server connected successfully');
+                    console.log('✅ SOC server connected successfully');
                     serverConnected = true;
-                    updateServerStatus(`Connected to server as ${testResult.user}`, 'success');
+                    updateServerStatus(`Secure connection established - SOC User: ${testResult.user}`, 'success');
                     
                     // Load approved workers data
                     await loadApprovedWorkers();
                 } else {
-                    console.log('❌ Server connection failed:', testResult.error);
+                    console.log('❌ SOC server connection failed:', testResult.error);
                     serverConnected = false;
-                    updateServerStatus('Server connection failed', 'error');
-                    showStatus('⚠️ Server connection failed. Please try again later or contact your administrator.', 'warning');
+                    updateServerStatus('SOC server connection failed - Check network', 'error');
+                    showStatus('⚠️ Cannot connect to SOC database. Please try again later or contact your administrator.', 'warning');
                 }
             } catch (error) {
-                console.error('❌ Failed to connect to server:', error);
+                console.error('❌ Failed to connect to SOC server:', error);
                 serverConnected = false;
-                updateServerStatus('Server unavailable', 'error');
-                showStatus('❌ Cannot connect to server. Please check your internet connection and try again.', 'danger');
+                updateServerStatus('SOC database unavailable', 'error');
+                showStatus('❌ Cannot establish secure connection. Please check your network and try again.', 'danger');
             }
         }
 
         async function loadApprovedWorkers() {
             try {
-                console.log('📥 Loading approved workers from server...');
+                console.log('📥 Loading authorized workers from SOC database...');
                 
                 const response = await fetch('/api/data');
                 const result = await response.json();
                 
                 if (result.success) {
                     const data = result.data;
-                    console.log('📦 Server data received');
+                    console.log('📦 SOC database data received');
                     
                     // Store approved workers locally for quick access
                     localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
@@ -347,19 +575,19 @@
                     localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
                     localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
                     
-                    console.log('✅ Approved workers loaded:', (data.approvedWorkers || []).length, 'workers');
+                    console.log('✅ Authorized workers loaded:', (data.approvedWorkers || []).length, 'personnel');
                     
                     if (!data.approvedWorkers || data.approvedWorkers.length === 0) {
-                        showStatus('⚠️ No approved workers configured. Please contact your administrator to set up worker access.', 'warning');
+                        showStatus('⚠️ No authorized workers configured in SOC database. Please contact your administrator.', 'warning');
                         showAdminContact();
                     }
                 } else {
-                    console.error('❌ Failed to load data from server:', result.error);
-                    showStatus('❌ Failed to load worker data from server. Please try again later.', 'danger');
+                    console.error('❌ Failed to load data from SOC server:', result.error);
+                    showStatus('❌ Failed to load worker authorization data. Please try again later.', 'danger');
                 }
             } catch (error) {
-                console.error('❌ Error loading approved workers:', error);
-                showStatus('❌ Error loading worker data. Please try again later.', 'danger');
+                console.error('❌ Error loading authorized workers:', error);
+                showStatus('❌ Error accessing SOC database. Please try again later.', 'danger');
             }
         }
 
@@ -372,11 +600,11 @@
             switch(type) {
                 case 'success':
                     statusClass += ' connected';
-                    icon = '✅';
+                    icon = '🔒';
                     break;
                 case 'error':
                     statusClass += ' disconnected';
-                    icon = '❌';
+                    icon = '⚠️';
                     break;
                 case 'warning':
                     statusClass += ' disconnected';
@@ -417,7 +645,7 @@
             }
 
             if (!serverConnected) {
-                showStatus('❌ Cannot verify access: Server is not connected. Please refresh the page and try again.', 'danger');
+                showStatus('❌ Cannot verify access: SOC server connection unavailable. Please refresh and try again.', 'danger');
                 return;
             }
 
@@ -426,7 +654,7 @@
             const loading = document.getElementById('loading');
             
             if (!enteredName) {
-                showStatus('Please enter your name.', 'danger');
+                showStatus('Please enter your name for verification.', 'danger');
                 return;
             }
 
@@ -436,20 +664,20 @@
             
             // Perform server-based verification
             try {
-                console.log('🔍 Verifying access for:', enteredName);
+                console.log('🔍 SOC access verification for:', enteredName);
                 
                 // Get fresh data from server to ensure we have the latest approved workers
                 await loadApprovedWorkers();
                 
                 setTimeout(() => {
                     performVerification(enteredName);
-                }, 800); // Small delay for UX
+                }, 1200); // Slightly longer delay for security feel
                 
             } catch (error) {
                 console.error('❌ Verification error:', error);
                 loading.style.display = 'none';
                 verifyBtn.disabled = false;
-                showStatus('❌ Verification failed due to server error. Please try again.', 'danger');
+                showStatus('❌ Verification failed due to SOC server error. Please try again.', 'danger');
             }
         }
 
@@ -460,8 +688,8 @@
             // Get approved workers list from localStorage (freshly loaded from server)
             const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
             
-            console.log('Verification attempt for:', enteredName);
-            console.log('Approved workers count:', approvedWorkers.length);
+            console.log('SOC verification attempt for:', enteredName);
+            console.log('Authorized workers count:', approvedWorkers.length);
 
             // Hide loading
             loading.style.display = 'none';
@@ -470,7 +698,7 @@
             // Check if any approved workers exist
             if (approvedWorkers.length === 0) {
                 recordFailedAttempt();
-                showStatus('❌ Access system not configured. Contact your administrator to set up worker access.', 'danger');
+                showStatus('❌ SOC authorization system not configured. Contact your administrator.', 'danger');
                 showAdminContact();
                 return;
             }
@@ -480,7 +708,7 @@
                 name.toLowerCase().trim() === enteredName.toLowerCase().trim()
             );
 
-            console.log('Access approved:', isApproved);
+            console.log('SOC access authorization:', isApproved);
 
             if (isApproved) {
                 // Find the exact name format from the approved list
@@ -488,14 +716,14 @@
                     name.toLowerCase().trim() === enteredName.toLowerCase().trim()
                 );
 
-                console.log('Exact name found:', exactName);
-                console.log('Redirecting to worker page...');
+                console.log('Exact authorized name:', exactName);
+                console.log('Redirecting to secure worker interface...');
 
                 // Clear failed attempts on successful login
                 failedAttemptCount = 0;
                 localStorage.removeItem('failedAccessAttempts');
 
-                showStatus('✅ Access granted! Redirecting to shift preference system...', 'success');
+                showStatus('✅ Access Authorized! Redirecting to secure shift system...', 'success');
                 
                 // Store verified worker name with verification timestamp
                 localStorage.setItem('verifiedWorker', exactName);
@@ -504,13 +732,13 @@
                 // Redirect to worker page after short delay
                 setTimeout(() => {
                     window.location.href = '/worker';
-                }, 1500);
+                }, 2000);
 
             } else {
                 recordFailedAttempt();
                 
-                // Generic denial message - NO worker names disclosed for security
-                showStatus('❌ Access Denied: Name not found in approved workers list.', 'danger');
+                // Security-focused denial message
+                showStatus('❌ Access Denied: Personnel not found in SOC authorization database.', 'danger');
                 showAdminContact();
                 
                 // Clear the input
@@ -523,7 +751,7 @@
             failedAttemptCount++;
             localStorage.setItem('failedAccessAttempts', failedAttemptCount.toString());
             
-            console.log('Failed attempt recorded:', failedAttemptCount);
+            console.log('SOC security: Failed attempt recorded:', failedAttemptCount);
             
             updateFailedAttemptsDisplay();
             
@@ -543,8 +771,8 @@
                 failedDiv.style.display = 'block';
                 failedDiv.innerHTML = `
                     <div class="failed-attempts">
-                        <strong>⚠️ Failed Attempts:</strong> ${failedAttemptCount}/${maxFailedAttempts}<br>
-                        ${remaining > 0 ? `${remaining} attempts remaining before temporary lockout.` : ''}
+                        <strong>⚠️ Security Alert:</strong> ${failedAttemptCount}/${maxFailedAttempts} Failed Access Attempts<br>
+                        ${remaining > 0 ? `${remaining} attempts remaining before security lockout.` : ''}
                     </div>
                 `;
             } else {
@@ -559,7 +787,7 @@
             verifyBtn.disabled = true;
             nameInput.disabled = true;
             
-            showStatus(`🔒 Too many failed attempts. Access locked for ${remainingMinutes} minutes.`, 'warning');
+            showStatus(`🔒 Security Lockout Active: Access blocked for ${remainingMinutes} minutes due to multiple failed attempts.`, 'warning');
             
             // Update countdown every minute
             const interval = setInterval(() => {
@@ -567,7 +795,7 @@
                     clearInterval(interval);
                     verifyBtn.disabled = false;
                     nameInput.disabled = false;
-                    showStatus('🔓 Lockout expired. You can try again.', 'info');
+                    showStatus('🔓 Security lockout expired. Access verification available again.', 'info');
                     failedAttemptCount = 0;
                     updateFailedAttemptsDisplay();
                 }
@@ -590,7 +818,7 @@
             if (serverConnected) {
                 try {
                     await loadApprovedWorkers();
-                    console.log('🔄 Auto-refreshed approved workers data');
+                    console.log('🔄 Auto-refreshed SOC authorization data');
                 } catch (error) {
                     console.error('❌ Auto-refresh failed:', error);
                 }
