@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Your Shift Preferences</title>
+    <title>Maccabi SOC - Shift Preferences</title>
     <style>
         * {
             margin: 0;
@@ -13,66 +13,270 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e3a8a 50%, #2563eb 75%, #1e40af 100%);
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Security Network Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(30, 58, 138, 0.1) 0%, transparent 50%);
+            background-size: 100% 100%;
+            z-index: -1;
+        }
+
+        .security-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(59, 130, 246, 0.1) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(59, 130, 246, 0.1) 50%, transparent 51%);
+            background-size: 100px 100px;
+            z-index: -1;
+            opacity: 0.3;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(59, 130, 246, 0.2);
             overflow: hidden;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(59, 130, 246, 0.3);
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
             color: white;
             padding: 30px;
             text-align: center;
             position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+            50% { transform: rotate(180deg) scale(1.1); opacity: 0.2; }
+        }
+
+        .maccabi-logo {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        .maccabi-shield {
+            width: 45px;
+            height: 50px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            clip-path: polygon(50% 0%, 0% 25%, 0% 75%, 50% 100%, 100% 75%, 100% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            letter-spacing: 1px;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2em;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .soc-subtitle {
+            font-size: 0.8em;
+            margin-top: 5px;
+            color: #bfdbfe;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
 
         .content {
             padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        .form-group {
+        /* Access Denied Section */
+        .access-denied {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .access-denied h2 {
+            color: #ef4444;
             margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Worker Info Bar */
+        .worker-info {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .worker-name {
+            font-weight: bold;
+            color: #bbf7d0;
+            font-size: 18px;
+        }
+
+        .worker-details {
+            font-size: 12px;
+            color: #86efac;
+            margin-top: 5px;
+        }
+
+        /* Sync Status */
+        .sync-status {
+            background: rgba(30, 58, 138, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 12px;
+            text-align: center;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .sync-status.connected {
+            background: rgba(22, 163, 74, 0.3);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #bbf7d0;
+        }
+
+        .sync-status.disconnected {
+            background: rgba(220, 38, 38, 0.3);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fecaca;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: linear-gradient(135deg, rgba(219, 234, 254, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            color: #dbeafe;
+            backdrop-filter: blur(10px);
+        }
+
+        .instructions h3 {
+            color: #93c5fd;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 25px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: #e2e8f0;
+            font-size: 16px;
         }
 
         input, select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
+            padding: 12px 16px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            background: rgba(30, 58, 138, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
         }
 
         input:focus, select:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
         }
 
+        /* Buttons */
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
             color: white;
             padding: 12px 30px;
             border: none;
@@ -80,242 +284,266 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
             margin-right: 10px;
             margin-bottom: 10px;
+            box-shadow: 
+                0 8px 16px rgba(30, 64, 175, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 
+                0 12px 24px rgba(30, 64, 175, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            padding: 8px 16px;
+            font-size: 14px;
         }
 
+        /* Preferences Grid */
         .worker-preferences {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, rgba(248, 249, 250, 0.1) 0%, rgba(241, 245, 249, 0.05) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(10px);
         }
 
         .preferences-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 10px;
-            margin: 10px 0;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
         }
 
         .day-column {
             text-align: center;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
+            padding: 15px 10px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(241, 245, 249, 0.05) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .day-column:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
         }
 
         .day-label {
             font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 12px;
-            color: #495057;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #e2e8f0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .shift-option {
-            margin: 8px 0;
+            margin: 10px 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 6px;
             flex-direction: column;
         }
 
         .shift-option label {
             text-align: center;
             font-size: 12px;
-            line-height: 1.2;
+            line-height: 1.3;
+            color: #cbd5e1;
+            margin-bottom: 0;
         }
 
         .shift-option small {
             font-size: 10px;
-            color: #6c757d;
+            color: #94a3b8;
         }
 
         .shift-checkbox {
-            transform: scale(1.2);
+            transform: scale(1.3);
+            accent-color: #3b82f6;
         }
 
         .weekend-premium {
-            background: white;
-            border: 1px solid #dee2e6;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.4);
         }
 
         .weekend-premium .day-label {
-            color: #495057;
+            color: #fef3c7;
             font-weight: bold;
         }
 
         .premium-badge {
-            color: #ffc107;
-            font-size: 12px;
+            color: #fbbf24;
+            font-size: 11px;
             font-weight: bold;
-            margin-top: 5px;
+            margin-top: 8px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
+        /* Alert Messages */
         .alert {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 12px;
             font-weight: 500;
+            backdrop-filter: blur(10px);
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.4);
         }
 
         .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+            color: #dbeafe;
+            border: 1px solid rgba(59, 130, 246, 0.4);
         }
 
         .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .instructions {
-            background: #e7f3ff;
-            border: 1px solid #b8daff;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .instructions h3 {
-            color: #004085;
-            margin-bottom: 10px;
-        }
-
-        .instructions ul {
-            color: #004085;
-            margin-left: 20px;
-        }
-
-        .instructions li {
-            margin-bottom: 5px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            color: #fef3c7;
+            border: 1px solid rgba(251, 191, 36, 0.4);
         }
 
         .hidden {
             display: none;
         }
 
-        .access-denied {
-            text-align: center;
-            padding: 40px 20px;
+        /* Security Icons Animation */
+        .security-icon {
+            display: inline-block;
+            animation: pulse 2s infinite;
         }
 
-        .access-denied h2 {
-            color: #dc3545;
-            margin-bottom: 20px;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
-        .worker-info {
-            background: #e8f5e8;
-            border: 1px solid #c3e6cb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .worker-name {
-            font-weight: bold;
-            color: #155724;
-        }
-
-        .sync-status {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .sync-status.connected {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .sync-status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
+        /* Responsive Design */
         @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+
             .preferences-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 5px;
+                gap: 8px;
             }
             
             .day-column {
-                padding: 8px;
+                padding: 10px 6px;
             }
 
             .worker-info {
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
                 text-align: center;
+            }
+
+            .header {
+                padding: 25px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.7em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .maccabi-logo {
+                width: 60px;
+                height: 60px;
+            }
+
+            .maccabi-shield {
+                width: 40px;
+                height: 45px;
+                font-size: 10px;
             }
         }
     </style>
 </head>
 <body>
+    <div class="security-lines"></div>
+    
     <div class="container">
         <div class="header">
-            <h1>🕐 Shift Preferences</h1>
-            <p>Submit your availability for the next 2 weeks</p>
+            <div class="maccabi-logo">
+                <div class="maccabi-shield">מכבי</div>
+            </div>
+            <h1><span class="security-icon">🕐</span> Shift Preferences</h1>
+            <p>Secure Personnel Scheduling System</p>
+            <div class="soc-subtitle">SOC OPERATIONS CENTER</div>
         </div>
 
         <div class="content">
             <!-- Access Denied Section -->
             <div id="accessDeniedSection" class="hidden">
                 <div class="access-denied">
-                    <h2>🚫 Access Denied</h2>
+                    <h2><span class="security-icon">🚫</span> Access Denied</h2>
                     <div class="alert alert-danger">
-                        <strong>You are not authorized to access this page.</strong><br><br>
-                        Only workers approved by the administrator can submit shift preferences.<br>
-                        Please contact your administrator to be added to the approved workers list.
+                        <strong>Unauthorized Access Attempt</strong><br><br>
+                        Only SOC personnel with proper authorization can access the shift preference system.<br>
+                        Please contact your SOC administrator to be added to the authorized workers database.
                     </div>
                     
                     <div style="margin-top: 30px;">
-                        <button class="btn" onclick="redirectToCheck()">Go to Access Verification</button>
+                        <button class="btn" onclick="redirectToCheck()">
+                            <span class="security-icon">🔐</span> Go to Access Verification
+                        </button>
                         <button class="btn btn-secondary" onclick="testAccess()">Test Access Again</button>
                     </div>
 
-                    <div style="margin-top: 20px; font-size: 14px; color: #6c757d;">
-                        <strong>How to get access:</strong><br>
-                        1. Contact your administrator<br>
-                        2. Ask them to add your name to the approved workers list in admin.html<br>
-                        3. Use the exact name they added (case doesn't matter)<br>
-                        4. Go through the proper access verification at check.html
+                    <div style="margin-top: 25px; font-size: 14px; color: #94a3b8;">
+                        <strong>SOC Authorization Process:</strong><br>
+                        1. Contact your SOC administrator or supervisor<br>
+                        2. Request addition to the authorized personnel database<br>
+                        3. Ensure they use your exact full name during registration<br>
+                        4. Complete proper access verification through the secure portal
                     </div>
                 </div>
             </div>
@@ -323,19 +551,21 @@
             <!-- Preferences Locked Section -->
             <div id="preferencesLockedSection" class="hidden">
                 <div class="access-denied">
-                    <h2>🔒 Preferences Locked</h2>
+                    <h2><span class="security-icon">🔒</span> Preferences Locked</h2>
                     <div class="alert alert-warning">
-                        <strong>Preference submission is currently disabled.</strong><br><br>
-                        The administrator has locked preference submissions, likely to generate schedules or perform maintenance.<br><br>
-                        Please try again later or contact your administrator.
+                        <strong>System Temporarily Locked</strong><br><br>
+                        The SOC administrator has temporarily disabled preference submissions for system maintenance or schedule generation.<br><br>
+                        Please check back later or contact your SOC administrator for more information.
                     </div>
                     
                     <div style="margin-top: 30px;">
-                        <button class="btn" onclick="checkLockStatus()">Check Status Again</button>
-                        <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                        <button class="btn" onclick="checkLockStatus()">
+                            <span class="security-icon">🔄</span> Check Status Again
+                        </button>
+                        <button class="btn btn-secondary" onclick="logout()">Secure Logout</button>
                     </div>
 
-                    <div style="margin-top: 20px; font-size: 14px; color: #6c757d;" id="lockDetails">
+                    <div style="margin-top: 25px; font-size: 14px; color: #94a3b8;" id="lockDetails">
                         <!-- Lock details will be populated by JavaScript -->
                     </div>
                 </div>
@@ -346,34 +576,41 @@
                 <!-- Worker Info Bar -->
                 <div class="worker-info">
                     <div>
-                        <span class="worker-name">Welcome, <span id="workerDisplayName"></span>!</span>
-                        <div style="font-size: 12px; color: #6c757d;">Verified worker access</div>
+                        <div class="worker-name">
+                            <span class="security-icon">👤</span> Welcome, <span id="workerDisplayName"></span>!
+                        </div>
+                        <div class="worker-details">Authorized SOC Personnel | Secure Session Active</div>
                     </div>
-                    <button class="btn btn-danger" onclick="logout()" style="padding: 8px 15px; font-size: 14px;">Logout</button>
+                    <button class="btn btn-danger" onclick="logout()">
+                        <span class="security-icon">🔓</span> Secure Logout
+                    </button>
                 </div>
 
                 <!-- Sync Status -->
                 <div id="syncStatusDisplay" class="sync-status">
-                    🔄 Checking server connection...
+                    🔄 Establishing secure connection to SOC database...
                 </div>
 
                 <div class="instructions">
-                    <h3>Instructions:</h3>
+                    <h3><span class="security-icon">📋</span> Shift Preference Instructions</h3>
                     <ul>
-                        <li><strong>All shifts are selected by default</strong> - Uncheck shifts you're NOT available for</li>
-                        <li><strong>Premium shifts (Friday evening → Saturday evening) pay extra 💰</strong></li>
-                        <li><strong>Shift Hours:</strong>
+                        <li><strong>Default State:</strong> All shifts are pre-selected for maximum coverage</li>
+                        <li><strong>Availability Selection:</strong> Uncheck shifts you are NOT available for</li>
+                        <li><strong>Premium Periods:</strong> Friday evening → Saturday evening shifts earn premium pay 💰</li>
+                        <li><strong>Shift Schedule:</strong>
                             <ul>
-                                <li>M = Morning (07:00-15:00)</li>
-                                <li>E = Evening (15:00-23:00)</li>
-                                <li>N = Night (23:00-07:00)</li>
+                                <li><strong>M</strong> = Morning (07:00-15:00)</li>
+                                <li><strong>E</strong> = Evening (15:00-23:00)</li>
+                                <li><strong>N</strong> = Night (23:00-07:00)</li>
                             </ul>
                         </li>
-                        <li><strong>Note:</strong> The system prevents exhausting "888" work patterns for your wellbeing</li>
+                        <li><strong>SOC Policy:</strong> System prevents exhausting work patterns for personnel wellbeing</li>
                     </ul>
                 </div>
 
-                <h3>Select shifts you're NOT available for (uncheck to remove):</h3>
+                <h3 style="color: #e2e8f0; margin-bottom: 15px;">
+                    <span class="security-icon">⚙️</span> Configure your shift availability (uncheck unavailable periods):
+                </h3>
                 
                 <div class="worker-preferences">
                     <div id="preferencesGrid" class="preferences-grid">
@@ -382,12 +619,18 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="workerNotes">Additional Notes (optional):</label>
-                    <input type="text" id="workerNotes" placeholder="Any special requests, constraints, or preferred shifts...">
+                    <label for="workerNotes">
+                        <span class="security-icon">📝</span> Additional Notes (optional):
+                    </label>
+                    <input type="text" id="workerNotes" placeholder="Special requests, constraints, or preferred shift patterns...">
                 </div>
 
-                <button class="btn" onclick="submitPreferences()">Submit My Preferences</button>
-                <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+                <button class="btn" onclick="submitPreferences()">
+                    <span class="security-icon">📤</span> Submit Preferences to SOC
+                </button>
+                <button class="btn btn-secondary" onclick="clearForm()">
+                    <span class="security-icon">🗑️</span> Clear Form
+                </button>
 
                 <div id="statusMessage"></div>
             </div>
@@ -400,8 +643,8 @@
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Worker Preferences starting (Server-based)...');
-            updateSyncStatus('Initializing...', 'info');
+            console.log('🚀 Maccabi SOC Worker Preferences starting...');
+            updateSyncStatus('Initializing secure connection...', 'info');
             checkAccess();
         });
 
@@ -411,16 +654,16 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    updateSyncStatus(`Connected to server as ${result.user}`, 'success');
+                    updateSyncStatus(`Secure connection established - SOC User: ${result.user}`, 'success');
                     serverConnected = true;
                     return true;
                 } else {
-                    updateSyncStatus('Server connection failed: ' + result.error, 'error');
+                    updateSyncStatus('SOC server connection failed: ' + result.error, 'error');
                     serverConnected = false;
                     return false;
                 }
             } catch (error) {
-                updateSyncStatus('Cannot reach server: ' + error.message, 'error');
+                updateSyncStatus('Cannot reach SOC server: ' + error.message, 'error');
                 serverConnected = false;
                 return false;
             }
@@ -432,7 +675,7 @@
             
             statusDiv.className = `sync-status ${type === 'success' ? 'connected' : type === 'error' ? 'disconnected' : ''}`;
             
-            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔄';
+            const icon = type === 'success' ? '🔒' : type === 'error' ? '⚠️' : '🔄';
             const timeStr = new Date().toLocaleTimeString();
             
             statusDiv.innerHTML = `
@@ -441,20 +684,20 @@
                     <small>${timeStr}</small>
                 </div>
                 <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">
-                    Server-based sync | Auto-sync every 30s
+                    SOC Database Sync | Auto-refresh every 30s | Secure Session
                 </div>
             `;
         }
 
         async function syncToServer(data) {
             if (!serverConnected) {
-                console.log('❌ Server not connected');
-                updateSyncStatus('Server not connected - using local storage', 'error');
+                console.log('❌ SOC server not connected');
+                updateSyncStatus('SOC server unavailable - using local storage', 'error');
                 return false;
             }
             
             try {
-                console.log('📤 Syncing data to server...');
+                console.log('📤 Syncing preferences to SOC database...');
                 
                 const response = await fetch('/api/data', {
                     method: 'POST',
@@ -467,63 +710,62 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    console.log('✅ Data synced to server successfully');
+                    console.log('✅ Data synced to SOC database successfully');
                     updateSyncStatus('Last sync: ' + new Date().toLocaleTimeString(), 'success');
                     return true;
                 } else {
-                    console.error('❌ Failed to sync to server:', result.error);
+                    console.error('❌ Failed to sync to SOC server:', result.error);
                     updateSyncStatus('Upload failed: ' + result.error, 'error');
                     return false;
                 }
             } catch (error) {
-                console.error('❌ Sync to server error:', error);
+                console.error('❌ Sync to SOC server error:', error);
                 updateSyncStatus('Upload error: ' + error.message, 'error');
                 return false;
             }
         }
 
         async function syncFromServer() {
-    if (!serverConnected) {
-        console.log('❌ Server not connected');
-        updateSyncStatus('Using local storage only', 'error');
-        return null;
-    }
-    
-    try {
-        console.log('📥 Syncing from server...');
-        
-        const response = await fetch('/api/data');
-        const result = await response.json();
-        
-        if (result.success) {
-            const data = result.data;
-            console.log('📦 Server data received:', Object.keys(data));
+            if (!serverConnected) {
+                console.log('❌ SOC server not connected');
+                updateSyncStatus('Using local storage only', 'error');
+                return null;
+            }
             
-            // Update local storage with server data INCLUDING scheduleConfig
-            localStorage.setItem('shiftSubmissions', JSON.stringify(data.shiftSubmissions || []));
-            localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-            localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-            localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-            localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
-            localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
-            
-            console.log('✅ Data updated from server');
-            updateSyncStatus('Connected to server - Data synchronized', 'success');
-            return data;
-        } else {
-            console.error('❌ Server API error:', result.error);
-            updateSyncStatus('Download failed: ' + result.error, 'error');
-            return null;
+            try {
+                console.log('📥 Syncing from SOC database...');
+                
+                const response = await fetch('/api/data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    console.log('📦 SOC database data received:', Object.keys(data));
+                    
+                    // Update local storage with server data
+                    localStorage.setItem('shiftSubmissions', JSON.stringify(data.shiftSubmissions || []));
+                    localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                    localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                    localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                    localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
+                    
+                    console.log('✅ Data updated from SOC server');
+                    updateSyncStatus('SOC database synchronized', 'success');
+                    return data;
+                } else {
+                    console.error('❌ SOC server API error:', result.error);
+                    updateSyncStatus('Download failed: ' + result.error, 'error');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ Failed to sync from SOC server:', error);
+                updateSyncStatus('Download error: ' + error.message, 'error');
+                return null;
+            }
         }
-    } catch (error) {
-        console.error('❌ Failed to sync from server:', error);
-        updateSyncStatus('Download error: ' + error.message, 'error');
-        return null;
-    }
-}
 
         async function checkAccess() {
-            console.log('Checking worker access...');
+            console.log('Checking SOC worker access...');
             
             // Test server connection first
             const connectionSuccess = await testServerConnection();
@@ -534,16 +776,16 @@
                 const syncData = await syncFromServer();
                 if (syncData && syncData.approvedWorkers) {
                     approvedWorkers = syncData.approvedWorkers;
-                    console.log('Using synced approved workers:', approvedWorkers.length);
+                    console.log('Using synced authorized workers:', approvedWorkers.length);
                 } else {
                     // Fallback to local storage
                     approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                    console.log('Using local approved workers:', approvedWorkers.length);
+                    console.log('Using local authorized workers:', approvedWorkers.length);
                 }
             } else {
                 // Server not available - use local storage
                 approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                console.log('Server unavailable - using local approved workers:', approvedWorkers.length);
+                console.log('SOC server unavailable - using local authorized workers:', approvedWorkers.length);
             }
             
             // Check if user came from proper verification
@@ -568,28 +810,6 @@
                 console.log('Current approved workers:', approvedWorkers);
                 
                 if (isStillApproved) {
-    // Check if there's an active period
-    const periodConfig = getCurrentPeriodFromStorage();
-    
-    if (!periodConfig || !periodConfig.isActive) {
-        // Show special message for no active period
-        document.getElementById('mainWorkerInterface').classList.add('hidden');
-        document.getElementById('accessDeniedSection').classList.add('hidden');
-        document.getElementById('preferencesLockedSection').classList.remove('hidden');
-        
-        // Customize the locked message for no active period
-        document.querySelector('#preferencesLockedSection h2').textContent = '📅 No Active Period';
-        document.querySelector('#preferencesLockedSection .alert-warning').innerHTML = `
-            <strong>No schedule period is currently open.</strong><br><br>
-            The administrator has not opened a 2-week period for preference submission yet.<br>
-            Please wait for the administrator to open a new period, then try again.
-        `;
-        document.getElementById('lockDetails').innerHTML = `
-            <strong>Status:</strong> Waiting for administrator to open new schedule period<br>
-            Contact your administrator if this persists.
-        `;
-        return;
-    }
                     // Check if preferences are locked BEFORE allowing access
                     if (checkPreferenceLock()) {
                         console.log('Preferences are locked - showing locked screen');
@@ -605,7 +825,7 @@
                     document.getElementById('mainWorkerInterface').classList.remove('hidden');
                     createPreferencesGrid();
                     loadExistingPreferences();
-                    console.log('Access granted to:', verifiedWorkerName);
+                    console.log('SOC access granted to:', verifiedWorkerName);
                     
                     // Start auto-sync if server is connected
                     if (serverConnected) {
@@ -613,7 +833,7 @@
                     }
                 } else {
                     // Worker was removed from approved list
-                    denyAccess('Your access has been revoked. Please contact the administrator.');
+                    denyAccess('Your SOC authorization has been revoked. Please contact the administrator.');
                 }
             } else {
                 // No valid verification found
@@ -650,7 +870,7 @@
         }
 
         function denyAccess(customMessage = null) {
-            console.log('Access denied');
+            console.log('SOC access denied');
             
             // Clear any stored verification
             localStorage.removeItem('verifiedWorker');
@@ -662,7 +882,7 @@
             
             if (customMessage) {
                 const alertDiv = document.querySelector('#accessDeniedSection .alert-danger');
-                alertDiv.innerHTML = `<strong>Access Revoked!</strong><br><br>${customMessage}`;
+                alertDiv.innerHTML = `<strong>SOC Authorization Revoked!</strong><br><br>${customMessage}`;
             }
         }
 
@@ -704,143 +924,85 @@
             document.getElementById('preferencesLockedSection').classList.remove('hidden');
             
             document.getElementById('lockDetails').innerHTML = `
-                <strong>Lock Details:</strong><br>
+                <strong>SOC System Status:</strong><br>
                 Locked since: ${lockTime}<br>
-                This is temporary - check back later or contact your administrator.
+                Reason: System maintenance or schedule generation in progress<br>
+                Action: Check back later or contact SOC administrator
             `;
             
             console.log('Showing locked message screen');
         }
 
         function checkLockStatus() {
-            console.log('Manually checking lock status...');
+            console.log('Manually checking SOC lock status...');
             if (!checkPreferenceLock()) {
                 // Lock has been removed, show main interface
                 document.getElementById('preferencesLockedSection').classList.add('hidden');
                 document.getElementById('mainWorkerInterface').classList.remove('hidden');
-                showStatus('🔓 Preferences have been unlocked! You can now submit your preferences.', 'success');
+                showStatus('🔓 SOC system unlocked! You can now submit your shift preferences.', 'success');
             } else {
-                showStatus('⏳ Preferences are still locked. Please try again later.', 'warning');
+                showStatus('⏳ SOC system is still locked. Please try again later.', 'warning');
             }
         }
 
         function createPreferencesGrid() {
-    const grid = document.getElementById('preferencesGrid');
-    
-    // Get current period configuration
-    const periodConfig = getCurrentPeriodFromStorage();
-    
-    if (!periodConfig || !periodConfig.isActive) {
-        grid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; 
-                        background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
-                <h3 style="color: #856404; margin-bottom: 15px;">📅 No Active Period</h3>
-                <p style="color: #856404;">The administrator has not opened a schedule period yet.<br>
-                Please wait for the administrator to open a new 2-week period.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const startDate = new Date(periodConfig.startDate);
-    const endDate = new Date(periodConfig.endDate);
-    
-    // Validate period is exactly 14 days
-    const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-    if (daysDiff !== 13) {
-        grid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 20px; background: #f8d7da; border-radius: 8px;">
-                <h3 style="color: #721c24;">⚠️ Invalid Period Configuration</h3>
-                <p>Contact administrator - period is not 14 days.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Update page title with current period
-    const existingTitle = document.querySelector('.period-title');
-    if (existingTitle) {
-        existingTitle.remove();
-    }
-    
-    const periodTitle = document.createElement('div');
-    periodTitle.className = 'period-title';
-    periodTitle.innerHTML = `
-        <div style="background: #e7f3ff; border: 1px solid #b8daff; border-radius: 8px; 
-                    padding: 15px; margin-bottom: 20px; text-align: center;">
-            <h3 style="color: #004085; margin-bottom: 5px;">📅 Current Period: ${periodConfig.label}</h3>
-            <small style="color: #6c757d;">
-                ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}
-            </small>
-        </div>
-    `;
-    document.querySelector('.instructions').insertAdjacentElement('beforebegin', periodTitle);
-    
-    let gridHTML = '';
+            const grid = document.getElementById('preferencesGrid');
+            // Start from June 1st, 2025
+            const startDate = new Date(2025, 5, 1); // Month is 0-indexed, so 5 = June
+            
+            let gridHTML = '';
 
-    // Create grid for the configured period (14 days)
-    for (let day = 0; day < 14; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + day);
-        
-        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-        const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-        
-        // Premium shifts: Friday evening to Saturday evening
-        const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
-        const isWeekendPremium = (dayOfWeek === 5) || (dayOfWeek === 6); // Friday or Saturday
-        
-        gridHTML += `
-            <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
-                <div class="day-label">${dayName}<br>${dateStr}</div>
+            // Create grid for 14 days starting from June 1st
+            for (let day = 0; day < 14; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
                 
-                <div class="shift-option">
-                    <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
-                    <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
-                </div>
+                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+                // Premium shifts: Friday evening to Saturday evening (days 5-6 and 12-13)
+                const isWeekendPremium = (day === 5) || (day === 6) || (day === 12) || (day === 13);
                 
-                <div class="shift-option">
-                    <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                    <label for="morning_${day}">M<br><small>07-15</small></label>
-                </div>
-                
-                <div class="shift-option">
-                    <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                    <label for="evening_${day}">E<br><small>15-23</small>${isWeekendPremium && dayOfWeek === 5 ? '<br>💰' : ''}</label>
-                </div>
-                
-                <div class="shift-option">
-                    <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                    <label for="night_${day}">N<br><small>23-07</small></label>
-                </div>
-                
-                ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
-            </div>
-        `;
-    }
-    
-    grid.innerHTML = gridHTML;
-}
-
-function getCurrentPeriodFromStorage() {
-    try {
-        const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
-        return config.currentPeriod || null;
-    } catch (error) {
-        console.error('Error reading period config:', error);
-        return null;
-    }
-}
+                gridHTML += `
+                    <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
+                        <div class="day-label">${dayName}<br>${dateStr}</div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
+                            <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                            <label for="morning_${day}">M<br><small>07-15</small></label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                            <label for="evening_${day}">E<br><small>15-23</small>${(day === 5 || day === 12) ? '<br>💰' : ''}</label>
+                        </div>
+                        
+                        <div class="shift-option">
+                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                            <label for="night_${day}">N<br><small>23-07</small></label>
+                        </div>
+                        
+                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = gridHTML;
+        }
 
         async function submitPreferences() {
             if (!verifiedWorkerName) {
-                showStatus('Error: No verified worker found. Please logout and verify access again.', 'error');
+                showStatus('Error: No verified SOC worker found. Please logout and verify access again.', 'error');
                 return;
             }
 
             // Check if preferences are locked
             if (checkPreferenceLock()) {
-                showStatus('❌ Cannot submit preferences: Submissions are currently locked by administrator.', 'error');
+                showStatus('❌ Cannot submit preferences: SOC system is currently locked by administrator.', 'error');
                 showLockedMessage(); // Switch to locked screen
                 return;
             }
@@ -863,7 +1025,7 @@ function getCurrentPeriodFromStorage() {
             );
 
             if (!hasPreferences) {
-                showStatus('Please select at least one shift preference.', 'error');
+                showStatus('Please select at least one shift preference before submitting to SOC.', 'error');
                 return;
             }
 
@@ -876,14 +1038,14 @@ function getCurrentPeriodFromStorage() {
                 approved: false
             };
 
-            console.log('Submitting preferences for:', verifiedWorkerName);
+            console.log('Submitting SOC preferences for:', verifiedWorkerName);
             await saveSubmission(submission);
         }
 
         async function saveSubmission(submission) {
             // Double-check lock before saving
             if (checkPreferenceLock()) {
-                showStatus('❌ Cannot save preferences: Submissions are currently locked by administrator.', 'error');
+                showStatus('❌ Cannot save preferences: SOC system is currently locked by administrator.', 'error');
                 showLockedMessage();
                 return;
             }
@@ -922,14 +1084,14 @@ function getCurrentPeriodFromStorage() {
             }
             
             if (syncSuccess) {
-                showStatus(`✅ Your preferences have been submitted and synced to server, ${verifiedWorkerName}!`, 'success');
+                showStatus(`✅ Your shift preferences have been submitted to SOC database, ${verifiedWorkerName}!`, 'success');
             } else {
-                showStatus(`✅ Your preferences have been submitted locally, ${verifiedWorkerName}! ${serverConnected ? '(Sync will retry automatically)' : '(Server offline - will sync when available)'}`, 'success');
+                showStatus(`✅ Your preferences have been submitted locally, ${verifiedWorkerName}! ${serverConnected ? '(SOC sync will retry automatically)' : '(SOC server offline - will sync when available)'}`, 'success');
             }
             
             // Optional: Clear form after successful submission
             setTimeout(() => {
-                if (confirm('Would you like to clear the form?')) {
+                if (confirm('Would you like to clear the form for a fresh start?')) {
                     clearForm();
                 }
             }, 2000);
@@ -966,7 +1128,7 @@ function getCurrentPeriodFromStorage() {
                         }
                     }
                     
-                    showStatus('Your previous preferences have been loaded. You can update them and resubmit.', 'info');
+                    showStatus('Your previous SOC preferences have been loaded. You can update them and resubmit.', 'info');
                 }
             }
         }
@@ -982,7 +1144,7 @@ function getCurrentPeriodFromStorage() {
                 document.getElementById(`night_${day}`).checked = false;
             }
             
-            showStatus('Form cleared.', 'info');
+            showStatus('Form cleared. All preferences reset.', 'info');
         }
 
         function showStatus(message, type) {
