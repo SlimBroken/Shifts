@@ -1853,7 +1853,7 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
             let consecutiveDays = 0;
             
             // Check backwards from the day before today
-            for (let checkDay = globalDay - 1; checkDay >= 0; checkDay--) {
+            for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - maxConsecutive; checkDay--) {
                 const weekIndex = Math.floor(checkDay / 7);
                 const dayIndex = checkDay % 7;
                 
@@ -1862,6 +1862,8 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
                     week = window.currentScheduleBeingGenerated?.week1;
                 } else if (weekIndex === 1) {
                     week = window.currentScheduleBeingGenerated?.week2;
+                } else {
+                    break; // Can't check further back
                 }
                 
                 if (!week || !week.days[dayIndex]) {
@@ -1875,13 +1877,14 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
                 
                 if (workedThisDay) {
                     consecutiveDays++;
-                    if (consecutiveDays >= maxConsecutive) {
-                        console.log(`⚠️ ${workerName} has worked ${consecutiveDays} consecutive days, blocking assignment on day ${globalDay}`);
-                        return true; // Would create 7+ consecutive days
-                    }
                 } else {
                     break; // No consecutive streak
                 }
+            }
+            
+            if (consecutiveDays >= maxConsecutive) {
+                console.log(`🚫 CONSECUTIVE DAYS VIOLATION: ${workerName} has worked ${consecutiveDays} consecutive days, blocking assignment on day ${globalDay}`);
+                return true; // Would create 7+ consecutive days
             }
             
             return false;
@@ -1990,76 +1993,81 @@ function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, s
 }
 
 function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
-    let filledCount = 0;
+            let filledCount = 0;
 
-    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-        const weekStartDay = weekIndex * 7;
-        
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
-            
-            ['morning', 'evening', 'night'].forEach(shift => {
-                if (week.days[day].shifts[shift]) {
-                    return; // Already filled
-                }
-
-                const availableWorkers = workers.filter(worker => {
-                    // Basic availability check
-                    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-                        return false;
-                    }
-
-                    // Check if worker already has a shift on this day
-                    const currentDayShifts = week.days[day].shifts;
-                    if (currentDayShifts.morning === worker.name || 
-                        currentDayShifts.evening === worker.name || 
-                        currentDayShifts.night === worker.name) {
-                        return false;
-                    }
-
-                    // Always respect night shift limit
-                    if (shift === 'night') {
-                        const currentWeek = Math.floor(globalDay / 7);
-                        const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                        if (nightShiftsThisWeek >= 2) {
-                            return false;
+            [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+                const weekStartDay = weekIndex * 7;
+                
+                for (let day = 0; day < 7; day++) {
+                    const globalDay = weekStartDay + day;
+                    
+                    ['morning', 'evening', 'night'].forEach(shift => {
+                        if (week.days[day].shifts[shift]) {
+                            return; // Already filled
                         }
-                    }
 
-                    // Check 8-hour break rule (unless aggressive pass)
-                    if (!isAggressivePass) {
-                        const workerStat = workerStats[worker.name];
-                        if (workerStat && workerStat.lastShiftEnd !== null) {
-                            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-                            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-                            
-                            if (hoursSinceLastShift < 8) {
+                        const availableWorkers = workers.filter(worker => {
+                            // Basic availability check
+                            if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
                                 return false;
                             }
+
+                            // Check if worker already has a shift on this day
+                            const currentDayShifts = week.days[day].shifts;
+                            if (currentDayShifts.morning === worker.name || 
+                                currentDayShifts.evening === worker.name || 
+                                currentDayShifts.night === worker.name) {
+                                return false;
+                            }
+
+                            // Always respect night shift limit
+                            if (shift === 'night') {
+                                const currentWeek = Math.floor(globalDay / 7);
+                                const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+                                if (nightShiftsThisWeek >= 2) {
+                                    return false;
+                                }
+                            }
+
+                            // CRITICAL: Always prevent 7 consecutive days - NEVER bypass this
+                            if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
+                                return false;
+                            }
+
+                            // Check 8-hour break rule (unless aggressive pass)
+                            if (!isAggressivePass) {
+                                const workerStat = workerStats[worker.name];
+                                if (workerStat && workerStat.lastShiftEnd !== null) {
+                                    const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                    const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                                    
+                                    if (hoursSinceLastShift < 8) {
+                                        return false;
+                                    }
+                                }
+                            }
+
+                            return true;
+                        });
+
+                        if (availableWorkers.length > 0) {
+                            // Sort by total shifts (prefer workers with fewer shifts)
+                            const sortedWorkers = availableWorkers.sort((a, b) => {
+                                const aStats = workerStats[a.name] || { totalShifts: 0 };
+                                const bStats = workerStats[b.name] || { totalShifts: 0 };
+                                return aStats.totalShifts - bStats.totalShifts;
+                            });
+
+                            const selectedWorker = sortedWorkers[0];
+                            assignWorkerToShift(selectedWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                            filledCount++;
                         }
-                    }
-
-                    return true;
-                });
-
-                if (availableWorkers.length > 0) {
-                    // Sort by total shifts (prefer workers with fewer shifts)
-                    const sortedWorkers = availableWorkers.sort((a, b) => {
-                        const aStats = workerStats[a.name] || { totalShifts: 0 };
-                        const bStats = workerStats[b.name] || { totalShifts: 0 };
-                        return aStats.totalShifts - bStats.totalShifts;
                     });
-
-                    const selectedWorker = sortedWorkers[0];
-                    assignWorkerToShift(selectedWorker, shift, day, globalDay, week, workerStats, shiftTimes);
-                    filledCount++;
                 }
             });
-        }
-    });
 
-    return filledCount;
-}
+            return filledCount;
+        }
 
 function calculateShiftStartTime(globalDay, shift, shiftTimes) {
     // Get the actual start date from current period
