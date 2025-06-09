@@ -2461,24 +2461,24 @@ function createWeekStats(weekTitle, week, workers) {
                         <strong style="color: #60a5fa;">${totalShifts}</strong>
                     </div>
                     ${morningShifts > 0 ? `
-                        <div style="margin-bottom: 6px; color: #fbbf24;">
+                        <div style="margin-bottom: 6px; color: #000000;">
                             <span>🌅 בוקר:</span> 
                             <strong>${morningShifts}</strong>
                         </div>
                     ` : `
-                        <div style="margin-bottom: 6px; color: #f87171;">
+                        <div style="margin-bottom: 6px; color: #000000;">
                             <span>🌅 בוקר:</span> 
-                            <strong style="color: #f87171;">0 ⚠️</strong>
+                            <strong style="color: #000000;">0 ⚠️</strong>
                         </div>
                     `}
                     ${nightShifts > 0 ? `
-                        <div style="margin-bottom: 6px; color: #a78bfa;">
+                        <div style="margin-bottom: 6px; color: #000000;">
                             <span>🌙 לילה:</span> 
                             <strong>${nightShifts}</strong>
                         </div>
                     ` : ''}
                     ${premiumShifts > 0 ? `
-                        <div style="color: #fbbf24;">
+                        <div style="color: #000000;">
                             <span>💰 פרמיום:</span> 
                             <strong>${premiumShifts}</strong>
                         </div>
