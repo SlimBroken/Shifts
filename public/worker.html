@@ -484,43 +484,44 @@
         }
 
         async function syncFromServer() {
-            if (!serverConnected) {
-                console.log('❌ Server not connected');
-                updateSyncStatus('Using local storage only', 'error');
-                return null;
-            }
+    if (!serverConnected) {
+        console.log('❌ Server not connected');
+        updateSyncStatus('Using local storage only', 'error');
+        return null;
+    }
+    
+    try {
+        console.log('📥 Syncing from server...');
+        
+        const response = await fetch('/api/data');
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            console.log('📦 Server data received:', Object.keys(data));
             
-            try {
-                console.log('📥 Syncing from server...');
-                
-                const response = await fetch('/api/data');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const data = result.data;
-                    console.log('📦 Server data received:', Object.keys(data));
-                    
-                    // Update local storage with server data
-                    localStorage.setItem('shiftSubmissions', JSON.stringify(data.shiftSubmissions || []));
-                    localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                    localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                    localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                    localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
-                    
-                    console.log('✅ Data updated from server');
-                    updateSyncStatus('Connected to server - Data synchronized', 'success');
-                    return data;
-                } else {
-                    console.error('❌ Server API error:', result.error);
-                    updateSyncStatus('Download failed: ' + result.error, 'error');
-                    return null;
-                }
-            } catch (error) {
-                console.error('❌ Failed to sync from server:', error);
-                updateSyncStatus('Download error: ' + error.message, 'error');
-                return null;
-            }
+            // Update local storage with server data INCLUDING scheduleConfig
+            localStorage.setItem('shiftSubmissions', JSON.stringify(data.shiftSubmissions || []));
+            localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+            localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+            localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+            localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
+            localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
+            
+            console.log('✅ Data updated from server');
+            updateSyncStatus('Connected to server - Data synchronized', 'success');
+            return data;
+        } else {
+            console.error('❌ Server API error:', result.error);
+            updateSyncStatus('Download failed: ' + result.error, 'error');
+            return null;
         }
+    } catch (error) {
+        console.error('❌ Failed to sync from server:', error);
+        updateSyncStatus('Download error: ' + error.message, 'error');
+        return null;
+    }
+}
 
         async function checkAccess() {
             console.log('Checking worker access...');
@@ -568,6 +569,28 @@
                 console.log('Current approved workers:', approvedWorkers);
                 
                 if (isStillApproved) {
+    // Check if there's an active period
+    const periodConfig = getCurrentPeriodFromStorage();
+    
+    if (!periodConfig || !periodConfig.isActive) {
+        // Show special message for no active period
+        document.getElementById('mainWorkerInterface').classList.add('hidden');
+        document.getElementById('accessDeniedSection').classList.add('hidden');
+        document.getElementById('preferencesLockedSection').classList.remove('hidden');
+        
+        // Customize the locked message for no active period
+        document.querySelector('#preferencesLockedSection h2').textContent = '📅 No Active Period';
+        document.querySelector('#preferencesLockedSection .alert-warning').innerHTML = `
+            <strong>No schedule period is currently open.</strong><br><br>
+            The administrator has not opened a 2-week period for preference submission yet.<br>
+            Please wait for the administrator to open a new period, then try again.
+        `;
+        document.getElementById('lockDetails').innerHTML = `
+            <strong>Status:</strong> Waiting for administrator to open new schedule period<br>
+            Contact your administrator if this persists.
+        `;
+        return;
+    }
                     // Check if preferences are locked BEFORE allowing access
                     if (checkPreferenceLock()) {
                         console.log('Preferences are locked - showing locked screen');
@@ -703,53 +726,112 @@
         }
 
         function createPreferencesGrid() {
-            const grid = document.getElementById('preferencesGrid');
-            // Start from June 1st, 2025
-            const startDate = new Date(2025, 5, 1); // Month is 0-indexed, so 5 = June
-            
-            let gridHTML = '';
+    const grid = document.getElementById('preferencesGrid');
+    
+    // Get current period configuration
+    const periodConfig = getCurrentPeriodFromStorage();
+    
+    if (!periodConfig || !periodConfig.isActive) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; 
+                        background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
+                <h3 style="color: #856404; margin-bottom: 15px;">📅 No Active Period</h3>
+                <p style="color: #856404;">The administrator has not opened a schedule period yet.<br>
+                Please wait for the administrator to open a new 2-week period.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const startDate = new Date(periodConfig.startDate);
+    const endDate = new Date(periodConfig.endDate);
+    
+    // Validate period is exactly 14 days
+    const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    if (daysDiff !== 13) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 20px; background: #f8d7da; border-radius: 8px;">
+                <h3 style="color: #721c24;">⚠️ Invalid Period Configuration</h3>
+                <p>Contact administrator - period is not 14 days.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Update page title with current period
+    const existingTitle = document.querySelector('.period-title');
+    if (existingTitle) {
+        existingTitle.remove();
+    }
+    
+    const periodTitle = document.createElement('div');
+    periodTitle.className = 'period-title';
+    periodTitle.innerHTML = `
+        <div style="background: #e7f3ff; border: 1px solid #b8daff; border-radius: 8px; 
+                    padding: 15px; margin-bottom: 20px; text-align: center;">
+            <h3 style="color: #004085; margin-bottom: 5px;">📅 Current Period: ${periodConfig.label}</h3>
+            <small style="color: #6c757d;">
+                ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}
+            </small>
+        </div>
+    `;
+    document.querySelector('.instructions').insertAdjacentElement('beforebegin', periodTitle);
+    
+    let gridHTML = '';
 
-            // Create grid for 14 days starting from June 1st
-            for (let day = 0; day < 14; day++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + day);
+    // Create grid for the configured period (14 days)
+    for (let day = 0; day < 14; day++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + day);
+        
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+        
+        // Premium shifts: Friday evening to Saturday evening
+        const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+        const isWeekendPremium = (dayOfWeek === 5) || (dayOfWeek === 6); // Friday or Saturday
+        
+        gridHTML += `
+            <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
+                <div class="day-label">${dayName}<br>${dateStr}</div>
                 
-                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-                // Premium shifts: Friday evening to Saturday evening (days 5-6 and 12-13)
-                const isWeekendPremium = (day === 5) || (day === 6) || (day === 12) || (day === 13);
+                <div class="shift-option">
+                    <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
+                    <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
+                </div>
                 
-                gridHTML += `
-                    <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
-                        <div class="day-label">${dayName}<br>${dateStr}</div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
-                            <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="morning_${day}">M<br><small>07-15</small></label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="evening_${day}">E<br><small>15-23</small>${(day === 5 || day === 12) ? '<br>💰' : ''}</label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="night_${day}">N<br><small>23-07</small></label>
-                        </div>
-                        
-                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
-                    </div>
-                `;
-            }
-            
-            grid.innerHTML = gridHTML;
-        }
+                <div class="shift-option">
+                    <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                    <label for="morning_${day}">M<br><small>07-15</small></label>
+                </div>
+                
+                <div class="shift-option">
+                    <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                    <label for="evening_${day}">E<br><small>15-23</small>${isWeekendPremium && dayOfWeek === 5 ? '<br>💰' : ''}</label>
+                </div>
+                
+                <div class="shift-option">
+                    <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
+                    <label for="night_${day}">N<br><small>23-07</small></label>
+                </div>
+                
+                ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
+            </div>
+        `;
+    }
+    
+    grid.innerHTML = gridHTML;
+}
+
+function getCurrentPeriodFromStorage() {
+    try {
+        const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+        return config.currentPeriod || null;
+    } catch (error) {
+        console.error('Error reading period config:', error);
+        return null;
+    }
+}
 
         async function submitPreferences() {
             if (!verifiedWorkerName) {
