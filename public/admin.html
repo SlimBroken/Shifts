@@ -5,243 +5,467 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Shift Schedule Manager</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+       * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e3a8a 50%, #2563eb 75%, #1e40af 100%);
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
+/* Security Network Background */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(30, 58, 138, 0.1) 0%, transparent 50%);
+    background-size: 100% 100%;
+    z-index: -1;
+}
 
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+.security-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(90deg, transparent 49%, rgba(59, 130, 246, 0.05) 50%, transparent 51%),
+        linear-gradient(0deg, transparent 49%, rgba(59, 130, 246, 0.05) 50%, transparent 51%);
+    background-size: 100px 100px;
+    z-index: -1;
+    opacity: 0.2;
+}
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
+.container {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
+    border-radius: 20px;
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 0 1px rgba(59, 130, 246, 0.3);
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+}
 
-        .content {
-            padding: 30px;
-        }
+.header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: shimmer 4s ease-in-out infinite;
+}
 
-        .btn:hover {
-            transform: translateY(-2px);
-        }
+@keyframes shimmer {
+    0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+    50% { transform: rotate(180deg) scale(1.1); opacity: 0.2; }
+}
 
-        .btn-success {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-        }
+.maccabi-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    position: relative;
+    z-index: 2;
+}
 
-        .btn-danger {
-            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
-        }
+.maccabi-shield {
+    width: 50px;
+    height: 55px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    clip-path: polygon(50% 0%, 0% 25%, 0% 75%, 50% 100%, 100% 75%, 100% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
 
-        .btn-warning {
-            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
-        }
+.header h1 {
+    font-size: 2.8em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 2;
+}
 
-        .password-section {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-        }
+.header p {
+    font-size: 1.2em;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+}
 
-        .password-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 15px;
-            justify-content: center;
-        }
+.soc-subtitle {
+    font-size: 0.9em;
+    margin-top: 10px;
+    color: #bfdbfe;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
 
-        .password-input input {
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 16px;
-            width: 250px;
-        }
+.content {
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.05);
+}
 
-        .section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 1px solid #dee2e6;
-        }
+.btn {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    box-shadow: 
+        0 8px 16px rgba(30, 64, 175, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
 
-        .section h3 {
-            color: #495057;
-            margin-bottom: 15px;
-        }
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
 
-        .worker-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+.btn:hover::before {
+    left: 100%;
+}
 
-        .worker-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 12px 24px rgba(30, 64, 175, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
 
-        .worker-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
+.btn-success {
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+}
 
-        .worker-tag {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+.btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+}
 
-        .worker-tag button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 2px 6px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+.btn-warning {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+}
 
-        .lock-status {
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
+.password-section {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    color: #fef3c7;
+}
 
-        .lock-status.locked {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
+.password-section h3 {
+    color: #fbbf24;
+    margin-bottom: 15px;
+}
 
-        .lock-status.unlocked {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
+.password-input {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-top: 20px;
+    justify-content: center;
+}
 
-        .submissions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
+.password-input input {
+    padding: 12px 16px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    font-size: 16px;
+    width: 250px;
+    background: rgba(30, 58, 138, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
 
-        .submission-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #dee2e6;
-            transition: transform 0.2s ease;
-        }
+.password-input input::placeholder {
+    color: #94a3b8;
+}
 
-        .submission-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
+.password-input input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
 
-        .submission-card.approved {
-            border-color: #28a745;
-            background: #f8fff9;
-        }
+.section {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 25px;
+    border-radius: 15px;
+    margin: 25px 0;
+    backdrop-filter: blur(10px);
+}
 
-        .submission-card h4 {
-            color: #495057;
-            margin-bottom: 10px;
-        }
+.section h3 {
+    color: #e2e8f0;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        .alert {
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 8px;
-            font-weight: 500;
-        }
+.worker-input {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+}
 
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
+.worker-input input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    font-size: 14px;
+    background: rgba(30, 58, 138, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
 
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
+.worker-input input::placeholder {
+    color: #94a3b8;
+}
 
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
+.worker-input input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
 
-        .hidden {
-            display: none;
-        }
+.worker-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.worker-tag {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(147, 197, 253, 0.3);
+    padding: 10px 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    color: #dbeafe;
+    transition: all 0.3s ease;
+}
+
+.worker-tag:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.worker-tag button {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.3s ease;
+}
+
+.worker-tag button:hover {
+    background: #ef4444;
+}
+
+.lock-status {
+    padding: 18px;
+    border-radius: 12px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.lock-status.locked {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+    color: #fecaca;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.lock-status.unlocked {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.submissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.submission-card {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 20px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    color: #e2e8f0;
+}
+
+.submission-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.submission-card.approved {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+}
+
+.submission-card h4 {
+    color: #dbeafe;
+    margin-bottom: 12px;
+    font-size: 18px;
+}
+
+.alert {
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 12px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+    color: #dbeafe;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+    color: #fef3c7;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.hidden {
+    display: none;
+}
+
+.security-icon {
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Enhanced styling for specific elements */
+label {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+input[type="date"], input[type="text"], select {
+    background: rgba(30, 58, 138, 0.3);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    color: white;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+input[type="date"]:focus, input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+input[type="date"]::placeholder, input[type="text"]::placeholder {
+    color: #94a3b8;
+}
     </style>
 </head>
-<body>
+<<body>
+    <div class="security-lines"></div>
     <div class="container">
-        <div class="header">
-            <h1>🔧 Admin Dashboard</h1>
-            <p>Shift Schedule Manager</p>
-        </div>
+        <div class="maccabi-shield">מכבי</div>
+    </div>
+    <h1><span class="security-icon">🔧</span> SOC Admin Dashboard</h1>
+    <p>Shift Schedule Management Center</p>
+    <div class="soc-subtitle">SOC OPERATIONS CENTER</div>
+</div>
 
         <div class="content">
             <!-- Login Section -->
             <div id="loginSection" class="password-section">
-                <h3>🔒 Admin Access Required</h3>
+                <h3><span class="security-icon">🔒</span> SOC Admin Access Required</h3>
                 <p>Enter the admin password to access the dashboard:</p>
                 <div class="password-input">
                     <input type="password" id="adminPassword" placeholder="Enter admin password">
@@ -254,7 +478,7 @@
             <div id="dashboard" class="hidden">
                 <!-- Worker Management -->
                 <div class="section">
-                    <h3>👥 Worker Access Management</h3>
+                    <h3><span class="security-icon">👥</span> Worker Access Management</h3>
                     <div class="worker-input">
                         <input type="text" id="workerNameInput" placeholder="Enter worker name">
                         <button class="btn btn-success" onclick="addWorker()">Add Worker</button>
@@ -266,7 +490,7 @@
                 </div>
                 <!-- Schedule Period Management -->
 <div class="section">
-    <h3>📅 Schedule Period Management</h3>
+    <h3><span class="security-icon">📅</span> Schedule Period Management</h3>
     
     <!-- Current Period Display -->
     <div id="currentPeriodDisplay" class="lock-status">
@@ -328,7 +552,7 @@
 </div>
                 <!-- Preference Lock Control -->
                 <div class="section">
-                    <h3>🔒 Preference Submission Control</h3>
+                    <h3><span class="security-icon">🔒</span> Preference Submission Control</h3>
                     <div id="lockStatus" class="lock-status">
                         <!-- Lock status will be displayed here -->
                     </div>
@@ -339,7 +563,7 @@
 
                 <!-- Worker Submissions -->
                 <div class="section">
-                    <h3>📝 Worker Submissions</h3>
+                    <h3><span class="security-icon">📝</span> Worker Submissions</h3>
                     <div id="submissionsList" class="submissions-grid">
                         <!-- Submissions will be displayed here -->
                     </div>
@@ -347,7 +571,7 @@
 
                 <!-- Schedule Generation -->
                 <div class="section">
-                    <h3>📊 Generate Schedule</h3>
+                    <h3><span class="security-icon">📊</span> Generate Schedule</h3>
                     <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
                         🔄 Generate Optimized Schedule
                     </button>
