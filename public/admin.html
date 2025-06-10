@@ -1764,14 +1764,122 @@ function generateSchedule() {
             // Calculate possible variations before generating
             const variations = calculatePossibleVariations(approvedSubmissions);
 
-            const schedule = generateOptimizedSchedule(approvedSubmissions);
+            // Show loading message
+            showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
+
+            // Generate multiple schedules and pick the best one
+            const bestSchedule = generateBestCoverageSchedule(approvedSubmissions, variations);
             
-            // Add variations data to schedule
-            schedule.variations = variations;
+            displaySchedule(bestSchedule);
             
-            displaySchedule(schedule);
+            showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
+        }
+
+        function generateBestCoverageSchedule(submissions, variations) {
+            console.log('🎯 SEARCHING FOR BEST COVERAGE SCHEDULE...');
             
-            showAlert('Schedule generated successfully!', 'success');
+            let bestSchedule = null;
+            let bestCoverage = 0;
+            const maxAttempts = 15; // Try up to 15 different schedules
+            let attempt = 1;
+
+            while (attempt <= maxAttempts) {
+                console.log(`🔄 Attempt ${attempt}/${maxAttempts}...`);
+                
+                try {
+                    const schedule = generateOptimizedSchedule(submissions);
+                    
+                    console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
+                    
+                    // If we found 100% coverage, use it immediately
+                    if (schedule.coverage >= 100) {
+                        console.log(`🎯 PERFECT! Found 100% coverage on attempt ${attempt}`);
+                        schedule.variations = variations;
+                        schedule.attemptNumber = attempt;
+                        schedule.totalAttempts = maxAttempts;
+                        return schedule;
+                    }
+                    
+                    // Otherwise, keep the best one so far
+                    if (schedule.coverage > bestCoverage) {
+                        bestCoverage = schedule.coverage;
+                        bestSchedule = schedule;
+                        console.log(`⭐ New best: ${bestCoverage.toFixed(1)}% coverage`);
+                    }
+                    
+                } catch (error) {
+                    console.log(`❌ Attempt ${attempt} failed:`, error);
+                }
+                
+                attempt++;
+            }
+
+            // Add metadata to the best schedule found
+            if (bestSchedule) {
+                bestSchedule.variations = variations;
+                bestSchedule.attemptNumber = "Best of " + maxAttempts;
+                bestSchedule.totalAttempts = maxAttempts;
+                console.log(`🏆 FINAL RESULT: Best coverage found was ${bestCoverage.toFixed(1)}%`);
+            }
+
+            return bestSchedule;
+        }
+
+        function generateOptimizedSchedule(submissions) {
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
+
+            const schedule = {
+                week1: initializeWeek(0),
+                week2: initializeWeek(7),
+                workers: workers.map(w => w.name)
+            };
+
+            window.currentScheduleBeingGenerated = schedule;
+
+            const workerStats = {};
+            workers.forEach(worker => {
+                workerStats[worker.name] = {
+                    totalShifts: 0,
+                    nightShifts: 0,
+                    morningShifts: 0,
+                    weekendShifts: 0,
+                    premiumShifts: 0,
+                    lastAssignedDay: -1,
+                    lastShiftEnd: null
+                };
+            });
+
+            let totalCoverage = 0;
+            const totalPossibleShifts = 42; // 3 shifts × 7 days × 2 weeks
+
+            const shiftTimes = {
+                morning: { start: 7, end: 15 },
+                evening: { start: 15, end: 23 },
+                night: { start: 23, end: 7 }
+            };
+
+            // PASS 1: Normal assignment with all constraints
+            totalCoverage = performSchedulingPass(schedule, workers, workerStats, shiftTimes, 1);
+
+            // PASS 2: Fill empty shifts with relaxed morning constraint
+            const pass2Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, false);
+            totalCoverage += pass2Filled;
+
+            // PASS 3: Final aggressive filling
+            const pass3Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, true);
+            totalCoverage += pass3Filled;
+
+            delete window.currentScheduleBeingGenerated;
+
+            return {
+                ...schedule,
+                coverage: (totalCoverage / totalPossibleShifts) * 100,
+                totalAssignedShifts: totalCoverage,
+                totalPossibleShifts: totalPossibleShifts
+            };
         }
 
 function generateOptimizedSchedule(submissions) {
@@ -2496,28 +2604,43 @@ function displaySchedule(schedule) {
                     <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
                     <div style="margin: 10px 0; padding: 15px; background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%); border-radius: 8px; border: 2px solid #4caf50;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 24px;">🎲</span>
-                                <div>
-                                    <div style="font-weight: bold; color: #2e7d32; font-size: 18px;">
-                                        ${schedule.variations ? schedule.variations.estimated : 'N/A'} אפשרויות
-                                    </div>
-                                    <div style="font-size: 12px; color: #558b2f;">
-                                        לוחות זמנים שונים אפשריים
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 24px;">🎲</span>
+                                    <div>
+                                        <div style="font-weight: bold; color: #2e7d32; font-size: 18px;">
+                                            ${schedule.variations ? schedule.variations.estimated : 'N/A'} אפשרויות
+                                        </div>
+                                        <div style="font-size: 12px; color: #558b2f;">
+                                            לוחות זמנים שונים אפשריים
+                                        </div>
                                     </div>
                                 </div>
+                                ${schedule.attemptNumber ? `
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 20px;">🎯</span>
+                                        <div>
+                                            <div style="font-weight: bold; color: #1976d2; font-size: 16px;">
+                                                ${schedule.coverage >= 100 ? 'מושלם!' : 'הטוב ביותר'}
+                                            </div>
+                                            <div style="font-size: 12px; color: #1565c0;">
+                                                ${schedule.attemptNumber} מתוך ${schedule.totalAttempts} ניסיונות
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                             <button class="btn" onclick="copyScheduleToExcel()" style="margin: 0;">📋 העתק לאקסל</button>
                         </div>
                         ${schedule.variations ? `
                             <div style="margin-top: 10px; font-size: 11px; color: #666; text-align: center;">
                                 ${schedule.variations.constrainedShifts} משמרות מוגבלות • ${schedule.variations.impossibleShifts} משמרות בלתי אפשריות
+                                ${schedule.coverage >= 100 ? ' • 🏆 כיסוי מושלם הושג!' : ''}
                             </div>
                         ` : ''}
                     </div>
                 </div>
             `;
-
     // Week 1
     html += createWeekTable(1, schedule.week1, schedule.workers);
     html += createWeekStats('שבוע 1', schedule.week1, schedule.workers);
