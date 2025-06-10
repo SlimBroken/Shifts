@@ -2176,7 +2176,7 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
             return false;
         }
         
-function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
+ function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
             // Check availability preference
             if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
                 return false;
@@ -2204,49 +2204,54 @@ function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shi
                 return false;
             }
 
-            // ENHANCED 8-hour break rule - check against ALL previous shifts
+            // ENHANCED 8-hour break rule with better logging
+            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
             const workerStat = workerStats[worker.name];
-            if (workerStat) {
-                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+            
+            if (workerStat && workerStat.lastShiftEnd !== null) {
+                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
                 
-                // Check against the worker's last recorded shift end
-                if (workerStat.lastShiftEnd !== null) {
-                    const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-                    
-                    if (hoursSinceLastShift < 8) {
-                        console.log(`❌ 8-hour violation: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
-                        return false;
-                    }
+                // Debug logging for negative hours
+                if (hoursSinceLastShift < 0) {
+                    console.log(`🐛 BUG DETECTED: ${worker.name} - Negative hours: ${hoursSinceLastShift.toFixed(1)}`);
+                    console.log(`   Current shift start: ${new Date(currentShiftStart).toLocaleString()}`);
+                    console.log(`   Last shift end: ${new Date(workerStat.lastShiftEnd).toLocaleString()}`);
+                    console.log(`   Last assigned day: ${workerStat.lastAssignedDay}, Current day: ${globalDay}`);
                 }
+                
+                if (hoursSinceLastShift < 8) {
+                    console.log(`❌ 8-hour violation: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                    return false;
+                }
+            }
 
-                // ADDITIONAL CHECK: Look for any shifts in the previous day that might conflict
-                if (globalDay > 0) {
-                    const previousGlobalDay = globalDay - 1;
-                    const previousWeekIndex = Math.floor(previousGlobalDay / 7);
-                    const previousDayIndex = previousGlobalDay % 7;
+            // ADDITIONAL CHECK: Look for any shifts in the previous day that might conflict
+            if (globalDay > 0) {
+                const previousGlobalDay = globalDay - 1;
+                const previousWeekIndex = Math.floor(previousGlobalDay / 7);
+                const previousDayIndex = previousGlobalDay % 7;
+                
+                let previousWeek;
+                if (previousWeekIndex === 0) {
+                    previousWeek = window.currentScheduleBeingGenerated?.week1;
+                } else if (previousWeekIndex === 1) {
+                    previousWeek = window.currentScheduleBeingGenerated?.week2;
+                }
+                
+                if (previousWeek && previousWeek.days[previousDayIndex]) {
+                    const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
                     
-                    let previousWeek;
-                    if (previousWeekIndex === 0) {
-                        previousWeek = window.currentScheduleBeingGenerated?.week1;
-                    } else if (previousWeekIndex === 1) {
-                        previousWeek = window.currentScheduleBeingGenerated?.week2;
-                    }
-                    
-                    if (previousWeek && previousWeek.days[previousDayIndex]) {
-                        const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
-                        
-                        // Check if worker had any shift yesterday
-                        ['morning', 'evening', 'night'].forEach(prevShift => {
-                            if (previousDayShifts[prevShift] === worker.name) {
-                                const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
-                                const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
-                                
-                                if (hoursGap < 8) {
-                                    console.log(`❌ Consecutive shift violation: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
-                                    return false;
-                                }
+                    // Check if worker had any shift yesterday
+                    for (const prevShift of ['morning', 'evening', 'night']) {
+                        if (previousDayShifts[prevShift] === worker.name) {
+                            const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
+                            const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
+                            
+                            if (hoursGap < 8) {
+                                console.log(`❌ Consecutive shift violation: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
+                                return false;
                             }
-                        });
+                        }
                     }
                 }
             }
@@ -2255,28 +2260,29 @@ function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shi
         }
 
 function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
-    week.days[day].shifts[shift] = worker.name;
+            week.days[day].shifts[shift] = worker.name;
 
-    const stats = workerStats[worker.name];
-    stats.totalShifts++;
-    if (shift === 'night') stats.nightShifts++;
-    if (shift === 'morning') stats.morningShifts++;
-    if (day === 5 || day === 6) stats.weekendShifts++;
-    
-    if (isPremiumWeekendShift(day, shift)) {
-        stats.premiumShifts++;
-    }
-    
-    stats.lastAssignedDay = globalDay;
-    
-    // CRITICAL: Always update the last shift end time
-    const shiftEndTime = calculateShiftEndTime(globalDay, shift, shiftTimes);
-    stats.lastShiftEnd = shiftEndTime;
-    
-    // Log for debugging
-    const endDate = new Date(shiftEndTime);
-    console.log(`✅ SOC assigned ${worker.name} to ${shift} on day ${globalDay}. Shift ends: ${endDate.toLocaleString()}`);
-}
+            const stats = workerStats[worker.name];
+            stats.totalShifts++;
+            if (shift === 'night') stats.nightShifts++;
+            if (shift === 'morning') stats.morningShifts++;
+            if (day === 5 || day === 6) stats.weekendShifts++;
+            
+            if (isPremiumWeekendShift(day, shift)) {
+                stats.premiumShifts++;
+            }
+            
+            stats.lastAssignedDay = globalDay;
+            
+            // CRITICAL: Always update the last shift end time with proper calculation
+            const shiftEndTime = calculateShiftEndTime(globalDay, shift, shiftTimes);
+            stats.lastShiftEnd = shiftEndTime;
+            
+            // Enhanced logging
+            const endDate = new Date(shiftEndTime);
+            console.log(`✅ Assigned ${worker.name} to ${shift} on day ${globalDay}. Shift ends: ${endDate.toLocaleString()}`);
+        }
+
 
 function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
             let filledCount = 0;
@@ -2391,48 +2397,38 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
         }
 
 function calculateShiftStartTime(globalDay, shift, shiftTimes) {
-    // Get the actual start date from current period
-    const periodConfig = getCurrentPeriodConfig();
-    if (!periodConfig) {
-        console.error('No active SOC period found for schedule generation');
-        return null;
-    }
-    
-    const periodStartDate = new Date(periodConfig.startDate);
-    const shiftDate = new Date(periodStartDate);
-    shiftDate.setDate(periodStartDate.getDate() + globalDay);
-    
-    const startHour = shiftTimes[shift].start;
-    shiftDate.setHours(startHour, 0, 0, 0);
-    
-    return shiftDate.getTime();
-}
+            // Base date: June 1st, 2025 (Sunday) - Make sure this is consistent
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed (5 = June)
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const startHour = shiftTimes[shift].start;
+            shiftDate.setHours(startHour, 0, 0, 0);
+            
+            console.log(`📅 ${shift} on day ${globalDay} starts: ${shiftDate.toLocaleString()}`);
+            return shiftDate.getTime();
+        }
 
 function calculateShiftEndTime(globalDay, shift, shiftTimes) {
-    // Get the actual start date from current period
-    const periodConfig = getCurrentPeriodConfig();
-    if (!periodConfig) {
-        console.error('No active SOC period found for schedule generation');
-        return null;
-    }
-    
-    const periodStartDate = new Date(periodConfig.startDate);
-    const shiftDate = new Date(periodStartDate);
-    shiftDate.setDate(periodStartDate.getDate() + globalDay);
-    
-    const endHour = shiftTimes[shift].end;
-    
-    if (shift === 'night') {
-        // Night shift ends the next day at 07:00
-        shiftDate.setDate(shiftDate.getDate() + 1);
-        shiftDate.setHours(endHour, 0, 0, 0);
-    } else {
-        // Morning/Evening shifts end same day
-        shiftDate.setHours(endHour, 0, 0, 0);
-    }
-    
-    return shiftDate.getTime();
-}
+            // Base date: June 1st, 2025 (Sunday) - Make sure this is consistent  
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed (5 = June)
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const endHour = shiftTimes[shift].end;
+            
+            if (shift === 'night') {
+                // Night shift ends the next day at 07:00
+                shiftDate.setDate(shiftDate.getDate() + 1);
+                shiftDate.setHours(endHour, 0, 0, 0);
+            } else {
+                // Morning/Evening shifts end same day
+                shiftDate.setHours(endHour, 0, 0, 0);
+            }
+            
+            console.log(`📅 ${shift} on day ${globalDay} ends: ${shiftDate.toLocaleString()}`);
+            return shiftDate.getTime();
+        }
 
 function initializeWeek(globalStartDay) {
     const week = { days: [] };
@@ -2763,11 +2759,12 @@ function displaySchedule(schedule) {
                     };
                 });
 
-                // Rebuild worker stats by scanning the schedule
+                // Rebuild worker stats by scanning the schedule IN CHRONOLOGICAL ORDER
                 [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
                     week.days.forEach((day, dayIndex) => {
                         const globalDay = weekIndex * 7 + dayIndex;
                         
+                        // Process shifts in order: morning, evening, night
                         ['morning', 'evening', 'night'].forEach(shift => {
                             const assignedWorker = day.shifts[shift];
                             if (assignedWorker && workerStats[assignedWorker]) {
@@ -2781,27 +2778,25 @@ function displaySchedule(schedule) {
                                     stats.premiumShifts++;
                                 }
                                 
-                                stats.lastAssignedDay = globalDay;
-                                
+                                // CRITICAL: Only update lastShiftEnd if this shift is LATER than previous
                                 const shiftTimes = {
                                     morning: { start: 7, end: 15 },
                                     evening: { start: 15, end: 23 },
                                     night: { start: 23, end: 7 }
                                 };
-                                stats.lastShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
+                                
+                                const thisShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
+                                
+                                // Only update if this is the worker's latest shift so far
+                                if (stats.lastShiftEnd === null || thisShiftEnd > stats.lastShiftEnd) {
+                                    stats.lastAssignedDay = globalDay;
+                                    stats.lastShiftEnd = thisShiftEnd;
+                                    console.log(`📊 Updated ${assignedWorker} last shift: ${shift} on day ${globalDay} ends ${new Date(thisShiftEnd).toLocaleString()}`);
+                                }
                             }
                         });
                     });
-                });
-
-                const shiftTimes = {
-                    morning: { start: 7, end: 15 },
-                    evening: { start: 15, end: 23 },
-                    night: { start: 23, end: 7 }
-                };
-
-                analyzeEmptyShifts(schedule, workers, workerStats, shiftTimes);
-            }        
+                });        
     let html = `
                 <div style="margin-top: 30px;">
                     <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
