@@ -2081,10 +2081,12 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                                 return false;
                             }
 
+                            // Calculate current shift start time (needed for both checks)
+                            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+
                             // CRITICAL: ALWAYS enforce 8-hour break rule - NEVER bypass this
                             const workerStat = workerStats[worker.name];
                             if (workerStat && workerStat.lastShiftEnd !== null) {
-                                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
                                 const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
                                 
                                 if (hoursSinceLastShift < 8) {
@@ -2110,7 +2112,7 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                                     const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
                                     
                                     // Check if worker had any shift yesterday
-                                    ['morning', 'evening', 'night'].forEach(prevShift => {
+                                    for (const prevShift of ['morning', 'evening', 'night']) {
                                         if (previousDayShifts[prevShift] === worker.name) {
                                             const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
                                             const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
@@ -2120,7 +2122,7 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                                                 return false;
                                             }
                                         }
-                                    });
+                                    }
                                 }
                             }
 
