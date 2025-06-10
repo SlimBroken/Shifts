@@ -1217,7 +1217,64 @@ function updateLockStatus() {
         toggleBtn.className = 'btn btn-warning';
     }
 }
+function calculatePossibleVariations(submissions) {
+            console.log('🔢 CALCULATING POSSIBLE SCHEDULE VARIATIONS...');
+            
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
 
+            let totalVariations = 1;
+            let constrainedShifts = 0;
+            let impossibleShifts = 0;
+
+            // Analyze each shift slot
+            for (let globalDay = 0; globalDay < 14; globalDay++) {
+                ['morning', 'evening', 'night'].forEach(shift => {
+                    // Count available workers for this specific shift
+                    const availableWorkers = workers.filter(worker => {
+                        return worker.preferences[globalDay] && worker.preferences[globalDay][shift];
+                    });
+
+                    if (availableWorkers.length === 0) {
+                        impossibleShifts++;
+                    } else if (availableWorkers.length === 1) {
+                        constrainedShifts++;
+                        // Only 1 choice = no variation for this slot
+                    } else {
+                        // Multiple workers available = variations possible
+                        totalVariations *= availableWorkers.length;
+                        
+                        // Cap the calculation to prevent overflow
+                        if (totalVariations > 1000000) {
+                            totalVariations = 1000000;
+                        }
+                    }
+                });
+            }
+
+            console.log(`📊 Analysis: ${constrainedShifts} constrained shifts, ${impossibleShifts} impossible shifts`);
+            
+            // Estimate realistic variations considering constraints
+            let estimatedVariations;
+            if (totalVariations >= 1000000) {
+                estimatedVariations = "1,000,000+";
+            } else if (totalVariations >= 10000) {
+                estimatedVariations = Math.round(totalVariations / 1000) + "K+";
+            } else if (totalVariations >= 1000) {
+                estimatedVariations = Math.round(totalVariations / 100) * 100 + "+";
+            } else {
+                estimatedVariations = totalVariations.toLocaleString();
+            }
+
+            return {
+                estimated: estimatedVariations,
+                raw: totalVariations,
+                constrainedShifts: constrainedShifts,
+                impossibleShifts: impossibleShifts
+            };
+        }
 function updateSubmissionsList() {
     const container = document.getElementById('submissionsList');
     
@@ -1693,39 +1750,29 @@ function removeWorker(workerName) {
 // This is Artifact 4 of 4
 
 function generateSchedule() {
-    console.log('🔄 SOC Schedule generation initiated...');
-    
-    // Check if we have an active period
-    const periodConfig = getCurrentPeriodConfig();
-    if (!periodConfig || !periodConfig.isActive) {
-        showAlert('❌ Cannot generate schedule: No active SOC period found. Please open a new 2-week period first.', 'warning');
-        return;
-    }
-    
-    const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-    
-    if (approvedSubmissions.length === 0) {
-        showAlert('❌ No approved submissions found. Please approve some worker submissions first.', 'warning');
-        return;
-    }
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
 
-    console.log('📋 SOC generating schedule for', approvedSubmissions.length, 'approved workers');
-    
-    // Lock preferences during generation
-    localStorage.setItem('preferencesLocked', 'true');
-    localStorage.setItem('lockTimestamp', Date.now().toString());
-    updateDisplay();
+            localStorage.setItem('preferencesLocked', 'true');
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            updateDisplay();
 
-    const schedule = generateOptimizedSchedule(approvedSubmissions);
-    
-    if (schedule) {
-        displaySchedule(schedule);
-        showAlert(`✅ SOC schedule generated successfully for ${periodConfig.label}! Coverage: ${schedule.coverage.toFixed(1)}%`, 'success');
-        console.log('✅ SOC schedule generation completed with', schedule.coverage.toFixed(1), '% coverage');
-    } else {
-        showAlert('❌ SOC schedule generation failed. Check console for details.', 'danger');
-    }
-}
+            // Calculate possible variations before generating
+            const variations = calculatePossibleVariations(approvedSubmissions);
+
+            const schedule = generateOptimizedSchedule(approvedSubmissions);
+            
+            // Add variations data to schedule
+            schedule.variations = variations;
+            
+            displaySchedule(schedule);
+            
+            showAlert('Schedule generated successfully!', 'success');
+        }
 
 function generateOptimizedSchedule(submissions) {
     // Validate that we have an active period
@@ -2409,25 +2456,32 @@ function logShiftDistribution(schedule) {
 }
 
 function displaySchedule(schedule) {
-    const periodInfo = schedule.periodInfo || {};
-    
-    let html = `
-        <div style="margin-top: 30px; padding: 25px; background: rgba(255, 255, 255, 0.1); border-radius: 15px; border: 1px solid rgba(59, 130, 246, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h4 style="color: #e2e8f0; margin-bottom: 5px;">
-                        <span class="security-icon">📊</span> SOC לוח משמרות - ${periodInfo.label || 'Generated Schedule'}
-                    </h4>
-                    <p style="color: #dbeafe; margin: 0; font-size: 14px;">
-                        Coverage: ${schedule.coverage.toFixed(1)}% | Generated: ${new Date().toLocaleString()}
-                    </p>
+            let html = `
+                <div style="margin-top: 30px;">
+                    <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
+                    <div style="margin: 10px 0; padding: 15px; background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%); border-radius: 8px; border: 2px solid #4caf50;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 24px;">🎲</span>
+                                <div>
+                                    <div style="font-weight: bold; color: #2e7d32; font-size: 18px;">
+                                        ${schedule.variations ? schedule.variations.estimated : 'N/A'} אפשרויות
+                                    </div>
+                                    <div style="font-size: 12px; color: #558b2f;">
+                                        לוחות זמנים שונים אפשריים
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn" onclick="copyScheduleToExcel()" style="margin: 0;">📋 העתק לאקסל</button>
+                        </div>
+                        ${schedule.variations ? `
+                            <div style="margin-top: 10px; font-size: 11px; color: #666; text-align: center;">
+                                ${schedule.variations.constrainedShifts} משמרות מוגבלות • ${schedule.variations.impossibleShifts} משמרות בלתי אפשריות
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
-                <button class="btn btn-success" onclick="copyScheduleToExcel()" style="padding: 10px 20px;">
-                    <span class="security-icon">📋</span> העתק לאקסל
-                </button>
-            </div>
-        </div>
-    `;
+            `;
 
     // Week 1
     html += createWeekTable(1, schedule.week1, schedule.workers);
