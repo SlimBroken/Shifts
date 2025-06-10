@@ -2081,16 +2081,46 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                                 return false;
                             }
 
-                            // Check 8-hour break rule (unless aggressive pass)
-                            if (!isAggressivePass) {
-                                const workerStat = workerStats[worker.name];
-                                if (workerStat && workerStat.lastShiftEnd !== null) {
-                                    const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-                                    const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                            // CRITICAL: ALWAYS enforce 8-hour break rule - NEVER bypass this
+                            const workerStat = workerStats[worker.name];
+                            if (workerStat && workerStat.lastShiftEnd !== null) {
+                                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                                
+                                if (hoursSinceLastShift < 8) {
+                                    console.log(`❌ 8-hour violation blocked in Pass ${isAggressivePass ? '3' : '2'}: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                                    return false;
+                                }
+                            }
+
+                            // ADDITIONAL: Check for previous day conflicts
+                            if (globalDay > 0) {
+                                const previousGlobalDay = globalDay - 1;
+                                const previousWeekIndex = Math.floor(previousGlobalDay / 7);
+                                const previousDayIndex = previousGlobalDay % 7;
+                                
+                                let previousWeek;
+                                if (previousWeekIndex === 0) {
+                                    previousWeek = schedule.week1;
+                                } else if (previousWeekIndex === 1) {
+                                    previousWeek = schedule.week2;
+                                }
+                                
+                                if (previousWeek && previousWeek.days[previousDayIndex]) {
+                                    const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
                                     
-                                    if (hoursSinceLastShift < 8) {
-                                        return false;
-                                    }
+                                    // Check if worker had any shift yesterday
+                                    ['morning', 'evening', 'night'].forEach(prevShift => {
+                                        if (previousDayShifts[prevShift] === worker.name) {
+                                            const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
+                                            const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
+                                            
+                                            if (hoursGap < 8) {
+                                                console.log(`❌ Cross-day 8-hour violation blocked: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
+                                                return false;
+                                            }
+                                        }
+                                    });
                                 }
                             }
 
@@ -2108,6 +2138,9 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                             const selectedWorker = sortedWorkers[0];
                             assignWorkerToShift(selectedWorker, shift, day, globalDay, week, workerStats, shiftTimes);
                             filledCount++;
+                            console.log(`✅ Pass ${isAggressivePass ? '3' : '2'}: Assigned ${selectedWorker.name} to ${shift} on day ${globalDay}`);
+                        } else {
+                            console.log(`❌ Pass ${isAggressivePass ? '3' : '2'}: No available workers for ${shift} on day ${globalDay}`);
                         }
                     });
                 }
