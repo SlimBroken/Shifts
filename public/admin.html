@@ -1403,38 +1403,6 @@ function showAlert(message, type) {
         // Maccabi SOC Admin Dashboard - Period & Worker Management Functions
 // This is Artifact 3 of 4
 
-function updateScheduleRulesPeriodStatus() {
-    const statusDiv = document.getElementById('scheduleRulesPeriodStatus');
-    if (!statusDiv) return;
-    
-    const periodConfig = getCurrentPeriodConfig();
-    
-    if (periodConfig && periodConfig.isActive) {
-        statusDiv.style.background = 'rgba(34, 197, 94, 0.2)';
-        statusDiv.style.border = '1px solid rgba(34, 197, 94, 0.4)';
-        statusDiv.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <span class="security-icon">📅</span>
-                <div>
-                    <strong style="color: #bbf7d0;">Active SOC Period: ${periodConfig.label}</strong><br>
-                    <small style="color: #bbf7d0; opacity: 0.9;">Schedules will be generated for ${periodConfig.startDate} to ${periodConfig.endDate}</small>
-                </div>
-            </div>
-        `;
-    } else {
-        statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
-        statusDiv.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-        statusDiv.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <span class="security-icon">❌</span>
-                <div>
-                    <strong style="color: #fecaca;">No Active SOC Period</strong><br>
-                    <small style="color: #fecaca; opacity: 0.9;">Please open a new 2-week period before generating schedules</small>
-                </div>
-            </div>
-        `;
-    }
-}
 
 // Period Management Functions
 function initializePeriodManagement() {
