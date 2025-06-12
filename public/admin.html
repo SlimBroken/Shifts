@@ -2238,71 +2238,40 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
         }
         
  function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
-            // Check availability preference
-            if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-                return false;
-            }
+    // Check availability preference
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
+        return false;
+    }
 
-            // Check if worker already has a shift on this day
-            const currentDayShifts = week.days[day].shifts;
-            if (currentDayShifts.morning === worker.name || 
-                currentDayShifts.evening === worker.name || 
-                currentDayShifts.night === worker.name) {
-                return false;
-            }
+    // Check if worker already has a shift on this day
+    const currentDayShifts = week.days[day].shifts;
+    if (currentDayShifts.morning === worker.name || 
+        currentDayShifts.evening === worker.name || 
+        currentDayShifts.night === worker.name) {
+        return false;
+    }
 
-            // Check night shift limit (max 2 per week)
-            if (shift === 'night') {
-                const currentWeek = Math.floor(globalDay / 7);
-                const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
-                if (nightShiftsThisWeek >= 2) {
-                    return false;
-                }
-            }
-
-            // HARD CONSTRAINT: No more than 6 consecutive working days (prevents 7 in a row)
-            if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
-                return false;
-            }
-
-            // NEW RULE: Consecutive shift pattern constraint
-if (!checkConsecutiveShiftPattern(worker.name, globalDay, week)) {
-    return false;
-}
-
-            // ADDITIONAL CHECK: Look for any shifts in the previous day that might conflict
-            if (globalDay > 0) {
-                const previousGlobalDay = globalDay - 1;
-                const previousWeekIndex = Math.floor(previousGlobalDay / 7);
-                const previousDayIndex = previousGlobalDay % 7;
-                
-                let previousWeek;
-                if (previousWeekIndex === 0) {
-                    previousWeek = window.currentScheduleBeingGenerated?.week1;
-                } else if (previousWeekIndex === 1) {
-                    previousWeek = window.currentScheduleBeingGenerated?.week2;
-                }
-                
-                if (previousWeek && previousWeek.days[previousDayIndex]) {
-                    const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
-                    
-                    // Check if worker had any shift yesterday
-                    for (const prevShift of ['morning', 'evening', 'night']) {
-                        if (previousDayShifts[prevShift] === worker.name) {
-                            const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
-                            const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
-                            
-                            if (hoursGap < 8) {
-                                console.log(`❌ Consecutive shift violation: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return true;
+    // Check night shift limit (max 2 per week)
+    if (shift === 'night') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
+        if (nightShiftsThisWeek >= 2) {
+            return false;
         }
+    }
+
+    // HARD CONSTRAINT: No more than 6 consecutive working days (prevents 7 in a row)
+    if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
+        return false;
+    }
+
+    // NEW RULE: Consecutive shift pattern constraint
+    if (!checkConsecutiveShiftPattern(worker.name, globalDay, week)) {
+        return false;
+    }
+
+    return true;
+}
 
 function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
             week.days[day].shifts[shift] = worker.name;
