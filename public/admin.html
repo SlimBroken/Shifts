@@ -2299,80 +2299,104 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
                         }
 
                         const availableWorkers = workers.filter(worker => {
-                            // Basic availability check
-                            if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-                                return false;
-                            }
+    // Basic availability check
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
+        return false;
+    }
 
-                            // Check if worker already has a shift on this day
-                            const currentDayShifts = week.days[day].shifts;
-                            if (currentDayShifts.morning === worker.name || 
-                                currentDayShifts.evening === worker.name || 
-                                currentDayShifts.night === worker.name) {
-                                return false;
-                            }
+    // Check if worker already has a shift on this day (ALWAYS enforce)
+    const currentDayShifts = week.days[day].shifts;
+    if (currentDayShifts.morning === worker.name || 
+        currentDayShifts.evening === worker.name || 
+        currentDayShifts.night === worker.name) {
+        return false;
+    }
 
-                            // Always respect night shift limit
-                            if (shift === 'night') {
-                                const currentWeek = Math.floor(globalDay / 7);
-                                const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                                if (nightShiftsThisWeek >= 2) {
-                                    return false;
-                                }
-                            }
+    // Always respect night shift limit (ALWAYS enforce)
+    if (shift === 'night') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+        if (nightShiftsThisWeek >= 2) {
+            return false;
+        }
+    }
 
-                            // CRITICAL: Always prevent 7 consecutive days - NEVER bypass this
-                            if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
-                                return false;
-                            }
+    // DIFFERENT RULES FOR AGGRESSIVE PASS
+    if (isAggressivePass) {
+        // AGGRESSIVE PASS 3: Relax some constraints
+        
+        // Relax consecutive days limit (allow up to 8 instead of 6)
+        if (hasWorkedConsecutiveDays(worker.name, globalDay, 8)) {
+            return false;
+        }
+        
+        // Relax 8-hour break to 4 hours
+        const workerStat = workerStats[worker.name];
+        if (workerStat && workerStat.lastShiftEnd !== null) {
+            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+            
+            if (hoursSinceLastShift < 4) { // Relaxed from 8 to 4 hours
+                console.log(`❌ 4-hour violation in aggressive pass: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                return false;
+            }
+        }
+        
+        return true; // Much more lenient in aggressive pass
+    } else {
+        // NORMAL PASS 2: Strict constraints
+        
+        // Prevent 7 consecutive days
+        if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
+            return false;
+        }
 
-                            // Calculate current shift start time (needed for both checks)
-                            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+        // Enforce 8-hour break rule
+        const workerStat = workerStats[worker.name];
+        if (workerStat && workerStat.lastShiftEnd !== null) {
+            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+            
+            if (hoursSinceLastShift < 8) {
+                console.log(`❌ 8-hour violation blocked in Pass 2: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                return false;
+            }
+        }
 
-                            // CRITICAL: ALWAYS enforce 8-hour break rule - NEVER bypass this
-                            const workerStat = workerStats[worker.name];
-                            if (workerStat && workerStat.lastShiftEnd !== null) {
-                                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-                                
-                                if (hoursSinceLastShift < 8) {
-                                    console.log(`❌ 8-hour violation blocked in Pass ${isAggressivePass ? '3' : '2'}: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
-                                    return false;
-                                }
-                            }
+        // Check previous day conflicts (all the existing logic)
+        if (globalDay > 0) {
+            const previousGlobalDay = globalDay - 1;
+            const previousWeekIndex = Math.floor(previousGlobalDay / 7);
+            const previousDayIndex = previousGlobalDay % 7;
+            
+            let previousWeek;
+            if (previousWeekIndex === 0) {
+                previousWeek = schedule.week1;
+            } else if (previousWeekIndex === 1) {
+                previousWeek = schedule.week2;
+            }
+            
+            if (previousWeek && previousWeek.days[previousDayIndex]) {
+                const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
+                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                
+                for (const prevShift of ['morning', 'evening', 'night']) {
+                    if (previousDayShifts[prevShift] === worker.name) {
+                        const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
+                        const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
+                        
+                        if (hoursGap < 8) {
+                            console.log(`❌ Cross-day 8-hour violation blocked: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
 
-                            // ADDITIONAL: Check for previous day conflicts
-                            if (globalDay > 0) {
-                                const previousGlobalDay = globalDay - 1;
-                                const previousWeekIndex = Math.floor(previousGlobalDay / 7);
-                                const previousDayIndex = previousGlobalDay % 7;
-                                
-                                let previousWeek;
-                                if (previousWeekIndex === 0) {
-                                    previousWeek = schedule.week1;
-                                } else if (previousWeekIndex === 1) {
-                                    previousWeek = schedule.week2;
-                                }
-                                
-                                if (previousWeek && previousWeek.days[previousDayIndex]) {
-                                    const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
-                                    
-                                    // Check if worker had any shift yesterday
-                                    for (const prevShift of ['morning', 'evening', 'night']) {
-                                        if (previousDayShifts[prevShift] === worker.name) {
-                                            const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
-                                            const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
-                                            
-                                            if (hoursGap < 8) {
-                                                console.log(`❌ Cross-day 8-hour violation blocked: ${worker.name} - ${prevShift} yesterday, ${shift} today (${hoursGap.toFixed(1)} hours gap)`);
-                                                return false;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            return true;
-                        });
+        return true;
+    }
+});
 
                         if (availableWorkers.length > 0) {
                             // Sort by total shifts (prefer workers with fewer shifts)
