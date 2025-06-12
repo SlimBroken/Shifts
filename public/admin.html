@@ -1008,6 +1008,67 @@ function login() {
     }
 }
 
+function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
+    // Look back at the worker's recent shift pattern
+    let consecutiveShifts = 0;
+    let daysSinceLastWork = 0;
+    
+    // Check backwards from the day before today
+    for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
+        const weekIndex = Math.floor(checkDay / 7);
+        const dayIndex = checkDay % 7;
+        
+        let week;
+        if (weekIndex === 0) {
+            week = window.currentScheduleBeingGenerated?.week1 || schedule.week1;
+        } else if (weekIndex === 1) {
+            week = window.currentScheduleBeingGenerated?.week2 || schedule.week2;
+        } else {
+            break;
+        }
+        
+        if (!week || !week.days[dayIndex]) break;
+        
+        const dayShifts = week.days[dayIndex].shifts;
+        const workedThisDay = (dayShifts.morning === workerName || 
+                             dayShifts.evening === workerName || 
+                             dayShifts.night === workerName);
+        
+        if (workedThisDay) {
+            if (daysSinceLastWork === 0) {
+                // Still in consecutive work period
+                consecutiveShifts++;
+            } else {
+                // Found work after some rest - stop counting
+                break;
+            }
+        } else {
+            // Rest day
+            daysSinceLastWork++;
+            if (consecutiveShifts > 0) {
+                // We've found the rest period after work
+                break;
+            }
+        }
+    }
+    
+    // Apply the rule:
+    // After 1 shift: need 1 break
+    // After 2+ shifts: need 2 breaks
+    if (consecutiveShifts === 1 && daysSinceLastWork < 1) {
+        console.log(`❌ Pattern violation: ${workerName} worked 1 shift, needs 1 break (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
+        console.log(`❌ Pattern violation: ${workerName} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    return true;
+}
+
+        
 async function loadData() {
     console.log('📥 Loading SOC data...');
     
@@ -2204,26 +2265,10 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
                 return false;
             }
 
-            // ENHANCED 8-hour break rule with better logging
-            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-            const workerStat = workerStats[worker.name];
-            
-            if (workerStat && workerStat.lastShiftEnd !== null) {
-                const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-                
-                // Debug logging for negative hours
-                if (hoursSinceLastShift < 0) {
-                    console.log(`🐛 BUG DETECTED: ${worker.name} - Negative hours: ${hoursSinceLastShift.toFixed(1)}`);
-                    console.log(`   Current shift start: ${new Date(currentShiftStart).toLocaleString()}`);
-                    console.log(`   Last shift end: ${new Date(workerStat.lastShiftEnd).toLocaleString()}`);
-                    console.log(`   Last assigned day: ${workerStat.lastAssignedDay}, Current day: ${globalDay}`);
-                }
-                
-                if (hoursSinceLastShift < 8) {
-                    console.log(`❌ 8-hour violation: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
-                    return false;
-                }
-            }
+            // NEW RULE: Consecutive shift pattern constraint
+if (!checkConsecutiveShiftPattern(worker.name, globalDay, week)) {
+    return false;
+}
 
             // ADDITIONAL CHECK: Look for any shifts in the previous day that might conflict
             if (globalDay > 0) {
@@ -2321,26 +2366,57 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
         }
     }
 
-    // DIFFERENT RULES FOR AGGRESSIVE PASS
     if (isAggressivePass) {
-        // AGGRESSIVE PASS 3: Relax some constraints
+    // AGGRESSIVE PASS: Still check pattern but allow working after 1 consecutive shift
+    let consecutiveShifts = 0;
+    let daysSinceLastWork = 0;
+    
+    for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 3; checkDay--) {
+        const weekIndex = Math.floor(checkDay / 7);
+        const dayIndex = checkDay % 7;
         
-        // Relax consecutive days limit (allow up to 8 instead of 6)
-        if (hasWorkedConsecutiveDays(worker.name, globalDay, 8)) {
-            return false;
+        let week;
+        if (weekIndex === 0) {
+            week = schedule.week1;
+        } else if (weekIndex === 1) {
+            week = schedule.week2;
+        } else {
+            break;
         }
         
-        // Relax 8-hour break to 4 hours
-        const workerStat = workerStats[worker.name];
-        if (workerStat && workerStat.lastShiftEnd !== null) {
-            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
-            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
-            
-            if (hoursSinceLastShift < 4) { // Relaxed from 8 to 4 hours
-                console.log(`❌ 4-hour violation in aggressive pass: ${worker.name} - ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
-                return false;
+        if (!week || !week.days[dayIndex]) break;
+        
+        const dayShifts = week.days[dayIndex].shifts;
+        const workedThisDay = (dayShifts.morning === worker.name || 
+                             dayShifts.evening === worker.name || 
+                             dayShifts.night === worker.name);
+        
+        if (workedThisDay) {
+            if (daysSinceLastWork === 0) {
+                consecutiveShifts++;
+            } else {
+                break;
+            }
+        } else {
+            daysSinceLastWork++;
+            if (consecutiveShifts > 0) {
+                break;
             }
         }
+    }
+    
+    // Aggressive: Only enforce 2-break rule after 2+ consecutive shifts
+    if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
+        console.log(`❌ Aggressive: ${worker.name} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+} else {
+    // NORMAL PASS: Full pattern constraint
+    if (!checkConsecutiveShiftPattern(worker.name, globalDay, schedule)) {
+        return false;
+    }
+}
         
         return true; // Much more lenient in aggressive pass
     } else {
