@@ -2237,6 +2237,12 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
 
 
 function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
+    const existingShifts = week.days[day].shifts;
+    if (Object.values(existingShifts).includes(worker.name)) {
+        console.error(`❌ Worker ${worker.name} already assigned on day ${globalDay}!`);
+        return; // skip assignment
+    }
+
             week.days[day].shifts[shift] = worker.name;
 
             const stats = workerStats[worker.name];
