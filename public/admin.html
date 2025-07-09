@@ -1109,6 +1109,8 @@ async function loadData() {
     initializePeriodManagement();
     
     console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
+    console.log("Loaded shiftSubmissions:", shiftSubmissions);
+    console.log("Approved:", approvedSubmissions);
 
 async function saveData() {
     const data = {
