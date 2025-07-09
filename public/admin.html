@@ -962,6 +962,7 @@
 const ADMIN_PASSWORD = 'admin123';
 let workerSubmissions = [];
 let serverConnected = false;
+let approvedSubmissions = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -1070,31 +1071,30 @@ function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
 
         
 async function loadData() {
-    console.log('📥 Loading SOC data...');
-    
-    if (serverConnected) {
-        try {
-            const response = await fetch('/api/data');
-            const result = await response.json();
-            
-            if (result.success) {
-                const data = result.data;
-                workerSubmissions = data.shiftSubmissions || [];
-                
-                // Update local storage with ALL data including scheduleConfig
-                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
-                localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
-                
-                console.log('✅ SOC data synced from server');
-            }
-        } catch (error) {
-            console.error('❌ Failed to load from SOC server:', error);
-            showAlert('Warning: Using local data - SOC server sync unavailable', 'warning');
+    try {
+        const response = await fetch("/api/data");
+        const result = await response.json();
+
+        if (!result.success) {
+            showMessage("❌ Failed to load shift data from server.", "error");
+            return;
         }
+
+        const data = result.data;
+        shiftSubmissions = data.shiftSubmissions || [];
+        approvedSubmissions = shiftSubmissions.filter(sub => sub.approved);
+        scheduleConfig = data.scheduleConfig || {};
+        preferencesLocked = Boolean(data.preferencesLocked);
+        lockTimestamp = data.lockTimestamp || "";
+        lastUpdate = data.lastUpdate || Date.now();
+
+        renderSubmissions();
+        updateCurrentPeriodDisplay();
+    } catch (error) {
+        console.error("❌ Error loading data:", error);
+        showMessage("❌ Failed to connect to backend or parse data.", "error");
     }
+}
 
     // Load from local storage as fallback
     workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
@@ -1779,15 +1779,20 @@ function removeWorker(workerName) {
 // This is Artifact 4 of 4
 
 function generateSchedule() {
+    if (typeof approvedSubmissions === 'undefined') {
+        console.error("❌ 'approvedSubmissions' is not defined. Cannot generate schedule.");
+        showMessage("❌ Internal error: approved worker data missing.", "error");
+        return;
+    }
+
     if (!approvedSubmissions || approvedSubmissions.length === 0) {
         showMessage("⚠️ No approved workers available. Please approve at least one submission first.", "warning");
         return;
     }
 
     showMessage("🔄 Generating multiple schedules to find best coverage...", "info");
-
-    // Reset output area and tracking vars
     document.getElementById("scheduleTableContainer").innerHTML = "";
+
     let bestCoverage = -1;
     let bestSchedule = null;
     let bestStats = null;
@@ -1808,9 +1813,10 @@ function generateSchedule() {
         displaySchedule(bestSchedule);
         showMessage(`✅ Best schedule found with ${bestCoverage.toFixed(1)}% coverage!`, "success");
     } else {
-        showMessage("❌ No valid schedule could be generated. Please check constraints and availability.", "error");
+        showMessage("❌ No valid schedule could be generated. Please check constraints and worker availability.", "error");
     }
 }
+
 
 
         function generateBestCoverageSchedule(submissions, variations) {
