@@ -2206,29 +2206,34 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
         }
         
  function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
-    // Must be available for this shift
     if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-    // Cannot already have a shift on this day
     const currentDayShifts = week.days[day].shifts;
-    if (currentDayShifts.morning === worker.name ||
-        currentDayShifts.evening === worker.name ||
-        currentDayShifts.night === worker.name) return false;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
     // Max 3 night shifts per week
     if (shift === 'night') {
         const currentWeek = Math.floor(globalDay / 7);
         const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
         if (nightShiftsThisWeek >= 3) return false;
+
+        // NEW RULE: Avoid two consecutive nights
+        if (globalDay > 0) {
+            const prevDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevDay / 7);
+            const prevDayIndex = prevDay % 7;
+            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+            if (prevShifts && prevShifts.night === worker.name) {
+                return false;
+            }
+        }
     }
-
-    // TEMPORARILY DISABLED: Consecutive shift pattern constraint
-    // This constraint often blocks fair distribution — especially with few workers
-
-    // TEMPORARILY DISABLED: Minimum 1-2 rest days between shifts
 
     return true;
 }
+
 
 
 function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
