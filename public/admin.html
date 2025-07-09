@@ -1779,30 +1779,39 @@ function removeWorker(workerName) {
 // This is Artifact 4 of 4
 
 function generateSchedule() {
-            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-            
-            if (approvedSubmissions.length === 0) {
-                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
-                return;
-            }
+    if (!approvedSubmissions || approvedSubmissions.length === 0) {
+        showMessage("⚠️ No approved workers available. Please approve at least one submission first.", "warning");
+        return;
+    }
 
-            localStorage.setItem('preferencesLocked', 'true');
-            localStorage.setItem('lockTimestamp', Date.now().toString());
-            updateDisplay();
+    showMessage("🔄 Generating multiple schedules to find best coverage...", "info");
 
-            // Calculate possible variations before generating
-            const variations = calculatePossibleVariations(approvedSubmissions);
+    // Reset output area and tracking vars
+    document.getElementById("scheduleTableContainer").innerHTML = "";
+    let bestCoverage = -1;
+    let bestSchedule = null;
+    let bestStats = null;
 
-            // Show loading message
-            showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
+    for (let i = 0; i < 30; i++) {
+        const schedule = initializeEmptySchedule();
+        const stats = {};
+        const coverage = performSchedulingPass(schedule, approvedSubmissions, stats, shiftTimes);
 
-            // Generate multiple schedules and pick the best one
-            const bestSchedule = generateBestCoverageSchedule(approvedSubmissions, variations);
-            
-            displaySchedule(bestSchedule);
-            
-            showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
+        if (coverage > bestCoverage) {
+            bestCoverage = coverage;
+            bestSchedule = schedule;
+            bestStats = stats;
         }
+    }
+
+    if (bestSchedule) {
+        displaySchedule(bestSchedule);
+        showMessage(`✅ Best schedule found with ${bestCoverage.toFixed(1)}% coverage!`, "success");
+    } else {
+        showMessage("❌ No valid schedule could be generated. Please check constraints and availability.", "error");
+    }
+}
+
 
         function generateBestCoverageSchedule(submissions, variations) {
             console.log('🎯 SEARCHING FOR BEST COVERAGE SCHEDULE...');
@@ -2156,8 +2165,10 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes) {
         }
     });
 
-    return Math.round((filledCount / 42) * 100);
+    const totalShifts = 14 * 3 * 2; // 14 days × 3 shifts × 2 weeks = 84
+    return Math.round((filledCount / totalShifts) * 100);
 }
+
 
 
         function hasWorkedConsecutiveDays(workerName, globalDay, maxConsecutive = 6) {
@@ -2289,6 +2300,7 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
 
     return filledCount;
 }
+
 
 
 
