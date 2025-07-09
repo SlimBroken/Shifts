@@ -1099,7 +1099,7 @@ async function loadData() {
         console.error("❌ Error loading data:", error);
         showMessage("❌ Failed to connect to backend or parse data.", "error");
     }
-
+}
 
 
     // Load from local storage as fallback
@@ -1109,7 +1109,7 @@ async function loadData() {
     initializePeriodManagement();
     
     console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
-}
+
 
 async function saveData() {
     const data = {
