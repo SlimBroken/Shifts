@@ -2206,40 +2206,30 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
         }
         
  function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
-    // Check availability preference
-    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-        return false;
-    }
+    // Must be available for this shift
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-    // Check if worker already has a shift on this day
+    // Cannot already have a shift on this day
     const currentDayShifts = week.days[day].shifts;
-    if (currentDayShifts.morning === worker.name || 
-        currentDayShifts.evening === worker.name || 
-        currentDayShifts.night === worker.name) {
-        return false;
-    }
+    if (currentDayShifts.morning === worker.name ||
+        currentDayShifts.evening === worker.name ||
+        currentDayShifts.night === worker.name) return false;
 
-    // Check night shift limit (max 2 per week)
+    // Max 3 night shifts per week
     if (shift === 'night') {
         const currentWeek = Math.floor(globalDay / 7);
         const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
-        if (nightShiftsThisWeek >= 2) {
-            return false;
-        }
+        if (nightShiftsThisWeek >= 3) return false;
     }
 
-    // HARD CONSTRAINT: No more than 6 consecutive working days (prevents 7 in a row)
-    if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
-        return false;
-    }
+    // TEMPORARILY DISABLED: Consecutive shift pattern constraint
+    // This constraint often blocks fair distribution — especially with few workers
 
-    // NEW RULE: Consecutive shift pattern constraint
-    if (!checkConsecutiveShiftPattern(worker.name, globalDay, week)) {
-        return false;
-    }
+    // TEMPORARILY DISABLED: Minimum 1-2 rest days between shifts
 
     return true;
 }
+
 
 function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
             week.days[day].shifts[shift] = worker.name;
@@ -2271,154 +2261,42 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
 
     [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
         const weekStartDay = weekIndex * 7;
-        
+
         for (let day = 0; day < 7; day++) {
             const globalDay = weekStartDay + day;
-            
+
             ['morning', 'evening', 'night'].forEach(shift => {
-                if (week.days[day].shifts[shift]) {
-                    return; // Already filled
-                }
+                if (week.days[day].shifts[shift]) return; // already filled
 
                 const availableWorkers = workers.filter(worker => {
-                    // Basic availability check
-                    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
-                        return false;
-                    }
+                    // Basic checks
+                    if (!worker.preferences[globalDay]?.[shift]) return false;
 
-                    // Check if worker already has a shift on this day (ALWAYS enforce)
                     const currentDayShifts = week.days[day].shifts;
-                    if (currentDayShifts.morning === worker.name || 
-                        currentDayShifts.evening === worker.name || 
-                        currentDayShifts.night === worker.name) {
-                        return false;
-                    }
+                    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-                    // Always respect night shift limit (ALWAYS enforce)
+                    // Night shift limit (3 max/week)
                     if (shift === 'night') {
                         const currentWeek = Math.floor(globalDay / 7);
                         const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                        if (nightShiftsThisWeek >= 2) {
-                            return false;
-                        }
+                        if (nightShiftsThisWeek >= 3) return false;
                     }
 
-                    // DIFFERENT LOGIC FOR AGGRESSIVE VS NORMAL PASS
-                    if (isAggressivePass) {
-                        // AGGRESSIVE PASS: Only enforce 2-break rule after 2+ consecutive shifts
-                        let consecutiveShifts = 0;
-                        let daysSinceLastWork = 0;
-                        
-                        for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 3; checkDay--) {
-                            const weekIndex = Math.floor(checkDay / 7);
-                            const dayIndex = checkDay % 7;
-                            
-                            let weekToCheck;
-                            if (weekIndex === 0) {
-                                weekToCheck = schedule.week1;
-                            } else if (weekIndex === 1) {
-                                weekToCheck = schedule.week2;
-                            } else {
-                                break;
-                            }
-                            
-                            if (!weekToCheck || !weekToCheck.days[dayIndex]) break;
-                            
-                            const dayShifts = weekToCheck.days[dayIndex].shifts;
-                            const workedThisDay = (dayShifts.morning === worker.name || 
-                                                 dayShifts.evening === worker.name || 
-                                                 dayShifts.night === worker.name);
-                            
-                            if (workedThisDay) {
-                                if (daysSinceLastWork === 0) {
-                                    consecutiveShifts++;
-                                } else {
-                                    break;
-                                }
-                            } else {
-                                daysSinceLastWork++;
-                                if (consecutiveShifts > 0) {
-                                    break;
-                                }
-                            }
-                        } // <-- MISSING CLOSING BRACE WAS HERE
-                        
-                        // Aggressive: Only enforce 2-break rule after 2+ consecutive shifts
-                        if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
-                            console.log(`❌ Aggressive: ${worker.name} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
-                            return false;
-                        }
-                        
-                        return true; // Much more lenient in aggressive pass
-                        
-                    } else {
-                        // NORMAL PASS: Full pattern constraint
-                        let consecutiveShifts = 0;
-                        let daysSinceLastWork = 0;
-                        
-                        for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
-                            const weekIndex = Math.floor(checkDay / 7);
-                            const dayIndex = checkDay % 7;
-                            
-                            let weekToCheck;
-                            if (weekIndex === 0) {
-                                weekToCheck = schedule.week1;
-                            } else if (weekIndex === 1) {
-                                weekToCheck = schedule.week2;
-                            } else {
-                                break;
-                            }
-                            
-                            if (!weekToCheck || !weekToCheck.days[dayIndex]) break;
-                            
-                            const dayShifts = weekToCheck.days[dayIndex].shifts;
-                            const workedThisDay = (dayShifts.morning === worker.name || 
-                                                 dayShifts.evening === worker.name || 
-                                                 dayShifts.night === worker.name);
-                            
-                            if (workedThisDay) {
-                                if (daysSinceLastWork === 0) {
-                                    consecutiveShifts++;
-                                } else {
-                                    break;
-                                }
-                            } else {
-                                daysSinceLastWork++;
-                                if (consecutiveShifts > 0) {
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Apply the rule: After 1 shift = 1 break, After 2+ shifts = 2 breaks
-                        if (consecutiveShifts === 1 && daysSinceLastWork < 1) {
-                            console.log(`❌ Pattern violation: ${worker.name} worked 1 shift, needs 1 break (has ${daysSinceLastWork})`);
-                            return false;
-                        }
-                        
-                        if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
-                            console.log(`❌ Pattern violation: ${worker.name} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
-                            return false;
-                        }
-
-                        return true;
-                    }
+                    return true; // pass all
                 });
 
                 if (availableWorkers.length > 0) {
-                    // Sort by total shifts (prefer workers with fewer shifts)
-                    const sortedWorkers = availableWorkers.sort((a, b) => {
-                        const aStats = workerStats[a.name] || { totalShifts: 0 };
-                        const bStats = workerStats[b.name] || { totalShifts: 0 };
-                        return aStats.totalShifts - bStats.totalShifts;
-                    });
+                    // Prefer least-used worker
+                    const sorted = availableWorkers.sort((a, b) =>
+                        (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
+                    );
 
-                    const selectedWorker = sortedWorkers[0];
-                    assignWorkerToShift(selectedWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                    const selected = sorted[0];
+                    assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
                     filledCount++;
-                    console.log(`✅ Pass ${isAggressivePass ? '3' : '2'}: Assigned ${selectedWorker.name} to ${shift} on day ${globalDay}`);
+                    console.log(`✅ Assigned ${selected.name} to ${shift} on day ${globalDay}`);
                 } else {
-                    console.log(`❌ Pass ${isAggressivePass ? '3' : '2'}: No available workers for ${shift} on day ${globalDay}`);
+                    console.warn(`❌ No eligible worker for ${shift} on day ${globalDay}`);
                 }
             });
         }
@@ -2426,6 +2304,7 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
 
     return filledCount;
 }
+
 
 function calculateShiftStartTime(globalDay, shift, shiftTimes) {
             // Base date: June 1st, 2025 (Sunday) - Make sure this is consistent
