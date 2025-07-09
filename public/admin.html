@@ -2361,78 +2361,50 @@ function initializeWeek(globalStartDay) {
     return week;
 }
 
-function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
-    let score = 100;
-    
-    // HARD CONSTRAINT: Maximum 2 night shifts per week
-    if (shift === 'night') {
-        const currentWeek = Math.floor(globalDay / 7);
-        const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
-        
-        if (nightShiftsThisWeek >= 2) {
-            return -1000; // Impossible score
-        }
-        
-        if (nightShiftsThisWeek === 1) {
-            score -= 500; // Heavy penalty
-        }
-        
-        score -= stats.nightShifts * 20;
-        
-        if (stats.nightShifts === 0) {
-            score += 15;
-        }
-    }
-    
-    // CRITICAL: Morning shift distribution - ensure everyone gets at least 1 per week
-    if (shift === 'morning') {
-        const currentWeek = Math.floor(globalDay / 7);
-        const morningShiftsThisWeek = countMorningShiftsInWeek(worker.name, currentWeek);
-        
-        // HIGHEST PRIORITY: Workers with 0 morning shifts this week
-        if (morningShiftsThisWeek === 0) {
-            score += 1000; // Extremely high bonus
-            
-            // Extra bonus if we're later in the week (urgency increases)
-            const dayInWeek = globalDay % 7;
-            if (dayInWeek >= 4) { // Thursday onwards
-                score += 500; // Even higher priority
-            }
-        } else {
-            // Heavily penalize workers who already have morning shifts this week
-            score -= morningShiftsThisWeek * 300;
-        }
-        
-        // Also consider overall morning shift balance
-        if (stats.morningShifts === 0) {
-            score += 200; // High bonus for workers with no morning shifts overall
-        }
-    }
-    
-    // Load balancing - prefer workers with fewer total shifts
-    score -= stats.totalShifts * 5;
-    
-    // Premium weekend shifts distribution (Friday evening to Saturday evening)
-    const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
-    if (isPremiumShift) {
-        score -= stats.premiumShifts * 15;
-        if (stats.premiumShifts === 0) {
-            score += 25;
-        }
-    }
-    
-    // Regular weekend consideration
-    if (dayOfWeek === 5 || dayOfWeek === 6) {
-        score -= stats.weekendShifts * 8;
-    }
-    
-    // Avoid consecutive days
+function calculateWorkerScore(worker, shift, day, globalDay, week, workerStats, shiftTimes, workers, schedule) {
+    const stats = workerStats[worker.name] || {
+        totalShifts: 0,
+        morningShifts: 0,
+        eveningShifts: 0,
+        nightShifts: 0,
+        premiumShifts: 0,
+        lastAssignedDay: -999
+    };
+
+    let score = 100; // Base score
+
+    // Penalize based on total shift count
+    score -= stats.totalShifts * 2;
+
+    // Reward if worker has not had this type of shift yet
+    if (shift === 'morning' && stats.morningShifts === 0) score += 15;
+    if (shift === 'evening' && stats.eveningShifts === 0) score += 10;
+    if (shift === 'night' && stats.nightShifts === 0) score += 20;
+
+    // Penalty for working the previous day (soft preference)
     if (stats.lastAssignedDay === globalDay - 1) {
-        score -= 20;
+        score -= 10;
     }
-    
-    return score + Math.random() * 5;
+
+    // Weekend logic (optional tweak)
+    const dayOfWeek = globalDay % 7;
+    const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6); // Saturday/Sunday
+    const isPremium = (isWeekend && shift === 'night');
+
+    if (isPremium) {
+        score -= stats.premiumShifts * 15; // the more they already have, the less we assign
+    }
+
+    // NEW: Reward if this worker has fewer shifts than others
+    const allShiftCounts = workers.map(w => workerStats[w.name]?.totalShifts || 0);
+    const minShifts = Math.min(...allShiftCounts);
+    if (stats.totalShifts === minShifts) {
+        score += 20; // fairness boost
+    }
+
+    return score;
 }
+
 
 function isPremiumWeekendShift(dayOfWeek, shift) {
     if (dayOfWeek === 5 && (shift === 'evening' || shift === 'night')) {
