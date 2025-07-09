@@ -1109,8 +1109,6 @@ async function loadData() {
     initializePeriodManagement();
     
     console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
-    console.log("Loaded shiftSubmissions:", shiftSubmissions);
-    console.log("Approved:", approvedSubmissions);
 
 async function saveData() {
     const data = {
@@ -3041,60 +3039,18 @@ function showMessage(message, type = "info") {
 
 // ✅ Safe placeholder for renderSubmissions
 function renderSubmissions() {
-  const container = document.getElementById("submissionCards");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  shiftSubmissions.forEach(sub => {
-    const approved = sub.approved;
-    const name = sub.name || "Unknown";
-    const submittedAt = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : "Unknown";
-    const prefs = sub.preferences || {};
-    const notes = sub.notes?.trim() || "";
-
-    const shiftCount = Object.values(prefs).reduce((count, day) => {
-      return count + Object.values(day).filter(Boolean).length;
-    }, 0);
-
-    const card = document.createElement("div");
-    card.className = "submission-card";
-
-    card.innerHTML = `
-      <div class="card-header">
-        <span>👤 ${name}</span> 
-        ${approved ? '✅' : '❌'}
-      </div>
-      <div class="card-body">
-        <p><strong>Available Shifts:</strong> ${shiftCount}/42</p>
-        <p><strong>Submitted:</strong> ${submittedAt}</p>
-        ${notes ? `<p><strong>📝 Notes:</strong> ${notes}</p>` : ""}
-        <button class="approve-btn">${approved ? "✔ Approved" : "Approve"}</button>
-        <button class="remove-btn">🗑 Remove</button>
-      </div>
-    `;
-
-    card.querySelector(".approve-btn").onclick = () => {
-      sub.approved = true;
-      saveData();
-    };
-
-    card.querySelector(".remove-btn").onclick = () => {
-      shiftSubmissions = shiftSubmissions.filter(s => s.id !== sub.id);
-      approvedSubmissions = approvedSubmissions.filter(s => s.id !== sub.id);
-      saveData();
-      renderSubmissions();
-    };
-
-    container.appendChild(card);
-  });
+  console.log("renderSubmissions() placeholder called.");
 }
-
 
 // ✅ Placeholder function for updateScheduleRulesPeriodStatus
 function updateScheduleRulesPeriodStatus() {
   console.log("updateScheduleRulesPeriodStatus() called — placeholder active.");
 }
     </script>
+
+<section class="admin-section">
+  <h2>📋 Submitted Worker Schedules</h2>
+  <div id="submissionCards" class="submission-card-list"></div>
+</section>
 </body>
 </html>
