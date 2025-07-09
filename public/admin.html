@@ -3044,6 +3044,23 @@ function generateWeekExcelFormat(week) {
     
     return text;
 }
-    </script>
+    
+const workerColors = {};
+const colorPalette = [
+  "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4",
+  "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", "#008080", "#e6beff",
+  "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
+  "#000075", "#808080"
+];
+
+function getWorkerColor(name) {
+  if (!workerColors[name]) {
+    const index = Object.keys(workerColors).length % colorPalette.length;
+    workerColors[name] = colorPalette[index];
+  }
+  return workerColors[name];
+}
+
+</script>
 </body>
 </html>
