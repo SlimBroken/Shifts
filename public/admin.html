@@ -1472,7 +1472,7 @@ function updateCurrentPeriodDisplay() {
             </div>
         `;
     }
-   // updateScheduleRulesPeriodStatus();
+    updateScheduleRulesPeriodStatus();
 }
 
 function getCurrentPeriodConfig() {
@@ -3015,11 +3015,32 @@ function generateWeekExcelFormat(week) {
     return text;
 }
 
-        function updateScheduleRulesPeriodStatus() {
-    // This function is not implemented yet.
-    // It is safe to leave empty for now.
+// ✅ Safe default message display function
+function showMessage(message, type = "info") {
+  const colors = {
+    success: "#28a745",
+    error: "#dc3545",
+    warning: "#ffc107",
+    info: "#007bff"
+  };
+
+  const alertBox = document.createElement("div");
+  alertBox.style.backgroundColor = colors[type] || "#007bff";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "10px";
+  alertBox.style.marginTop = "10px";
+  alertBox.style.borderRadius = "5px";
+  alertBox.style.fontWeight = "bold";
+  alertBox.innerText = `${type.toUpperCase()}: ${message}`;
+
+  document.body.prepend(alertBox);
+  setTimeout(() => alertBox.remove(), 5000);
 }
 
+// ✅ Safe placeholder for renderSubmissions
+function renderSubmissions() {
+  console.log("renderSubmissions() placeholder called.");
+}
     </script>
 </body>
 </html>
