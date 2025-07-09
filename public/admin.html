@@ -2266,37 +2266,43 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
             const globalDay = weekStartDay + day;
 
             ['morning', 'evening', 'night'].forEach(shift => {
-                if (week.days[day].shifts[shift]) return; // already filled
+                if (week.days[day].shifts[shift]) return;
 
                 const availableWorkers = workers.filter(worker => {
-                    // Basic checks
                     if (!worker.preferences[globalDay]?.[shift]) return false;
 
                     const currentDayShifts = week.days[day].shifts;
                     if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-                    // Night shift limit (3 max/week)
                     if (shift === 'night') {
                         const currentWeek = Math.floor(globalDay / 7);
                         const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
                         if (nightShiftsThisWeek >= 3) return false;
+
+                        // NEW RULE: Avoid 2 nights in a row
+                        if (globalDay > 0) {
+                            const prevDay = globalDay - 1;
+                            const prevWeekIndex = Math.floor(prevDay / 7);
+                            const prevDayIndex = prevDay % 7;
+                            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+                            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+                            if (prevShifts && prevShifts.night === worker.name) {
+                                return false;
+                            }
+                        }
                     }
 
-                    return true; // pass all
+                    return true;
                 });
 
                 if (availableWorkers.length > 0) {
-                    // Prefer least-used worker
                     const sorted = availableWorkers.sort((a, b) =>
                         (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
                     );
-
                     const selected = sorted[0];
                     assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
                     filledCount++;
-                    console.log(`✅ Assigned ${selected.name} to ${shift} on day ${globalDay}`);
-                } else {
-                    console.warn(`❌ No eligible worker for ${shift} on day ${globalDay}`);
                 }
             });
         }
@@ -2304,6 +2310,7 @@ function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressiv
 
     return filledCount;
 }
+
 
 
 function calculateShiftStartTime(globalDay, shift, shiftTimes) {
