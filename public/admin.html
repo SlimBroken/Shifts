@@ -2206,6 +2206,17 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
         }
         
  function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
+    // ❌ Prevent night-to-morning double shift
+    if (shift === 'morning') {
+        if (day > 0) {
+            const prevDayShifts = week.days[day - 1]?.shifts || {};
+            if (prevDayShifts.night === worker.name) return false;
+        } else if (week === schedule.week2) {
+            const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
+            if (prevWeekLastDayShifts.night === worker.name) return false;
+        }
+    }
+
     if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
     const currentDayShifts = week.days[day].shifts;
