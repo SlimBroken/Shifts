@@ -1278,6 +1278,32 @@ function updateLockStatus() {
         toggleBtn.className = 'btn btn-warning';
     }
 }
+
+function assignShift(schedule, globalDay, shift, workerName, workerStats, shiftTime) {
+    const week = globalDay < 7 ? schedule.week1 : schedule.week2;
+    const dayIndex = globalDay % 7;
+
+    const day = week.days[dayIndex];
+    day.shifts[shift] = workerName;
+
+    const stats = workerStats[workerName];
+    stats.totalShifts++;
+
+    if (shift === 'night') stats.nightShifts++;
+    if (shift === 'morning') stats.morningShifts++;
+
+    const isWeekend = (day.dayShort === 'Fri' || day.dayShort === 'Sat');
+    if (isWeekend) stats.weekendShifts++;
+    if (shift === 'evening' && day.dayShort === 'Fri') stats.premiumShifts++;
+
+    stats.lastAssignedDay = globalDay;
+    stats.lastShiftEnd = {
+        day: globalDay,
+        hour: shiftTime.end
+    };
+}
+
+        
 function calculatePossibleVariations(submissions) {
             console.log('🔢 CALCULATING POSSIBLE SCHEDULE VARIATIONS...');
             
