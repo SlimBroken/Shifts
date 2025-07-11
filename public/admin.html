@@ -1008,7 +1008,68 @@ function login() {
     }
 }
 
-       async function loadData() {
+function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
+    // Look back at the worker's recent shift pattern
+    let consecutiveShifts = 0;
+    let daysSinceLastWork = 0;
+    
+    // Check backwards from the day before today
+    for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
+        const weekIndex = Math.floor(checkDay / 7);
+        const dayIndex = checkDay % 7;
+        
+        let week;
+        if (weekIndex === 0) {
+            week = window.currentScheduleBeingGenerated?.week1 || schedule.week1;
+        } else if (weekIndex === 1) {
+            week = window.currentScheduleBeingGenerated?.week2 || schedule.week2;
+        } else {
+            break;
+        }
+        
+        if (!week || !week.days[dayIndex]) break;
+        
+        const dayShifts = week.days[dayIndex].shifts;
+        const workedThisDay = (dayShifts.morning === workerName || 
+                             dayShifts.evening === workerName || 
+                             dayShifts.night === workerName);
+        
+        if (workedThisDay) {
+            if (daysSinceLastWork === 0) {
+                // Still in consecutive work period
+                consecutiveShifts++;
+            } else {
+                // Found work after some rest - stop counting
+                break;
+            }
+        } else {
+            // Rest day
+            daysSinceLastWork++;
+            if (consecutiveShifts > 0) {
+                // We've found the rest period after work
+                break;
+            }
+        }
+    }
+    
+    // Apply the rule:
+    // After 1 shift: need 1 break
+    // After 2+ shifts: need 2 breaks
+    if (consecutiveShifts === 1 && daysSinceLastWork < 1) {
+        console.log(`❌ Pattern violation: ${workerName} worked 1 shift, needs 1 break (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
+        console.log(`❌ Pattern violation: ${workerName} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    return true;
+}
+
+        
+async function loadData() {
     console.log('📥 Loading SOC data...');
     
     if (serverConnected) {
@@ -1077,42 +1138,6 @@ async function saveData() {
     } else {
         console.log('⚠️ SOC server offline - data saved locally only');
     }
-}
-
-function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
-    let consecutiveShifts = 0;
-    let daysSinceLastWork = 0;
-
-    for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
-        const weekIndex = Math.floor(checkDay / 7);
-        const dayIndex = checkDay % 7;
-
-        let week = weekIndex === 0 ? schedule.week1 : schedule.week2;
-        if (!week || !week.days[dayIndex]) break;
-
-        const shifts = week.days[dayIndex].shifts;
-        const worked = (shifts.morning === workerName ||
-                        shifts.evening === workerName ||
-                        shifts.night === workerName);
-
-        if (worked) {
-            if (daysSinceLastWork === 0) {
-                consecutiveShifts++;
-            } else {
-                break;
-            }
-        } else {
-            daysSinceLastWork++;
-            if (consecutiveShifts > 0) break;
-        }
-    }
-
-    if (consecutiveShifts >= 2 && daysSinceLastWork < 1) {
-        console.log(`❌ Pattern violation: ${workerName} worked ${consecutiveShifts} shifts, needs 1 rest day (has ${daysSinceLastWork})`);
-        return false;
-    }
-
-    return true;
 }
 
 function addWorker() {
