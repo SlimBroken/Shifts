@@ -1,17 +1,10 @@
-import { initAuth } from './admin/auth.js';
-import { loadDashboard } from './admin/dashboard.js';
-import { manageWorkers } from './admin/workers.js';
-import { handlePeriod } from './admin/period.js';
-import { lockPreferences } from './admin/lock.js';
-import { handleSubmissions } from './admin/submissions.js';
-import { generateSchedule } from './admin/schedule.js';
+// admin.js
+import '././admin/auth.js';
+import '././admin/dashboard.js';
+import '././admin/workers.js';
+import '././admin/submissions.js';
+import '././admin/lock.js';
+import '././admin/period.js';
+import '././admin/schedule.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  initAuth();
-  loadDashboard();
-  manageWorkers();
-  handlePeriod();
-  lockPreferences();
-  handleSubmissions();
-  generateSchedule();
-});
+document.addEventListener('DOMContentLoaded', 
