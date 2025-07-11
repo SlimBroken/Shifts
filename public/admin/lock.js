@@ -1,1 +1,0 @@
-export function lockPreferences() { console.log('Lock system initialized'); }
