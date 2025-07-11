@@ -1009,48 +1009,61 @@ function login() {
 }
 
 function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
-    // Look back at the worker's recent shift pattern
     let consecutiveShifts = 0;
     let daysSinceLastWork = 0;
-    
-    // Check backwards from the day before today
+
+    // Look back over the previous 5 days
     for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
         const weekIndex = Math.floor(checkDay / 7);
         const dayIndex = checkDay % 7;
-        
+
         let week;
         if (weekIndex === 0) {
-            week = window.currentScheduleBeingGenerated?.week1 || schedule.week1;
+            week = schedule.week1;
         } else if (weekIndex === 1) {
-            week = window.currentScheduleBeingGenerated?.week2 || schedule.week2;
+            week = schedule.week2;
         } else {
             break;
         }
-        
+
         if (!week || !week.days[dayIndex]) break;
-        
+
         const dayShifts = week.days[dayIndex].shifts;
-        const workedThisDay = (dayShifts.morning === workerName || 
-                             dayShifts.evening === workerName || 
-                             dayShifts.night === workerName);
-        
-        if (workedThisDay) {
+        const workedThatDay = (
+            dayShifts.morning === workerName ||
+            dayShifts.evening === workerName ||
+            dayShifts.night === workerName
+        );
+
+        if (workedThatDay) {
             if (daysSinceLastWork === 0) {
-                // Still in consecutive work period
+                // Still in a streak of consecutive work days
                 consecutiveShifts++;
             } else {
-                // Found work after some rest - stop counting
+                // Had a break — end streak
                 break;
             }
         } else {
-            // Rest day
+            // Day off
             daysSinceLastWork++;
             if (consecutiveShifts > 0) {
-                // We've found the rest period after work
+                // Already had some shifts, now a break — done
                 break;
             }
         }
     }
+
+    // ✅ New Rule:
+    // - 0 or 1 consecutive shifts: no rest needed
+    // - 2+ consecutive shifts: need at least 1 day off
+    if (consecutiveShifts >= 2 && daysSinceLastWork < 1) {
+        console.log(`❌ Pattern violation: ${workerName} worked ${consecutiveShifts} consecutive shifts, needs 1 rest day (has ${daysSinceLastWork})`);
+        return false;
+    }
+
+    return true;
+}
+
     
     // Apply the rule:
     // After 1 shift: need 1 break
