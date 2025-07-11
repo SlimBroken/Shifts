@@ -1879,6 +1879,8 @@ function generateSchedule() {
                     lastAssignedDay: -1,
     week1Shifts: 0,
     week2Shifts: 0,
+    week1Shifts: 0,
+    week2Shifts: 0,
                     lastShiftEnd: null
                 };
             });
@@ -1951,6 +1953,8 @@ function generateOptimizedSchedule(submissions) {
             weekendShifts: 0,
             premiumShifts: 0,
             lastAssignedDay: -1,
+    week1Shifts: 0,
+    week2Shifts: 0,
     week1Shifts: 0,
     week2Shifts: 0,
             lastShiftEnd: null
@@ -2157,6 +2161,8 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
                     if (scoredWorkers.length > 0) {
                         const bestWorker = scoredWorkers[0].worker;
                         assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                    const assignedWeekKey = globalDay < 7 ? 'week1Shifts' : 'week2Shifts';
+                    workerStats[bestWorker.name][assignedWeekKey]++;
                     const assignedWeekKey = globalDay < 7 ? 'week1Shifts' : 'week2Shifts';
                     workerStats[bestWorker.name][assignedWeekKey]++;
                         coverage++;
