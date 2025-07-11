@@ -1,1 +1,0 @@
-export function handlePeriod() { console.log('Period handling logic loaded'); }
