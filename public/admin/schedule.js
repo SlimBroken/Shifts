@@ -1,0 +1,1 @@
+export function generateSchedule() { console.log('Schedule generation ready'); }
