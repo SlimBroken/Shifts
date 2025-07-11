@@ -1008,21 +1008,42 @@ function login() {
     }
 }
 
-        function loadData() {
-    syncFromServer().then(data => {
-        if (data) {
-            shiftSubmissions = data.shiftSubmissions || [];
-            approvedWorkers = data.approvedWorkers || [];
-            preferencesLocked = data.preferencesLocked || false;
-            scheduleConfig = data.scheduleConfig || {};
-            updateDisplay();
-        } else {
-            console.warn("⚠️ No data received during load");
+       async function loadData() {
+    console.log('📥 Loading SOC data...');
+    
+    if (serverConnected) {
+        try {
+            const response = await fetch('/api/data');
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                workerSubmissions = data.shiftSubmissions || [];
+                
+                // Update local storage with ALL data including scheduleConfig
+                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
+                
+                console.log('✅ SOC data synced from server');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load from SOC server:', error);
+            showAlert('Warning: Using local data - SOC server sync unavailable', 'warning');
         }
-    }).catch(err => {
-        console.error("❌ Error loading data:", err);
-    });
+    }
+
+    // Load from local storage as fallback
+    workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+    
+    updateDisplay();
+    initializePeriodManagement();
+    
+    console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
 }
+
 
 function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
     let consecutiveShifts = 0;
