@@ -995,18 +995,15 @@ async function testServerConnection() {
 }
 
 function login() {
-    const password = document.getElementById('adminPassword').value;
-    if (password === ADMIN_PASSWORD) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
-        console.log('✅ SOC Admin authenticated successfully');
-        loadData();
+    const password = prompt("Enter admin password:");
+    if (password === "admin123") {
+        localStorage.setItem("adminLoggedIn", "true");
+        location.reload();
     } else {
-        showAlert('Incorrect password. Access denied to SOC administration.', 'warning');
-        document.getElementById('adminPassword').value = '';
-        console.log('❌ SOC Admin authentication failed');
+        alert("Incorrect password. Try again.");
     }
 }
+
 
 function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
     let consecutiveShifts = 0;
