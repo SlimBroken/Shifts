@@ -1008,6 +1008,22 @@ function login() {
     }
 }
 
+        function loadData() {
+    syncFromServer().then(data => {
+        if (data) {
+            shiftSubmissions = data.shiftSubmissions || [];
+            approvedWorkers = data.approvedWorkers || [];
+            preferencesLocked = data.preferencesLocked || false;
+            scheduleConfig = data.scheduleConfig || {};
+            updateDisplay();
+        } else {
+            console.warn("⚠️ No data received during load");
+        }
+    }).catch(err => {
+        console.error("❌ Error loading data:", err);
+    });
+}
+
 function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
     let consecutiveShifts = 0;
     let daysSinceLastWork = 0;
