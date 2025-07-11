@@ -1044,6 +1044,40 @@ function login() {
     console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
 }
 
+async function saveData() {
+    const data = {
+        shiftSubmissions: workerSubmissions,
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+        scheduleConfig: JSON.parse(localStorage.getItem('scheduleConfig') || '{}'),
+        lastUpdate: Date.now()
+    };
+
+    localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+    localStorage.setItem('lastUpdate', Date.now().toString());
+
+    if (serverConnected) {
+        try {
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ SOC data synced to server');
+            } else {
+                console.error('❌ SOC server sync failed:', result.error);
+            }
+        } catch (error) {
+            console.error('❌ Failed to save to SOC server:', error);
+        }
+    } else {
+        console.log('⚠️ SOC server offline - data saved locally only');
+    }
+}
 
 function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
     let consecutiveShifts = 0;
