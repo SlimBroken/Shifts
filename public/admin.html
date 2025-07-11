@@ -2124,44 +2124,50 @@ function analyzeEmptyShifts(schedule, workers, workerStats, shiftTimes) {
             return emptyShiftsAnalysis;
         }
 function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passNumber) {
-    let coverage = 0;
+    let assignedCount = 0;
 
     [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
         const weekStartDay = weekIndex * 7;
-        
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
-            
-            ['morning', 'evening', 'night'].forEach(shift => {
-                if (week.days[day].shifts[shift]) {
-                    coverage++;
-                    return; // Already assigned
-                }
 
-                const availableWorkers = workers.filter(worker => {
-                    return isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
+        week.days.forEach((day, dayIndex) => {
+            const globalDay = weekStartDay + dayIndex;
+
+            ['morning', 'evening', 'night'].forEach(shift => {
+                if (day.shifts[shift]) return;
+
+                const availableCandidates = workers.filter(worker => {
+                    const prefs = worker.preferences[globalDay];
+                    if (!prefs || !prefs[shift]) return false;
+
+                    const stats = workerStats[worker.name];
+
+                    // 🔒 HARD CONSTRAINT: Max 6 shifts
+                    if (stats.totalShifts >= 6) return false;
+
+                    // 🔒 HARD CONSTRAINT: Max 2 night shifts
+                    if (shift === 'night' && stats.nightShifts >= 2) return false;
+
+                    // 🔒 HARD CONSTRAINT: Must rest 8 hours between shifts
+                    if (!has8HourBreak(stats.lastShiftEnd, globalDay, shiftTimes[shift])) return false;
+
+                    // 🔒 HARD CONSTRAINT: No shift-after-shift
+                    if (!checkConsecutiveShiftPattern(worker.name, globalDay, schedule)) return false;
+
+                    return true;
                 });
 
-                if (availableWorkers.length > 0) {
-                    const scoredWorkers = availableWorkers.map(worker => ({
-                        worker: worker,
-                        score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
-                    }))
-                    .filter(sw => sw.score > -500)
-                    .sort((a, b) => b.score - a.score);
-
-                    if (scoredWorkers.length > 0) {
-                        const bestWorker = scoredWorkers[0].worker;
-                        assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
-                        coverage++;
-                    }
+                if (availableCandidates.length > 0) {
+                    const selected = availableCandidates[Math.floor(Math.random() * availableCandidates.length)];
+                    assignShift(schedule, globalDay, shift, selected.name, workerStats, shiftTimes[shift]);
+                    assignedCount++;
                 }
             });
-        }
+        });
     });
 
-    return coverage;
+    return assignedCount;
 }
+
 
         function hasWorkedConsecutiveDays(workerName, globalDay, maxConsecutive = 6) {
             // Check if worker has worked the last 6 days (would make 7 with today)
@@ -2278,56 +2284,49 @@ function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, s
         }
 
 
-function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
+function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, allowAggressive) {
     let filledCount = 0;
 
     [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
         const weekStartDay = weekIndex * 7;
 
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
+        week.days.forEach((day, dayIndex) => {
+            const globalDay = weekStartDay + dayIndex;
 
             ['morning', 'evening', 'night'].forEach(shift => {
-                if (week.days[day].shifts[shift]) return;
+                if (day.shifts[shift]) return;
 
-                const availableWorkers = workers.filter(worker => {
-                    if (!worker.preferences[globalDay]?.[shift]) return false;
+                const fallbackCandidates = workers.filter(worker => {
+                    const prefs = worker.preferences[globalDay];
+                    if (!prefs) return false;
 
-                    const currentDayShifts = week.days[day].shifts;
-                    if (Object.values(currentDayShifts).includes(worker.name)) return false;
+                    const willing = allowAggressive || prefs[shift];
+                    if (!willing) return false;
 
-                    if (shift === 'night') {
-                        const currentWeek = Math.floor(globalDay / 7);
-                        const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                        if (nightShiftsThisWeek >= 3) return false;
+                    const stats = workerStats[worker.name];
 
-                        // NEW RULE: Avoid 2 nights in a row
-                        if (globalDay > 0) {
-                            const prevDay = globalDay - 1;
-                            const prevWeekIndex = Math.floor(prevDay / 7);
-                            const prevDayIndex = prevDay % 7;
-                            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+                    // 🔒 HARD CONSTRAINT: Max 6 shifts
+                    if (stats.totalShifts >= 6) return false;
 
-                            if (prevShifts && prevShifts.night === worker.name) {
-                                return false;
-                            }
-                        }
-                    }
+                    // 🔒 HARD CONSTRAINT: Max 2 night shifts
+                    if (shift === 'night' && stats.nightShifts >= 2) return false;
+
+                    // 🔒 HARD CONSTRAINT: 8-hour break
+                    if (!has8HourBreak(stats.lastShiftEnd, globalDay, shiftTimes[shift])) return false;
+
+                    // 🔒 HARD CONSTRAINT: No back-to-back
+                    if (!checkConsecutiveShiftPattern(worker.name, globalDay, schedule)) return false;
 
                     return true;
                 });
 
-                if (availableWorkers.length > 0) {
-                    const sorted = availableWorkers.sort((a, b) =>
-                        (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
-                    );
-                    const selected = sorted[0];
-                    assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
+                if (fallbackCandidates.length > 0) {
+                    const selected = fallbackCandidates[Math.floor(Math.random() * fallbackCandidates.length)];
+                    assignShift(schedule, globalDay, shift, selected.name, workerStats, shiftTimes[shift]);
                     filledCount++;
                 }
             });
-        }
+        });
     });
 
     return filledCount;
