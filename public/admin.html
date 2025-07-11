@@ -1,216 +1,3083 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Maccabi SOC - Admin Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maccabi SOC - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<link href="admin.css" rel="stylesheet"/></head>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e3a8a 50%, #2563eb 75%, #1e40af 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Security Network Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(30, 58, 138, 0.08) 0%, transparent 50%);
+            background-size: 100% 100%;
+            z-index: -1;
+        }
+
+        .security-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(59, 130, 246, 0.03) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(59, 130, 246, 0.03) 50%, transparent 51%);
+            background-size: 120px 120px;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(59, 130, 246, 0.3);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 4s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+            50% { transform: rotate(180deg) scale(1.1); opacity: 0.2; }
+        }
+
+        .maccabi-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        .maccabi-shield {
+            width: 50px;
+            height: 55px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            clip-path: polygon(50% 0%, 0% 25%, 0% 75%, 50% 100%, 100% 75%, 100% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .soc-subtitle {
+            font-size: 0.9em;
+            margin-top: 8px;
+            color: #bfdbfe;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .content {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            box-shadow: 
+                0 8px 16px rgba(30, 64, 175, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 24px rgba(30, 64, 175, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+        }
+
+        .password-section {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .password-section h3 {
+            color: #fbbf24;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .password-section p {
+            color: #fef3c7;
+            margin-bottom: 20px;
+        }
+
+        .password-input {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .password-input input {
+            padding: 15px 20px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            font-size: 16px;
+            width: 280px;
+            background: rgba(30, 58, 138, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .password-input input::placeholder {
+            color: #94a3b8;
+        }
+
+        .password-input input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .password-section small {
+            color: #fef3c7;
+            opacity: 0.8;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .section h3 {
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3em;
+        }
+
+        .worker-input {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .worker-input input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 16px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            font-size: 16px;
+            background: rgba(30, 58, 138, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .worker-input input::placeholder {
+            color: #94a3b8;
+        }
+
+        .worker-input input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .worker-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .worker-tag {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            color: #e2e8f0;
+        }
+
+        .worker-tag:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .worker-tag button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .worker-tag button:hover {
+            background: #b91c1c;
+        }
+
+        .lock-status {
+            padding: 18px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .lock-status.locked {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .lock-status.unlocked {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .submissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .submission-card {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            padding: 25px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .submission-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .submission-card.approved {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+        }
+
+        .submission-card h4 {
+            color: #e2e8f0;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+        }
+
+        .submission-card p {
+            color: #dbeafe;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+            color: #dbeafe;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            color: #fef3c7;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .security-icon {
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Period Management Specific Styles */
+        .period-form {
+            margin: 20px 0;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(147, 197, 253, 0.3);
+        }
+
+        .period-form h4 {
+            margin-bottom: 20px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .period-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .period-grid label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .period-grid input[type="date"], 
+        .period-grid input[type="text"] {
+            padding: 10px 12px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            width: 100%;
+            background: rgba(30, 58, 138, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .period-grid input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .period-grid input::placeholder {
+            color: #94a3b8;
+        }
+
+        .period-grid input[readonly] {
+            background: rgba(55, 65, 81, 0.3);
+            cursor: not-allowed;
+        }
+
+        .quick-actions {
+            margin-top: 20px;
+        }
+
+        .quick-actions h5 {
+            margin-bottom: 12px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .advanced-options {
+            margin-top: 20px;
+        }
+
+        .advanced-options summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #e2e8f0;
+            padding: 8px 0;
+            transition: color 0.3s ease;
+        }
+
+        .advanced-options summary:hover {
+            color: #93c5fd;
+        }
+
+        .advanced-options-content {
+            margin-top: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .advanced-options-content label {
+            color: #fef3c7;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .advanced-options-content input[type="checkbox"] {
+            transform: scale(1.2);
+            accent-color: #3b82f6;
+        }
+
+        /* Schedule Rules Section */
+        .rules-section {
+            margin-top: 40px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%);
+            border: 2px solid rgba(147, 197, 253, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .rules-header {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .rules-header h3 {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .rules-content {
+            padding: 25px;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 25px;
+        }
+
+        .rule-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .rule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .rule-card.constraints {
+            border-left-color: #dc2626;
+        }
+
+        .rule-card.goals {
+            border-left-color: #059669;
+        }
+
+        .rule-card.shifts {
+            border-left-color: #2563eb;
+        }
+
+        .rule-card.process {
+            border-left-color: #d97706;
+        }
+
+        .rule-card.notes {
+            border-left-color: #ea580c;
+        }
+
+        .rule-card h4 {
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+
+        .rule-card ul, .rule-card ol {
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+            color: #dbeafe;
+        }
+
+        .rule-card li {
+            margin-bottom: 8px;
+        }
+
+        .algorithm-info {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.1) 100%);
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .algorithm-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #dbeafe;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .period-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+
+            .period-grid .btn {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .header {
+                padding: 25px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .maccabi-logo {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .maccabi-shield {
+                width: 45px;
+                height: 50px;
+                font-size: 11px;
+            }
+
+            .period-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .worker-input {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .worker-input input {
+                min-width: auto;
+            }
+
+            .submissions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
 <body>
-<div class="security-lines"></div>
-<div class="container">
-<div class="header">
-<div class="maccabi-logo">
-<div class="maccabi-shield">מכבי</div>
-</div>
-<h1><span class="security-icon">🔧</span> Admin Dashboard</h1>
-<p>Shift Schedule Management System</p>
-<div class="soc-subtitle">SOC OPERATIONS CENTER</div>
-</div>
-<div class="content">
-<!-- Login Section -->
-<div class="password-section" id="loginSection">
-<h3><span class="security-icon">🔒</span> SOC Admin Access Required</h3>
-<p>Enter the administrator password to access the SOC dashboard:</p>
-<div class="password-input">
-<input id="adminPassword" placeholder="Enter admin password" type="password"/>
-<button class="btn" onclick="login()">
-<span class="security-icon">🔐</span> Login
+    <div class="security-lines"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="maccabi-logo">
+                <div class="maccabi-shield">מכבי</div>
+            </div>
+            <h1><span class="security-icon">🔧</span> Admin Dashboard</h1>
+            <p>Shift Schedule Management System</p>
+            <div class="soc-subtitle">SOC OPERATIONS CENTER</div>
+        </div>
+
+        <div class="content">
+            <!-- Login Section -->
+            <div id="loginSection" class="password-section">
+                <h3><span class="security-icon">🔒</span> SOC Admin Access Required</h3>
+                <p>Enter the administrator password to access the SOC dashboard:</p>
+                <div class="password-input">
+                    <input type="password" id="adminPassword" placeholder="Enter admin password">
+                    <button class="btn" onclick="login()">
+                        <span class="security-icon">🔐</span> Login
                     </button>
-</div>
-<small>Default password: admin123</small>
-</div>
-<!-- Main Dashboard -->
-<div class="hidden" id="dashboard">
-<!-- Worker Management -->
-<div class="section">
-<h3><span class="security-icon">👥</span> Worker Access Management</h3>
-<div class="worker-input">
-<input id="workerNameInput" placeholder="Enter worker name" type="text"/>
-<button class="btn btn-success" onclick="addWorker()">
-<span class="security-icon">➕</span> Add Worker
+                </div>
+                <small>Default password: admin123</small>
+            </div>
+
+            <!-- Main Dashboard -->
+            <div id="dashboard" class="hidden">
+                <!-- Worker Management -->
+                <div class="section">
+                    <h3><span class="security-icon">👥</span> Worker Access Management</h3>
+                    <div class="worker-input">
+                        <input type="text" id="workerNameInput" placeholder="Enter worker name">
+                        <button class="btn btn-success" onclick="addWorker()">
+                            <span class="security-icon">➕</span> Add Worker
                         </button>
-<button class="btn" onclick="refreshData()">
-<span class="security-icon">🔄</span> Refresh Data
+                        <button class="btn" onclick="refreshData()">
+                            <span class="security-icon">🔄</span> Refresh Data
                         </button>
-</div>
-<div class="worker-tags" id="workersList">
-<!-- Workers will be displayed here -->
-</div>
-</div>
-<!-- Schedule Period Management -->
-<div class="section">
-<h3><span class="security-icon">📅</span> Schedule Period Management</h3>
-<!-- Current Period Display -->
-<div class="lock-status" id="currentPeriodDisplay">
-<div style="text-align: center;">
-<strong>❌ No Active Period</strong><br/>
-<small>Workers cannot submit preferences until a new period is opened</small>
-</div>
-</div>
-<!-- New Period Creation -->
-<div class="period-form">
-<h4><span class="security-icon">📅</span> Open New 2-Week Period</h4>
-<div class="period-grid">
-<div>
-<label for="newPeriodStart">Start Date (Sunday):</label>
-<input id="newPeriodStart" type="date"/>
-</div>
-<div>
-<label for="newPeriodEnd">End Date (Saturday):</label>
-<input id="newPeriodEnd" readonly="" type="date"/>
-</div>
-<div>
-<label for="periodLabel">Period Label:</label>
-<input id="periodLabel" placeholder="e.g., June 15-28, 2025" type="text"/>
-</div>
-<button class="btn btn-success" onclick="openNewPeriod()" style="height: 44px;">
-<span class="security-icon">🚀</span> Open New Period
+                    </div>
+                    <div id="workersList" class="worker-tags">
+                        <!-- Workers will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Schedule Period Management -->
+                <div class="section">
+                    <h3><span class="security-icon">📅</span> Schedule Period Management</h3>
+                    
+                    <!-- Current Period Display -->
+                    <div id="currentPeriodDisplay" class="lock-status">
+                        <div style="text-align: center;">
+                            <strong>❌ No Active Period</strong><br>
+                            <small>Workers cannot submit preferences until a new period is opened</small>
+                        </div>
+                    </div>
+                    
+                    <!-- New Period Creation -->
+                    <div class="period-form">
+                        <h4><span class="security-icon">📅</span> Open New 2-Week Period</h4>
+                        
+                        <div class="period-grid">
+                            <div>
+                                <label for="newPeriodStart">Start Date (Sunday):</label>
+                                <input type="date" id="newPeriodStart">
+                            </div>
+                            
+                            <div>
+                                <label for="newPeriodEnd">End Date (Saturday):</label>
+                                <input type="date" id="newPeriodEnd" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="periodLabel">Period Label:</label>
+                                <input type="text" id="periodLabel" placeholder="e.g., June 15-28, 2025">
+                            </div>
+                            
+                            <button class="btn btn-success" onclick="openNewPeriod()" style="height: 44px;">
+                                <span class="security-icon">🚀</span> Open New Period
                             </button>
-</div>
-<!-- Quick Period Buttons -->
-<div class="quick-actions">
-<h5>Quick Actions:</h5>
-<button class="btn" onclick="setNextTwoWeeks()">📅 Next 2 Weeks</button>
-<button class="btn" onclick="setSpecificDate('2025-06-15')">📅 June 15-28</button>
-<button class="btn" onclick="setSpecificDate('2025-07-01')">📅 July 1-14</button>
-</div>
-</div>
-<!-- Advanced Options -->
-<details class="advanced-options">
-<summary><span class="security-icon">⚙️</span> Advanced Options</summary>
-<div class="advanced-options-content">
-<label>
-<input checked="" id="archiveOldSubmissions" type="checkbox"/>
+                        </div>
+                        
+                        <!-- Quick Period Buttons -->
+                        <div class="quick-actions">
+                            <h5>Quick Actions:</h5>
+                            <button class="btn" onclick="setNextTwoWeeks()">📅 Next 2 Weeks</button>
+                            <button class="btn" onclick="setSpecificDate('2025-06-15')">📅 June 15-28</button>
+                            <button class="btn" onclick="setSpecificDate('2025-07-01')">📅 July 1-14</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Options -->
+                    <details class="advanced-options">
+                        <summary><span class="security-icon">⚙️</span> Advanced Options</summary>
+                        <div class="advanced-options-content">
+                            <label>
+                                <input type="checkbox" id="archiveOldSubmissions" checked>
                                 Archive old worker submissions when opening new period
                             </label>
-<label>
-<input checked="" id="clearOldSchedules" type="checkbox"/>
+                            <label>
+                                <input type="checkbox" id="clearOldSchedules" checked>
                                 Clear previously generated schedules
                             </label>
-</div>
-</details>
-</div>
-<!-- Preference Lock Control -->
-<div class="section">
-<h3><span class="security-icon">🔒</span> Preference Submission Control</h3>
-<div class="lock-status" id="lockStatus">
-<!-- Lock status will be displayed here -->
-</div>
-<button class="btn" id="lockToggleBtn" onclick="toggleLock()">
-<!-- Button text will be set by JavaScript -->
-</button>
-</div>
-<!-- Worker Submissions -->
-<div class="section">
-<h3><span class="security-icon">📝</span> Worker Submissions</h3>
-<div class="submissions-grid" id="submissionsList">
-<!-- Submissions will be displayed here -->
-</div>
-</div>
-<!-- Schedule Generation -->
-<div class="section">
-<h3><span class="security-icon">📊</span> Generate Schedule</h3>
-<button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
-<span class="security-icon">🔄</span> Generate Optimized Schedule
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Preference Lock Control -->
+                <div class="section">
+                    <h3><span class="security-icon">🔒</span> Preference Submission Control</h3>
+                    <div id="lockStatus" class="lock-status">
+                        <!-- Lock status will be displayed here -->
+                    </div>
+                    <button class="btn" id="lockToggleBtn" onclick="toggleLock()">
+                        <!-- Button text will be set by JavaScript -->
                     </button>
-<div id="scheduleOutput">
-<!-- Generated schedule will be displayed here -->
-</div>
-</div>
-<!-- Status Messages -->
-<div id="statusMessages"></div>
-<!-- Schedule Generation Rules -->
-<div class="section rules-section">
-<div class="rules-header">
-<h3><span class="security-icon">📋</span> Schedule Generation Rules &amp; Constraints</h3>
-<div id="scheduleRulesPeriodStatus" style="margin-top: 15px; padding: 12px; border-radius: 8px;">
-<!-- Period status will be populated by JavaScript -->
-</div>
-</div>
-<div class="rules-content">
-<div class="rules-grid">
-<!-- Hard Constraints -->
-<div class="rule-card constraints">
-<h4 style="color: #fecaca;">🚫 Hard Constraints (Never Violated)</h4>
-<ul>
-<li><strong>Maximum 2 night shifts per week</strong> - Workers cannot be assigned more than 2 night shifts in any single week</li>
-<li><strong>Minimum 1 morning shift per week</strong> - Every worker must get at least 1 morning shift per week</li>
-<li><strong>One shift per day</strong> - Workers cannot work multiple shifts on the same day</li>
-<li><strong>8-hour minimum break</strong> - At least 8 hours must pass between the end of one shift and start of the next</li>
-<li><strong>Availability only</strong> - Workers are only assigned to shifts they marked as available</li>
-<li><strong>Approved workers only</strong> - Only workers with approved submissions can be scheduled</li>
-</ul>
-</div>
-<!-- Optimization Goals -->
-<div class="rule-card goals">
-<h4 style="color: #bbf7d0;">🎯 Optimization Goals</h4>
-<ul>
-<li><strong>Maximum coverage</strong> - Fill as many shifts as possible (3 aggressive passes)</li>
-<li><strong>Fair shift distribution</strong> - Balance total shifts across all workers</li>
-<li><strong>Morning shift guarantee</strong> - Aggressively ensure every worker gets morning shifts</li>
-<li><strong>Night shift balance</strong> - Distribute night shifts fairly while respecting limits</li>
-<li><strong>Premium shift fairness</strong> - Distribute premium weekend shifts equally</li>
-<li><strong>Minimize consecutive days</strong> - Avoid scheduling workers on consecutive days when possible</li>
-</ul>
-</div>
-<!-- Shift Details -->
-<div class="rule-card shifts">
-<h4 style="color: #dbeafe;">🕐 Shift Information</h4>
-<ul>
-<li><strong>Morning (בוקר):</strong> 07:00 - 15:00</li>
-<li><strong>Evening (ערב):</strong> 15:00 - 23:00</li>
-<li><strong>Night (לילה):</strong> 23:00 - 07:00 (next day)</li>
-<li><strong>Premium Period:</strong> Friday evening through Saturday evening (higher pay)</li>
-<li><strong>Total shifts:</strong> 42 shifts across 2 weeks (3 shifts × 7 days × 2 weeks)</li>
-</ul>
-</div>
-<!-- Algorithm Process -->
-<div class="rule-card process">
-<h4 style="color: #fef3c7;">⚙️ Generation Process</h4>
-<ol>
-<li><strong>Pass 1:</strong> Initial assignment with strict constraints and priorities</li>
-<li><strong>Pass 2:</strong> Fill empty shifts with relaxed morning constraint</li>
-<li><strong>Pass 3:</strong> Final aggressive filling with minimal constraints</li>
-<li><strong>Validation:</strong> Verify all hard constraints are met</li>
-<li><strong>Analysis:</strong> Detailed logging of coverage and constraint compliance</li>
-</ol>
-</div>
-<!-- Important Notes -->
-<div class="rule-card notes">
-<h4 style="color: #fed7aa;">⚠️ Important Notes</h4>
-<ul>
-<li><strong>Three-Pass Algorithm:</strong> Aggressive filling to maximize coverage</li>
-<li><strong>Real-time Validation:</strong> All constraints checked during assignment</li>
-<li><strong>Detailed Logging:</strong> Check browser console (F12) for detailed analysis</li>
-<li><strong>Auto-Lock:</strong> Preferences locked during generation</li>
-<li><strong>Export Ready:</strong> Generated schedules can be copied directly to Excel</li>
-</ul>
-</div>
-</div>
-<div class="algorithm-info">
-<p>
-<strong>🔧 Algorithm Version:</strong> Triple-Pass Maximum Coverage with Constraints v3.0 | 
+                </div>
+
+                <!-- Worker Submissions -->
+                <div class="section">
+                    <h3><span class="security-icon">📝</span> Worker Submissions</h3>
+                    <div id="submissionsList" class="submissions-grid">
+                        <!-- Submissions will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Schedule Generation -->
+                <div class="section">
+                    <h3><span class="security-icon">📊</span> Generate Schedule</h3>
+                    <button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
+                        <span class="security-icon">🔄</span> Generate Optimized Schedule
+                    </button>
+                    <div id="scheduleOutput">
+                        <!-- Generated schedule will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="statusMessages"></div>
+                
+                <!-- Schedule Generation Rules -->
+                <div class="section rules-section">
+                    <div class="rules-header">
+                        <h3><span class="security-icon">📋</span> Schedule Generation Rules & Constraints</h3>
+                        <div id="scheduleRulesPeriodStatus" style="margin-top: 15px; padding: 12px; border-radius: 8px;">
+                            <!-- Period status will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="rules-content">
+                        <div class="rules-grid">
+                            <!-- Hard Constraints -->
+                            <div class="rule-card constraints">
+                                <h4 style="color: #fecaca;">🚫 Hard Constraints (Never Violated)</h4>
+                                <ul>
+                                    <li><strong>Maximum 2 night shifts per week</strong> - Workers cannot be assigned more than 2 night shifts in any single week</li>
+                                    <li><strong>Minimum 1 morning shift per week</strong> - Every worker must get at least 1 morning shift per week</li>
+                                    <li><strong>One shift per day</strong> - Workers cannot work multiple shifts on the same day</li>
+                                    <li><strong>8-hour minimum break</strong> - At least 8 hours must pass between the end of one shift and start of the next</li>
+                                    <li><strong>Availability only</strong> - Workers are only assigned to shifts they marked as available</li>
+                                    <li><strong>Approved workers only</strong> - Only workers with approved submissions can be scheduled</li>
+                                </ul>
+                            </div>
+
+                            <!-- Optimization Goals -->
+                            <div class="rule-card goals">
+                                <h4 style="color: #bbf7d0;">🎯 Optimization Goals</h4>
+                                <ul>
+                                    <li><strong>Maximum coverage</strong> - Fill as many shifts as possible (3 aggressive passes)</li>
+                                    <li><strong>Fair shift distribution</strong> - Balance total shifts across all workers</li>
+                                    <li><strong>Morning shift guarantee</strong> - Aggressively ensure every worker gets morning shifts</li>
+                                    <li><strong>Night shift balance</strong> - Distribute night shifts fairly while respecting limits</li>
+                                    <li><strong>Premium shift fairness</strong> - Distribute premium weekend shifts equally</li>
+                                    <li><strong>Minimize consecutive days</strong> - Avoid scheduling workers on consecutive days when possible</li>
+                                </ul>
+                            </div>
+
+                            <!-- Shift Details -->
+                            <div class="rule-card shifts">
+                                <h4 style="color: #dbeafe;">🕐 Shift Information</h4>
+                                <ul>
+                                    <li><strong>Morning (בוקר):</strong> 07:00 - 15:00</li>
+                                    <li><strong>Evening (ערב):</strong> 15:00 - 23:00</li>
+                                    <li><strong>Night (לילה):</strong> 23:00 - 07:00 (next day)</li>
+                                    <li><strong>Premium Period:</strong> Friday evening through Saturday evening (higher pay)</li>
+                                    <li><strong>Total shifts:</strong> 42 shifts across 2 weeks (3 shifts × 7 days × 2 weeks)</li>
+                                </ul>
+                            </div>
+
+                            <!-- Algorithm Process -->
+                            <div class="rule-card process">
+                                <h4 style="color: #fef3c7;">⚙️ Generation Process</h4>
+                                <ol>
+                                    <li><strong>Pass 1:</strong> Initial assignment with strict constraints and priorities</li>
+                                    <li><strong>Pass 2:</strong> Fill empty shifts with relaxed morning constraint</li>
+                                    <li><strong>Pass 3:</strong> Final aggressive filling with minimal constraints</li>
+                                    <li><strong>Validation:</strong> Verify all hard constraints are met</li>
+                                    <li><strong>Analysis:</strong> Detailed logging of coverage and constraint compliance</li>
+                                </ol>
+                            </div>
+
+                            <!-- Important Notes -->
+                            <div class="rule-card notes">
+                                <h4 style="color: #fed7aa;">⚠️ Important Notes</h4>
+                                <ul>
+                                    <li><strong>Three-Pass Algorithm:</strong> Aggressive filling to maximize coverage</li>
+                                    <li><strong>Real-time Validation:</strong> All constraints checked during assignment</li>
+                                    <li><strong>Detailed Logging:</strong> Check browser console (F12) for detailed analysis</li>
+                                    <li><strong>Auto-Lock:</strong> Preferences locked during generation</li>
+                                    <li><strong>Export Ready:</strong> Generated schedules can be copied directly to Excel</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-info">
+                            <p>
+                                <strong>🔧 Algorithm Version:</strong> Triple-Pass Maximum Coverage with Constraints v3.0 | 
                                 <strong>⏱️ Generation Time:</strong> Typically 2-5 seconds | 
                                 <strong>🎯 Target Coverage:</strong> 90-98%
                             </p>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Maccabi SOC Admin Dashboard - Core JavaScript Functions
+// This is Artifact 2 of 4
 
-<script src="admin.js" type="module"></script></body>
+const ADMIN_PASSWORD = 'admin123';
+let workerSubmissions = [];
+let serverConnected = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Maccabi SOC Admin Dashboard starting...');
+    
+    document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+    document.getElementById('workerNameInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addWorker();
+        }
+    });
+
+    testServerConnection();
+});
+
+async function testServerConnection() {
+    try {
+        const response = await fetch('/api/test');
+        const result = await response.json();
+        serverConnected = result.success;
+        console.log('SOC server connection:', serverConnected ? '✅ Connected' : '❌ Disconnected');
+    } catch (error) {
+        serverConnected = false;
+        console.log('SOC server connection: ❌ Failed');
+    }
+}
+
+function login() {
+    const password = document.getElementById('adminPassword').value;
+    if (password === ADMIN_PASSWORD) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        console.log('✅ SOC Admin authenticated successfully');
+        loadData();
+    } else {
+        showAlert('Incorrect password. Access denied to SOC administration.', 'warning');
+        document.getElementById('adminPassword').value = '';
+        console.log('❌ SOC Admin authentication failed');
+    }
+}
+
+function checkConsecutiveShiftPattern(workerName, globalDay, schedule) {
+    // Look back at the worker's recent shift pattern
+    let consecutiveShifts = 0;
+    let daysSinceLastWork = 0;
+    
+    // Check backwards from the day before today
+    for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - 5; checkDay--) {
+        const weekIndex = Math.floor(checkDay / 7);
+        const dayIndex = checkDay % 7;
+        
+        let week;
+        if (weekIndex === 0) {
+            week = window.currentScheduleBeingGenerated?.week1 || schedule.week1;
+        } else if (weekIndex === 1) {
+            week = window.currentScheduleBeingGenerated?.week2 || schedule.week2;
+        } else {
+            break;
+        }
+        
+        if (!week || !week.days[dayIndex]) break;
+        
+        const dayShifts = week.days[dayIndex].shifts;
+        const workedThisDay = (dayShifts.morning === workerName || 
+                             dayShifts.evening === workerName || 
+                             dayShifts.night === workerName);
+        
+        if (workedThisDay) {
+            if (daysSinceLastWork === 0) {
+                // Still in consecutive work period
+                consecutiveShifts++;
+            } else {
+                // Found work after some rest - stop counting
+                break;
+            }
+        } else {
+            // Rest day
+            daysSinceLastWork++;
+            if (consecutiveShifts > 0) {
+                // We've found the rest period after work
+                break;
+            }
+        }
+    }
+    
+    // Apply the rule:
+    // After 1 shift: need 1 break
+    // After 2+ shifts: need 2 breaks
+    if (consecutiveShifts === 1 && daysSinceLastWork < 1) {
+        console.log(`❌ Pattern violation: ${workerName} worked 1 shift, needs 1 break (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    if (consecutiveShifts >= 2 && daysSinceLastWork < 2) {
+        console.log(`❌ Pattern violation: ${workerName} worked ${consecutiveShifts} shifts, needs 2 breaks (has ${daysSinceLastWork})`);
+        return false;
+    }
+    
+    return true;
+}
+
+        
+async function loadData() {
+    console.log('📥 Loading SOC data...');
+    
+    if (serverConnected) {
+        try {
+            const response = await fetch('/api/data');
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                workerSubmissions = data.shiftSubmissions || [];
+                
+                // Update local storage with ALL data including scheduleConfig
+                localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+                localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
+                localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
+                localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
+                localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
+                
+                console.log('✅ SOC data synced from server');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load from SOC server:', error);
+            showAlert('Warning: Using local data - SOC server sync unavailable', 'warning');
+        }
+    }
+
+    // Load from local storage as fallback
+    workerSubmissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
+    
+    updateDisplay();
+    initializePeriodManagement();
+    
+    console.log('📊 SOC Dashboard initialized with', workerSubmissions.length, 'submissions');
+}
+
+async function saveData() {
+    const data = {
+        shiftSubmissions: workerSubmissions,
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
+        lockTimestamp: localStorage.getItem('lockTimestamp') || '',
+        scheduleConfig: JSON.parse(localStorage.getItem('scheduleConfig') || '{}'),
+        lastUpdate: Date.now()
+    };
+
+    localStorage.setItem('shiftSubmissions', JSON.stringify(workerSubmissions));
+    localStorage.setItem('lastUpdate', Date.now().toString());
+
+    if (serverConnected) {
+        try {
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ SOC data synced to server');
+            } else {
+                console.error('❌ SOC server sync failed:', result.error);
+            }
+        } catch (error) {
+            console.error('❌ Failed to save to SOC server:', error);
+        }
+    } else {
+        console.log('⚠️ SOC server offline - data saved locally only');
+    }
+}
+
+function addWorker() {
+    const input = document.getElementById('workerNameInput');
+    const workerName = input.value.trim();
+    
+    if (!workerName) {
+        showAlert('Please enter a worker name for SOC authorization.', 'warning');
+        return;
+    }
+
+    const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+    
+    if (approvedWorkers.some(name => name.toLowerCase() === workerName.toLowerCase())) {
+        showAlert('Worker already authorized in SOC system.', 'warning');
+        return;
+    }
+
+    approvedWorkers.push(workerName);
+    localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+    
+    input.value = '';
+    updateDisplay();
+    saveData();
+    showAlert(`✅ Worker "${workerName}" added to SOC authorized personnel!`, 'success');
+    console.log('👤 SOC worker added:', workerName);
+}
+
+function removeWorker(workerName) {
+    if (confirm(`Remove "${workerName}" from SOC authorized workers?\n\nThis will revoke their access to submit shift preferences.`)) {
+        let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+        approvedWorkers = approvedWorkers.filter(name => name !== workerName);
+        localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+        
+        updateDisplay();
+        saveData();
+        showAlert(`❌ Worker "${workerName}" removed from SOC authorization.`, 'success');
+        console.log('👤 SOC worker removed:', workerName);
+    }
+}
+
+function toggleLock() {
+    const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+    const newState = !isLocked;
+    
+    localStorage.setItem('preferencesLocked', newState.toString());
+    localStorage.setItem('lockTimestamp', Date.now().toString());
+    
+    updateDisplay();
+    saveData();
+    
+    const message = newState ? 
+        '🔒 SOC preference submissions locked!' : 
+        '🔓 SOC preference submissions unlocked!';
+    showAlert(message, newState ? 'warning' : 'success');
+    
+    console.log('🔒 SOC preference lock status:', newState ? 'LOCKED' : 'UNLOCKED');
+}
+
+function toggleApproval(submissionId) {
+    const submission = workerSubmissions.find(s => s.id === submissionId);
+    if (submission) {
+        submission.approved = !submission.approved;
+        updateDisplay();
+        saveData();
+        
+        const status = submission.approved ? 'approved ✅' : 'unapproved ❌';
+        showAlert(`${submission.name} ${status} by SOC administrator!`, 'success');
+        console.log('📝 SOC submission status changed:', submission.name, '->', status);
+    }
+}
+
+function removeSubmission(submissionId) {
+    const submission = workerSubmissions.find(s => s.id === submissionId);
+    if (submission && confirm(`Remove ${submission.name}'s submission from SOC database?\n\nThis action cannot be undone.`)) {
+        workerSubmissions = workerSubmissions.filter(s => s.id !== submissionId);
+        updateDisplay();
+        saveData();
+        showAlert('📝 Submission removed from SOC database.', 'success');
+        console.log('📝 SOC submission removed:', submission.name);
+    }
+}
+
+function refreshData() {
+    console.log('🔄 Refreshing SOC data...');
+    loadData();
+    showAlert('🔄 SOC data refreshed!', 'info');
+}
+
+function updateDisplay() {
+    updateWorkersList();
+    updateLockStatus();
+    updateSubmissionsList();
+}
+
+function updateWorkersList() {
+    const workers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+    const container = document.getElementById('workersList');
+    
+    if (workers.length === 0) {
+        container.innerHTML = '<p style="color: #fef3c7;">No authorized SOC workers yet.</p>';
+        return;
+    }
+
+    container.innerHTML = workers.map(worker => `
+        <div class="worker-tag">
+            <span>👤 ${worker}</span>
+            <button onclick="removeWorker('${worker.replace(/'/g, "\\'")}')">✕</button>
+        </div>
+    `).join('');
+}
+
+function updateLockStatus() {
+    const isLocked = localStorage.getItem('preferencesLocked') === 'true';
+    const lockTimestamp = localStorage.getItem('lockTimestamp');
+    const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown';
+    
+    const statusDiv = document.getElementById('lockStatus');
+    const toggleBtn = document.getElementById('lockToggleBtn');
+    
+    if (isLocked) {
+        statusDiv.className = 'lock-status locked';
+        statusDiv.innerHTML = `
+            <span style="font-size: 1.2em;">🔒 SOC PREFERENCES LOCKED</span><br>
+            <small>Locked since: ${lockTime}</small><br>
+            <small style="opacity: 0.8;">Workers cannot submit new preferences</small>
+        `;
+        toggleBtn.innerHTML = '<span class="security-icon">🔓</span> Unlock Preferences';
+        toggleBtn.className = 'btn btn-success';
+    } else {
+        statusDiv.className = 'lock-status unlocked';
+        statusDiv.innerHTML = `
+            <span style="font-size: 1.2em;">🔓 SOC PREFERENCES UNLOCKED</span><br>
+            <small>Workers can submit shift preferences</small><br>
+            <small style="opacity: 0.8;">System accepting new submissions</small>
+        `;
+        toggleBtn.innerHTML = '<span class="security-icon">🔒</span> Lock Preferences';
+        toggleBtn.className = 'btn btn-warning';
+    }
+}
+function calculatePossibleVariations(submissions) {
+            console.log('🔢 CALCULATING POSSIBLE SCHEDULE VARIATIONS...');
+            
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
+
+            let totalVariations = 1;
+            let constrainedShifts = 0;
+            let impossibleShifts = 0;
+
+            // Analyze each shift slot
+            for (let globalDay = 0; globalDay < 14; globalDay++) {
+                ['morning', 'evening', 'night'].forEach(shift => {
+                    // Count available workers for this specific shift
+                    const availableWorkers = workers.filter(worker => {
+                        return worker.preferences[globalDay] && worker.preferences[globalDay][shift];
+                    });
+
+                    if (availableWorkers.length === 0) {
+                        impossibleShifts++;
+                    } else if (availableWorkers.length === 1) {
+                        constrainedShifts++;
+                        // Only 1 choice = no variation for this slot
+                    } else {
+                        // Multiple workers available = variations possible
+                        totalVariations *= availableWorkers.length;
+                        
+                        // Cap the calculation to prevent overflow
+                        if (totalVariations > 1000000) {
+                            totalVariations = 1000000;
+                        }
+                    }
+                });
+            }
+
+            console.log(`📊 Analysis: ${constrainedShifts} constrained shifts, ${impossibleShifts} impossible shifts`);
+            
+            // Estimate realistic variations considering constraints
+            let estimatedVariations;
+            if (totalVariations >= 1000000) {
+                estimatedVariations = "1,000,000+";
+            } else if (totalVariations >= 10000) {
+                estimatedVariations = Math.round(totalVariations / 1000) + "K+";
+            } else if (totalVariations >= 1000) {
+                estimatedVariations = Math.round(totalVariations / 100) * 100 + "+";
+            } else {
+                estimatedVariations = totalVariations.toLocaleString();
+            }
+
+            return {
+                estimated: estimatedVariations,
+                raw: totalVariations,
+                constrainedShifts: constrainedShifts,
+                impossibleShifts: impossibleShifts
+            };
+        }
+function updateSubmissionsList() {
+    const container = document.getElementById('submissionsList');
+    
+    if (workerSubmissions.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; 
+                        background: rgba(59, 130, 246, 0.1); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                <h4 style="color: #dbeafe; margin-bottom: 10px;">📝 No Worker Submissions</h4>
+                <p style="color: #dbeafe; opacity: 0.8;">No SOC personnel have submitted shift preferences yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = workerSubmissions.map(submission => {
+        const availableShifts = Object.values(submission.preferences)
+            .reduce((count, day) => count + (day.morning ? 1 : 0) + (day.evening ? 1 : 0) + (day.night ? 1 : 0), 0);
+
+        const approvalIcon = submission.approved ? '✅' : '⏳';
+        const cardClass = submission.approved ? 'submission-card approved' : 'submission-card';
+
+        return `
+            <div class="${cardClass}">
+                <h4>
+                    <span class="security-icon">👤</span> ${submission.name} ${approvalIcon}
+                </h4>
+                <p><strong>Available Shifts:</strong> ${availableShifts}/42 shifts</p>
+                <p><strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}</p>
+                ${submission.notes ? `<p><strong>Notes:</strong> ${submission.notes}</p>` : ''}
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn ${submission.approved ? '' : 'btn-success'}" onclick="toggleApproval(${submission.id})">
+                        ${submission.approved ? '✓ Approved' : '📋 Approve'}
+                    </button>
+                    <button class="btn btn-danger" onclick="removeSubmission(${submission.id})">
+                        🗑️ Remove
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="security-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'danger' ? '❌' : 'ℹ️'}</span>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    const container = document.getElementById('statusMessages');
+    container.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+    
+    console.log(`📢 SOC Alert [${type.toUpperCase()}]:`, message);
+}
+        // Maccabi SOC Admin Dashboard - Period & Worker Management Functions
+// This is Artifact 3 of 4
+
+
+// Period Management Functions
+function initializePeriodManagement() {
+    console.log('📅 Initializing SOC period management...');
+    
+    document.getElementById('newPeriodStart').addEventListener('change', function() {
+        const startDate = new Date(this.value);
+        if (startDate) {
+            const dayOfWeek = startDate.getDay();
+            if (dayOfWeek !== 0) {
+                showAlert('⚠️ SOC Recommendation: Start date should be a Sunday for proper week alignment.', 'warning');
+            }
+            
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 13);
+            
+            document.getElementById('newPeriodEnd').value = endDate.toISOString().split('T')[0];
+            
+            const startStr = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            const endStr = endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('periodLabel').value = `${startStr} - ${endStr}`;
+        }
+    });
+    
+    updateCurrentPeriodDisplay();
+}
+
+function updateCurrentPeriodDisplay() {
+    const currentPeriod = getCurrentPeriodConfig();
+    const displayDiv = document.getElementById('currentPeriodDisplay');
+    
+    if (currentPeriod && currentPeriod.isActive) {
+        displayDiv.className = 'lock-status unlocked';
+        displayDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <span class="security-icon">📅</span>
+                        <strong style="font-size: 1.1em;">Current Active SOC Period: ${currentPeriod.label}</strong>
+                    </div>
+                    <small style="opacity: 0.9;">
+                        📊 ${currentPeriod.startDate} to ${currentPeriod.endDate} | 
+                        Created: ${new Date(currentPeriod.createdAt).toLocaleDateString()}
+                    </small>
+                </div>
+                <div>
+                    <button class="btn btn-danger" onclick="closePeriod()" style="padding: 8px 16px;">
+                        <span class="security-icon">🔒</span> Close Period
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        displayDiv.className = 'lock-status locked';
+        displayDiv.innerHTML = `
+            <div style="text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                    <span class="security-icon">❌</span>
+                    <strong style="font-size: 1.1em;">No Active SOC Period</strong>
+                </div>
+                <small>Workers cannot submit preferences until a new period is opened by SOC administration</small>
+            </div>
+        `;
+    }
+    updateScheduleRulesPeriodStatus();
+}
+
+function getCurrentPeriodConfig() {
+    try {
+        const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+        return config.currentPeriod || null;
+    } catch (error) {
+        console.error('❌ Error reading SOC period config:', error);
+        return null;
+    }
+}
+
+function setNextTwoWeeks() {
+    const today = new Date();
+    const nextSunday = new Date(today);
+    
+    const daysUntilSunday = (7 - today.getDay()) % 7;
+    nextSunday.setDate(today.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
+    
+    document.getElementById('newPeriodStart').value = nextSunday.toISOString().split('T')[0];
+    document.getElementById('newPeriodStart').dispatchEvent(new Event('change'));
+    
+    console.log('📅 SOC period set to next 2 weeks starting:', nextSunday.toDateString());
+}
+
+function setSpecificDate(dateString) {
+    document.getElementById('newPeriodStart').value = dateString;
+    document.getElementById('newPeriodStart').dispatchEvent(new Event('change'));
+    
+    console.log('📅 SOC period set to specific date:', dateString);
+}
+
+async function openNewPeriod() {
+    const startDate = document.getElementById('newPeriodStart').value;
+    const endDate = document.getElementById('newPeriodEnd').value;
+    const label = document.getElementById('periodLabel').value;
+    
+    if (!startDate || !endDate || !label) {
+        showAlert('❌ Please fill in all SOC period details.', 'warning');
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff !== 13) {
+        showAlert('❌ SOC Period must be exactly 14 days (2 weeks).', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Open new SOC period: ${label}?\n\nThis will:\n• Archive current submissions\n• Clear existing schedules\n• Allow workers to submit new preferences\n\nContinue with SOC period activation?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    console.log('📅 Opening new SOC period:', label);
+    
+    const newPeriod = {
+        startDate: startDate,
+        endDate: endDate,
+        label: label,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        createdBy: 'SOC Admin'
+    };
+    
+    let currentData = {
+        shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: false,
+        lockTimestamp: '',
+        scheduleConfig: {
+            currentPeriod: newPeriod,
+            history: JSON.parse(localStorage.getItem('scheduleConfig') || '{}').history || []
+        }
+    };
+    
+    // Archive old submissions if requested
+    if (document.getElementById('archiveOldSubmissions').checked && currentData.shiftSubmissions.length > 0) {
+        const archiveEntry = {
+            archivedAt: new Date().toISOString(),
+            periodLabel: getCurrentPeriodConfig()?.label || 'Previous Period',
+            submissions: [...currentData.shiftSubmissions],
+            archivedBy: 'SOC Admin'
+        };
+        currentData.scheduleConfig.history.unshift(archiveEntry);
+        
+        // Keep only last 10 archived periods
+        if (currentData.scheduleConfig.history.length > 10) {
+            currentData.scheduleConfig.history = currentData.scheduleConfig.history.slice(0, 10);
+        }
+        
+        currentData.shiftSubmissions = [];
+        console.log('📦 SOC archived', archiveEntry.submissions.length, 'submissions from previous period');
+    }
+    
+    // Clear old schedules if requested
+    if (document.getElementById('clearOldSchedules').checked) {
+        document.getElementById('scheduleOutput').innerHTML = '';
+        console.log('🗑️ SOC cleared previous schedule displays');
+    }
+    
+    // Save all data
+    localStorage.setItem('scheduleConfig', JSON.stringify(currentData.scheduleConfig));
+    localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
+    localStorage.setItem('preferencesLocked', 'false');
+    localStorage.setItem('lockTimestamp', '');
+    
+    // Update worker submissions in memory
+    workerSubmissions = currentData.shiftSubmissions;
+    
+    await saveData();
+    
+    updateCurrentPeriodDisplay();
+    updateDisplay();
+    
+    // Clear form
+    document.getElementById('newPeriodStart').value = '';
+    document.getElementById('newPeriodEnd').value = '';
+    document.getElementById('periodLabel').value = '';
+    
+    showAlert(`✅ New SOC period opened: ${label}. Workers can now submit their preferences!`, 'success');
+    console.log('✅ SOC period activated successfully:', label);
+}
+
+function closePeriod() {
+    const currentPeriod = getCurrentPeriodConfig();
+    if (!currentPeriod) {
+        showAlert('❌ No active SOC period to close.', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Close the current SOC period: ${currentPeriod.label}?\n\nThis will:\n• Prevent workers from submitting new preferences\n• Lock the current period\n• Require opening a new period for future submissions\n\nContinue with SOC period closure?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    console.log('🔒 Closing SOC period:', currentPeriod.label);
+    
+    const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    if (config.currentPeriod) {
+        config.currentPeriod.isActive = false;
+        config.currentPeriod.closedAt = new Date().toISOString();
+        config.currentPeriod.closedBy = 'SOC Admin';
+        localStorage.setItem('scheduleConfig', JSON.stringify(config));
+        
+        // Lock preferences when period is closed
+        localStorage.setItem('preferencesLocked', 'true');
+        localStorage.setItem('lockTimestamp', Date.now().toString());
+        
+        saveData();
+        updateCurrentPeriodDisplay();
+        updateDisplay();
+        
+        showAlert(`🔒 SOC period closed: ${currentPeriod.label}. Workers can no longer submit preferences.`, 'info');
+        console.log('✅ SOC period closed successfully');
+    }
+}
+
+// Enhanced worker management with SOC security features
+function validateWorkerName(name) {
+    // Basic validation for SOC worker names
+    if (!name || name.length < 2) {
+        return { valid: false, message: 'Worker name must be at least 2 characters long.' };
+    }
+    
+    if (name.length > 50) {
+        return { valid: false, message: 'Worker name cannot exceed 50 characters.' };
+    }
+    
+    // Check for potentially problematic characters
+    const invalidChars = /[<>\"'&]/;
+    if (invalidChars.test(name)) {
+        return { valid: false, message: 'Worker name contains invalid characters.' };
+    }
+    
+    return { valid: true };
+}
+
+function addWorkerWithValidation() {
+    const input = document.getElementById('workerNameInput');
+    const workerName = input.value.trim();
+    
+    // Validate input
+    const validation = validateWorkerName(workerName);
+    if (!validation.valid) {
+        showAlert(`❌ SOC Validation Error: ${validation.message}`, 'warning');
+        return;
+    }
+
+    const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+    
+    // Check for duplicates (case-insensitive)
+    if (approvedWorkers.some(name => name.toLowerCase() === workerName.toLowerCase())) {
+        showAlert(`⚠️ Worker "${workerName}" is already authorized in SOC system.`, 'warning');
+        input.focus();
+        return;
+    }
+
+    // Add to approved workers
+    approvedWorkers.push(workerName);
+    localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+    
+    input.value = '';
+    updateDisplay();
+    saveData();
+    
+    showAlert(`✅ SOC Authorization granted to "${workerName}"! They can now access the preference system.`, 'success');
+    console.log('👤 SOC worker authorized:', workerName, '| Total authorized:', approvedWorkers.length);
+}
+
+function removeWorkerWithConfirmation(workerName) {
+    // Check if worker has active submissions
+    const hasSubmissions = workerSubmissions.some(s => s.name === workerName);
+    
+    let confirmMessage = `Remove "${workerName}" from SOC authorized workers?\n\n`;
+    confirmMessage += `This will:\n`;
+    confirmMessage += `• Revoke their access to submit shift preferences\n`;
+    confirmMessage += `• Remove them from the authorized personnel list\n`;
+    
+    if (hasSubmissions) {
+        confirmMessage += `• Their existing submission will remain (but they cannot modify it)\n`;
+    }
+    
+    confirmMessage += `\nContinue with SOC authorization removal?`;
+    
+    if (confirm(confirmMessage)) {
+        let approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+        const originalCount = approvedWorkers.length;
+        approvedWorkers = approvedWorkers.filter(name => name !== workerName);
+        
+        if (approvedWorkers.length === originalCount) {
+            showAlert(`⚠️ Worker "${workerName}" was not found in SOC authorization list.`, 'warning');
+            return;
+        }
+        
+        localStorage.setItem('approvedWorkers', JSON.stringify(approvedWorkers));
+        
+        updateDisplay();
+        saveData();
+        
+        showAlert(`❌ SOC authorization revoked for "${workerName}". They can no longer access the system.`, 'success');
+        console.log('👤 SOC worker authorization revoked:', workerName, '| Remaining authorized:', approvedWorkers.length);
+    }
+}
+
+// Bulk worker management functions
+function exportWorkerList() {
+    const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+    
+    if (approvedWorkers.length === 0) {
+        showAlert('❌ No SOC workers to export.', 'warning');
+        return;
+    }
+    
+    const exportData = {
+        exportedAt: new Date().toISOString(),
+        exportedBy: 'SOC Admin',
+        totalWorkers: approvedWorkers.length,
+        workers: approvedWorkers
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `soc_workers_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showAlert(`📋 SOC worker list exported (${approvedWorkers.length} workers).`, 'success');
+    console.log('📋 SOC worker list exported:', approvedWorkers.length, 'workers');
+}
+
+function getWorkerStatistics() {
+    const approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
+    const totalWorkers = approvedWorkers.length;
+    const workersWithSubmissions = workerSubmissions.length;
+    const approvedSubmissions = workerSubmissions.filter(s => s.approved).length;
+    const pendingSubmissions = workersWithSubmissions - approvedSubmissions;
+    
+    return {
+        totalWorkers,
+        workersWithSubmissions,
+        approvedSubmissions,
+        pendingSubmissions,
+        submissionRate: totalWorkers > 0 ? (workersWithSubmissions / totalWorkers * 100).toFixed(1) : 0,
+        approvalRate: workersWithSubmissions > 0 ? (approvedSubmissions / workersWithSubmissions * 100).toFixed(1) : 0
+    };
+}
+
+// Override the original addWorker function to use validation
+function addWorker() {
+    addWorkerWithValidation();
+}
+
+// Override the original removeWorker function to use enhanced confirmation
+function removeWorker(workerName) {
+    removeWorkerWithConfirmation(workerName);
+}
+        // Maccabi SOC Admin Dashboard - Schedule Generation & Display Functions
+// This is Artifact 4 of 4
+
+function generateSchedule() {
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            localStorage.setItem('preferencesLocked', 'true');
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            updateDisplay();
+
+            // Calculate possible variations before generating
+            const variations = calculatePossibleVariations(approvedSubmissions);
+
+            // Show loading message
+            showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
+
+            // Generate multiple schedules and pick the best one
+            const bestSchedule = generateBestCoverageSchedule(approvedSubmissions, variations);
+            
+            displaySchedule(bestSchedule);
+            
+            showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
+        }
+
+        function generateBestCoverageSchedule(submissions, variations) {
+            console.log('🎯 SEARCHING FOR BEST COVERAGE SCHEDULE...');
+            
+            let bestSchedule = null;
+            let bestCoverage = 0;
+            const maxAttempts = 15; // Try up to 15 different schedules
+            let attempt = 1;
+
+            while (attempt <= maxAttempts) {
+                console.log(`🔄 Attempt ${attempt}/${maxAttempts}...`);
+                
+                try {
+                    const schedule = generateOptimizedSchedule(submissions);
+                    
+                    console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
+                    
+                    // If we found 100% coverage, use it immediately
+                    if (schedule.coverage >= 100) {
+                        console.log(`🎯 PERFECT! Found 100% coverage on attempt ${attempt}`);
+                        schedule.variations = variations;
+                        schedule.attemptNumber = attempt;
+                        schedule.totalAttempts = maxAttempts;
+                        return schedule;
+                    }
+                    
+                    // Otherwise, keep the best one so far
+                    if (schedule.coverage > bestCoverage) {
+                        bestCoverage = schedule.coverage;
+                        bestSchedule = schedule;
+                        console.log(`⭐ New best: ${bestCoverage.toFixed(1)}% coverage`);
+                    }
+                    
+                } catch (error) {
+                    console.log(`❌ Attempt ${attempt} failed:`, error);
+                }
+                
+                attempt++;
+            }
+
+            // Add metadata to the best schedule found
+            if (bestSchedule) {
+                bestSchedule.variations = variations;
+                bestSchedule.attemptNumber = "Best of " + maxAttempts;
+                bestSchedule.totalAttempts = maxAttempts;
+                console.log(`🏆 FINAL RESULT: Best coverage found was ${bestCoverage.toFixed(1)}%`);
+            }
+
+            return bestSchedule;
+        }
+
+        function generateOptimizedSchedule(submissions) {
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
+
+            const schedule = {
+                week1: initializeWeek(0),
+                week2: initializeWeek(7),
+                workers: workers.map(w => w.name)
+            };
+
+            window.currentScheduleBeingGenerated = schedule;
+
+            const workerStats = {};
+            workers.forEach(worker => {
+                workerStats[worker.name] = {
+                    totalShifts: 0,
+                    nightShifts: 0,
+                    morningShifts: 0,
+                    weekendShifts: 0,
+                    premiumShifts: 0,
+                    lastAssignedDay: -1,
+                    lastShiftEnd: null
+                };
+            });
+
+            let totalCoverage = 0;
+            const totalPossibleShifts = 42; // 3 shifts × 7 days × 2 weeks
+
+            const shiftTimes = {
+                morning: { start: 7, end: 15 },
+                evening: { start: 15, end: 23 },
+                night: { start: 23, end: 7 }
+            };
+
+            // PASS 1: Normal assignment with all constraints
+            totalCoverage = performSchedulingPass(schedule, workers, workerStats, shiftTimes, 1);
+
+            // PASS 2: Fill empty shifts with relaxed morning constraint
+            const pass2Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, false);
+            totalCoverage += pass2Filled;
+
+            // PASS 3: Final aggressive filling
+            const pass3Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, true);
+            totalCoverage += pass3Filled;
+
+            delete window.currentScheduleBeingGenerated;
+
+            return {
+                ...schedule,
+                coverage: (totalCoverage / totalPossibleShifts) * 100,
+                totalAssignedShifts: totalCoverage,
+                totalPossibleShifts: totalPossibleShifts
+            };
+        }
+
+function generateOptimizedSchedule(submissions) {
+    // Validate that we have an active period
+    const periodConfig = getCurrentPeriodConfig();
+    if (!periodConfig || !periodConfig.isActive) {
+        showAlert('❌ Cannot generate schedule: No active SOC period found. Please open a new period first.', 'danger');
+        return null;
+    }
+    
+    console.log('📅 SOC generating schedule for period:', periodConfig.label);
+    console.log('📊 SOC period dates:', periodConfig.startDate, 'to', periodConfig.endDate);
+    
+    const workers = submissions.map(s => ({
+        name: s.name,
+        preferences: s.preferences
+    }));
+
+    const schedule = {
+        week1: initializeWeek(0),
+        week2: initializeWeek(7),
+        workers: workers.map(w => w.name),
+        periodInfo: {
+            label: periodConfig.label,
+            startDate: periodConfig.startDate,
+            endDate: periodConfig.endDate
+        }
+    };
+
+    window.currentScheduleBeingGenerated = schedule;
+
+    const workerStats = {};
+    workers.forEach(worker => {
+        workerStats[worker.name] = {
+            totalShifts: 0,
+            nightShifts: 0,
+            morningShifts: 0,
+            weekendShifts: 0,
+            premiumShifts: 0,
+            lastAssignedDay: -1,
+            lastShiftEnd: null
+        };
+    });
+
+    let totalCoverage = 0;
+    const totalPossibleShifts = 42; // 3 shifts × 7 days × 2 weeks
+
+    const shiftTimes = {
+        morning: { start: 7, end: 15 },
+        evening: { start: 15, end: 23 },
+        night: { start: 23, end: 7 }
+    };
+
+    // PASS 1: Normal assignment with all constraints
+    console.log('📋 SOC PASS 1: Initial assignment with full constraints...');
+    totalCoverage = performSchedulingPass(schedule, workers, workerStats, shiftTimes, 1);
+    console.log(`✅ SOC Pass 1 complete. Coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
+
+    // PASS 2: Fill empty shifts with relaxed morning constraint
+    console.log('📋 SOC PASS 2: Filling empty shifts with relaxed morning constraint...');
+    const pass2Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, false);
+    totalCoverage += pass2Filled;
+    console.log(`✅ SOC Pass 2 complete. Additional filled: ${pass2Filled}. Total coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
+
+    // PASS 3: Final aggressive filling
+    console.log('📋 SOC PASS 3: Final aggressive filling with minimal constraints...');
+    const pass3Filled = fillEmptyShifts(schedule, workers, workerStats, shiftTimes, true);
+    totalCoverage += pass3Filled;
+    console.log(`✅ SOC Pass 3 complete. Additional filled: ${pass3Filled}. Final coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
+
+    delete window.currentScheduleBeingGenerated;
+
+    console.log('🎯 SOC SCHEDULE GENERATION COMPLETE!');
+    return {
+        ...schedule,
+        coverage: (totalCoverage / totalPossibleShifts) * 100,
+        totalAssignedShifts: totalCoverage,
+        totalPossibleShifts: totalPossibleShifts,
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'SOC Admin'
+    };
+}
+function analyzeEmptyShifts(schedule, workers, workerStats, shiftTimes) {
+            console.log('🔍 ANALYZING WHY SHIFTS ARE EMPTY...');
+            
+            let emptyShiftsAnalysis = [];
+
+            [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+                const weekStartDay = weekIndex * 7;
+                
+                for (let day = 0; day < 7; day++) {
+                    const globalDay = weekStartDay + day;
+                    
+                    ['morning', 'evening', 'night'].forEach(shift => {
+                        if (!week.days[day].shifts[shift]) {
+                            // This shift is empty - let's analyze why
+                            const analysis = {
+                                globalDay,
+                                weekIndex: weekIndex + 1,
+                                dayName: week.days[day].dayShort,
+                                shift,
+                                reasons: []
+                            };
+
+                            console.log(`\n❌ EMPTY SHIFT: ${shift} on ${week.days[day].dayShort} (Day ${globalDay})`);
+
+                            // Check each worker to see why they can't work this shift
+                            workers.forEach(worker => {
+                                const reasons = [];
+
+                                // Check availability
+                                if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) {
+                                    reasons.push('Not available');
+                                } else {
+                                    // Check if worker already has a shift on this day
+                                    const currentDayShifts = week.days[day].shifts;
+                                    if (currentDayShifts.morning === worker.name || 
+                                        currentDayShifts.evening === worker.name || 
+                                        currentDayShifts.night === worker.name) {
+                                        reasons.push('Already working this day');
+                                    } else {
+                                        // Check night shift limit
+                                        if (shift === 'night') {
+                                            const currentWeek = Math.floor(globalDay / 7);
+                                            const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+                                            if (nightShiftsThisWeek >= 2) {
+                                                reasons.push(`Already has ${nightShiftsThisWeek} night shifts this week`);
+                                            }
+                                        }
+
+                                        // Check consecutive days
+                                        if (hasWorkedConsecutiveDays(worker.name, globalDay, 6)) {
+                                            reasons.push('Would create 7+ consecutive days');
+                                        }
+
+                                        // Check 8-hour break
+                                        const workerStat = workerStats[worker.name];
+                                        if (workerStat && workerStat.lastShiftEnd !== null) {
+                                            const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                            const hoursSinceLastShift = (currentShiftStart - workerStat.lastShiftEnd) / (1000 * 60 * 60);
+                                            
+                                            if (hoursSinceLastShift < 8) {
+                                                reasons.push(`Only ${hoursSinceLastShift.toFixed(1)} hours since last shift`);
+                                            }
+                                        }
+
+                                        // Check cross-day conflicts
+                                        if (globalDay > 0) {
+                                            const previousGlobalDay = globalDay - 1;
+                                            const previousWeekIndex = Math.floor(previousGlobalDay / 7);
+                                            const previousDayIndex = previousGlobalDay % 7;
+                                            
+                                            let previousWeek;
+                                            if (previousWeekIndex === 0) {
+                                                previousWeek = schedule.week1;
+                                            } else if (previousWeekIndex === 1) {
+                                                previousWeek = schedule.week2;
+                                            }
+                                            
+                                            if (previousWeek && previousWeek.days[previousDayIndex]) {
+                                                const previousDayShifts = previousWeek.days[previousDayIndex].shifts;
+                                                const currentShiftStart = calculateShiftStartTime(globalDay, shift, shiftTimes);
+                                                
+                                                for (const prevShift of ['morning', 'evening', 'night']) {
+                                                    if (previousDayShifts[prevShift] === worker.name) {
+                                                        const prevShiftEnd = calculateShiftEndTime(previousGlobalDay, prevShift, shiftTimes);
+                                                        const hoursGap = (currentShiftStart - prevShiftEnd) / (1000 * 60 * 60);
+                                                        
+                                                        if (hoursGap < 8) {
+                                                            reasons.push(`Only ${hoursGap.toFixed(1)} hours after ${prevShift} yesterday`);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (reasons.length === 0) {
+                                            reasons.push('✅ AVAILABLE - This is suspicious!');
+                                        }
+                                    }
+                                }
+
+                                console.log(`  ${worker.name}: ${reasons.join(', ')}`);
+                                analysis.reasons.push({ worker: worker.name, constraints: reasons });
+                            });
+
+                            emptyShiftsAnalysis.push(analysis);
+                        }
+                    });
+                }
+            });
+
+            console.log(`\n📊 SUMMARY: ${emptyShiftsAnalysis.length} empty shifts found`);
+            
+            // Count reasons
+            const reasonCounts = {};
+            emptyShiftsAnalysis.forEach(shift => {
+                shift.reasons.forEach(workerReason => {
+                    workerReason.constraints.forEach(constraint => {
+                        reasonCounts[constraint] = (reasonCounts[constraint] || 0) + 1;
+                    });
+                });
+            });
+
+            console.log('\n📈 TOP BLOCKING REASONS:');
+            Object.entries(reasonCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10)
+                .forEach(([reason, count]) => {
+                    console.log(`  ${count}x: ${reason}`);
+                });
+
+            return emptyShiftsAnalysis;
+        }
+function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passNumber) {
+    let coverage = 0;
+
+    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+        const weekStartDay = weekIndex * 7;
+        
+        for (let day = 0; day < 7; day++) {
+            const globalDay = weekStartDay + day;
+            
+            ['morning', 'evening', 'night'].forEach(shift => {
+                if (week.days[day].shifts[shift]) {
+                    coverage++;
+                    return; // Already assigned
+                }
+
+                const availableWorkers = workers.filter(worker => {
+                    return isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
+                });
+
+                if (availableWorkers.length > 0) {
+                    const scoredWorkers = availableWorkers.map(worker => ({
+                        worker: worker,
+                        score: calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
+                    }))
+                    .filter(sw => sw.score > -500)
+                    .sort((a, b) => b.score - a.score);
+
+                    if (scoredWorkers.length > 0) {
+                        const bestWorker = scoredWorkers[0].worker;
+                        assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                        coverage++;
+                    }
+                }
+            });
+        }
+    });
+
+    return coverage;
+}
+
+        function hasWorkedConsecutiveDays(workerName, globalDay, maxConsecutive = 6) {
+            // Check if worker has worked the last 6 days (would make 7 with today)
+            let consecutiveDays = 0;
+            
+            // Check backwards from the day before today
+            for (let checkDay = globalDay - 1; checkDay >= 0 && checkDay >= globalDay - maxConsecutive; checkDay--) {
+                const weekIndex = Math.floor(checkDay / 7);
+                const dayIndex = checkDay % 7;
+                
+                let week;
+                if (weekIndex === 0) {
+                    week = window.currentScheduleBeingGenerated?.week1;
+                } else if (weekIndex === 1) {
+                    week = window.currentScheduleBeingGenerated?.week2;
+                } else {
+                    break; // Can't check further back
+                }
+                
+                if (!week || !week.days[dayIndex]) {
+                    break; // Can't check further back
+                }
+                
+                const dayShifts = week.days[dayIndex].shifts;
+                const workedThisDay = (dayShifts.morning === workerName || 
+                                     dayShifts.evening === workerName || 
+                                     dayShifts.night === workerName);
+                
+                if (workedThisDay) {
+                    consecutiveDays++;
+                } else {
+                    break; // No consecutive streak
+                }
+            }
+            
+            if (consecutiveDays >= maxConsecutive) {
+                console.log(`🚫 CONSECUTIVE DAYS VIOLATION: ${workerName} has worked ${consecutiveDays} consecutive days, blocking assignment on day ${globalDay}`);
+                return true; // Would create 7+ consecutive days
+            }
+            
+            return false;
+        }
+        
+ function isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
+    // ❌ Prevent night-to-morning double shift
+    if (shift === 'morning') {
+        if (day > 0) {
+            const prevDayShifts = week.days[day - 1]?.shifts || {};
+            if (prevDayShifts.night === worker.name) return false;
+        } else if (week === schedule.week2) {
+            const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
+            if (prevWeekLastDayShifts.night === worker.name) return false;
+        }
+    }
+
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+    // Max 3 night shifts per week
+    if (shift === 'night') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
+        if (nightShiftsThisWeek >= 3) return false;
+
+        // NEW RULE: Avoid two consecutive nights
+        if (globalDay > 0) {
+            const prevDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevDay / 7);
+            const prevDayIndex = prevDay % 7;
+            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+            if (prevShifts && prevShifts.night === worker.name) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+
+function assignWorkerToShift(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
+    const existingShifts = week.days[day].shifts;
+    if (Object.values(existingShifts).includes(worker.name)) {
+        console.error(`❌ Worker ${worker.name} already assigned on day ${globalDay}!`);
+        return; // skip assignment
+    }
+
+            week.days[day].shifts[shift] = worker.name;
+
+            const stats = workerStats[worker.name];
+            stats.totalShifts++;
+            if (shift === 'night') stats.nightShifts++;
+            if (shift === 'morning') stats.morningShifts++;
+            if (day === 5 || day === 6) stats.weekendShifts++;
+            
+            if (isPremiumWeekendShift(day, shift)) {
+                stats.premiumShifts++;
+            }
+            
+            stats.lastAssignedDay = globalDay;
+            
+            // CRITICAL: Always update the last shift end time with proper calculation
+            const shiftEndTime = calculateShiftEndTime(globalDay, shift, shiftTimes);
+            stats.lastShiftEnd = shiftEndTime;
+            
+            // Enhanced logging
+            const endDate = new Date(shiftEndTime);
+            console.log(`✅ Assigned ${worker.name} to ${shift} on day ${globalDay}. Shift ends: ${endDate.toLocaleString()}`);
+        }
+
+
+function fillEmptyShifts(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
+    let filledCount = 0;
+
+    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+        const weekStartDay = weekIndex * 7;
+
+        for (let day = 0; day < 7; day++) {
+            const globalDay = weekStartDay + day;
+
+            ['morning', 'evening', 'night'].forEach(shift => {
+                if (week.days[day].shifts[shift]) return;
+
+                const availableWorkers = workers.filter(worker => {
+                    if (!worker.preferences[globalDay]?.[shift]) return false;
+
+                    const currentDayShifts = week.days[day].shifts;
+                    if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+                    if (shift === 'night') {
+                        const currentWeek = Math.floor(globalDay / 7);
+                        const nightShiftsThisWeek = countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+                        if (nightShiftsThisWeek >= 3) return false;
+
+                        // NEW RULE: Avoid 2 nights in a row
+                        if (globalDay > 0) {
+                            const prevDay = globalDay - 1;
+                            const prevWeekIndex = Math.floor(prevDay / 7);
+                            const prevDayIndex = prevDay % 7;
+                            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+                            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+                            if (prevShifts && prevShifts.night === worker.name) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                });
+
+                if (availableWorkers.length > 0) {
+                    const sorted = availableWorkers.sort((a, b) =>
+                        (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
+                    );
+                    const selected = sorted[0];
+                    assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
+                    filledCount++;
+                }
+            });
+        }
+    });
+
+    return filledCount;
+}
+
+
+
+function calculateShiftStartTime(globalDay, shift, shiftTimes) {
+            // Base date: June 1st, 2025 (Sunday) - Make sure this is consistent
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed (5 = June)
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const startHour = shiftTimes[shift].start;
+            shiftDate.setHours(startHour, 0, 0, 0);
+            
+            console.log(`📅 ${shift} on day ${globalDay} starts: ${shiftDate.toLocaleString()}`);
+            return shiftDate.getTime();
+        }
+
+function calculateShiftEndTime(globalDay, shift, shiftTimes) {
+            // Base date: June 1st, 2025 (Sunday) - Make sure this is consistent  
+            const baseDate = new Date(2025, 5, 1); // Month is 0-indexed (5 = June)
+            const shiftDate = new Date(baseDate);
+            shiftDate.setDate(baseDate.getDate() + globalDay);
+            
+            const endHour = shiftTimes[shift].end;
+            
+            if (shift === 'night') {
+                // Night shift ends the next day at 07:00
+                shiftDate.setDate(shiftDate.getDate() + 1);
+                shiftDate.setHours(endHour, 0, 0, 0);
+            } else {
+                // Morning/Evening shifts end same day
+                shiftDate.setHours(endHour, 0, 0, 0);
+            }
+            
+            console.log(`📅 ${shift} on day ${globalDay} ends: ${shiftDate.toLocaleString()}`);
+            return shiftDate.getTime();
+        }
+
+function initializeWeek(globalStartDay) {
+    const week = { days: [] };
+    
+    // Get the actual start date from current period
+    const periodConfig = getCurrentPeriodConfig();
+    if (!periodConfig) {
+        console.error('No active SOC period found for schedule generation');
+        return week;
+    }
+    
+    const periodStartDate = new Date(periodConfig.startDate);
+    const startDate = new Date(periodStartDate);
+    startDate.setDate(periodStartDate.getDate() + globalStartDay);
+    
+    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        week.days.push({
+            dayShort: hebrewDays[currentDate.getDay()],
+            dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            shifts: {
+                morning: null,
+                evening: null,
+                night: null
+            }
+        });
+    }
+    
+    return week;
+}
+
+function calculateWorkerScore(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
+    let score = 100;
+    
+    // HARD CONSTRAINT: Maximum 2 night shifts per week
+    if (shift === 'night') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const nightShiftsThisWeek = countNightShiftsInWeek(worker.name, currentWeek);
+        
+        if (nightShiftsThisWeek >= 2) {
+            return -1000; // Impossible score
+        }
+        
+        if (nightShiftsThisWeek === 1) {
+            score -= 500; // Heavy penalty
+        }
+        
+        score -= stats.nightShifts * 20;
+        
+        if (stats.nightShifts === 0) {
+            score += 15;
+        }
+    }
+    
+    // CRITICAL: Morning shift distribution - ensure everyone gets at least 1 per week
+    if (shift === 'morning') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const morningShiftsThisWeek = countMorningShiftsInWeek(worker.name, currentWeek);
+        
+        // HIGHEST PRIORITY: Workers with 0 morning shifts this week
+        if (morningShiftsThisWeek === 0) {
+            score += 1000; // Extremely high bonus
+            
+            // Extra bonus if we're later in the week (urgency increases)
+            const dayInWeek = globalDay % 7;
+            if (dayInWeek >= 4) { // Thursday onwards
+                score += 500; // Even higher priority
+            }
+        } else {
+            // Heavily penalize workers who already have morning shifts this week
+            score -= morningShiftsThisWeek * 300;
+        }
+        
+        // Also consider overall morning shift balance
+        if (stats.morningShifts === 0) {
+            score += 200; // High bonus for workers with no morning shifts overall
+        }
+    }
+    
+    // Load balancing - prefer workers with fewer total shifts
+    score -= stats.totalShifts * 5;
+    
+    // Premium weekend shifts distribution (Friday evening to Saturday evening)
+    const isPremiumShift = isPremiumWeekendShift(dayOfWeek, shift);
+    if (isPremiumShift) {
+        score -= stats.premiumShifts * 15;
+        if (stats.premiumShifts === 0) {
+            score += 25;
+        }
+    }
+    
+    // Regular weekend consideration
+    if (dayOfWeek === 5 || dayOfWeek === 6) {
+        score -= stats.weekendShifts * 8;
+    }
+    
+    // Avoid consecutive days
+    if (stats.lastAssignedDay === globalDay - 1) {
+        score -= 20;
+    }
+    
+    return score + Math.random() * 5;
+}
+
+function isPremiumWeekendShift(dayOfWeek, shift) {
+    if (dayOfWeek === 5 && (shift === 'evening' || shift === 'night')) {
+        return true;
+    }
+    if (dayOfWeek === 6 && (shift === 'morning' || shift === 'evening')) {
+        return true;
+    }
+    return false;
+}
+
+function countNightShiftsInWeek(workerName, weekNumber) {
+    let week;
+    if (weekNumber === 0) {
+        week = window.currentScheduleBeingGenerated?.week1;
+    } else if (weekNumber === 1) {
+        week = window.currentScheduleBeingGenerated?.week2;
+    }
+    
+    if (!week) return 0;
+    
+    let nightShiftCount = 0;
+    week.days.forEach(day => {
+        if (day.shifts.night === workerName) {
+            nightShiftCount++;
+        }
+    });
+    
+    return nightShiftCount;
+}
+
+function countMorningShiftsInWeek(workerName, weekNumber) {
+    let week;
+    if (weekNumber === 0) {
+        week = window.currentScheduleBeingGenerated?.week1;
+    } else if (weekNumber === 1) {
+        week = window.currentScheduleBeingGenerated?.week2;
+    }
+    
+    if (!week) return 0;
+    
+    let morningShiftCount = 0;
+    week.days.forEach(day => {
+        if (day.shifts.morning === workerName) {
+            morningShiftCount++;
+        }
+    });
+    
+    return morningShiftCount;
+}
+
+function countNightShiftsInCurrentSchedule(workerName, weekNumber, schedule) {
+    let week;
+    if (weekNumber === 0) {
+        week = schedule.week1;
+    } else if (weekNumber === 1) {
+        week = schedule.week2;
+    }
+    
+    if (!week) return 0;
+    
+    let nightShiftCount = 0;
+    week.days.forEach(day => {
+        if (day.shifts.night === workerName) {
+            nightShiftCount++;
+        }
+    });
+    
+    return nightShiftCount;
+}
+
+function logShiftDistribution(schedule) {
+    console.log('=== SOC SHIFT DISTRIBUTION ANALYSIS ===');
+    
+    const workers = schedule.workers;
+    const shiftCounts = {};
+    
+    // Initialize counts
+    workers.forEach(worker => {
+        shiftCounts[worker] = { 
+            night: { week1: 0, week2: 0, total: 0 },
+            morning: { week1: 0, week2: 0, total: 0 },
+            total: { week1: 0, week2: 0, overall: 0 }
+        };
+    });
+    
+    // Count week 1
+    schedule.week1.days.forEach((day, dayIndex) => {
+        ['morning', 'evening', 'night'].forEach(shiftType => {
+            const assignedWorker = day.shifts[shiftType];
+            if (assignedWorker && workers.includes(assignedWorker)) {
+                shiftCounts[assignedWorker].total.week1++;
+                shiftCounts[assignedWorker].total.overall++;
+                
+                if (shiftType === 'night') {
+                    shiftCounts[assignedWorker].night.week1++;
+                    shiftCounts[assignedWorker].night.total++;
+                }
+                if (shiftType === 'morning') {
+                    shiftCounts[assignedWorker].morning.week1++;
+                    shiftCounts[assignedWorker].morning.total++;
+                }
+            }
+        });
+    });
+    
+    // Count week 2
+    schedule.week2.days.forEach((day, dayIndex) => {
+        ['morning', 'evening', 'night'].forEach(shiftType => {
+            const assignedWorker = day.shifts[shiftType];
+            if (assignedWorker && workers.includes(assignedWorker)) {
+                shiftCounts[assignedWorker].total.week2++;
+                shiftCounts[assignedWorker].total.overall++;
+                
+                if (shiftType === 'night') {
+                    shiftCounts[assignedWorker].night.week2++;
+                    shiftCounts[assignedWorker].night.total++;
+                }
+                if (shiftType === 'morning') {
+                    shiftCounts[assignedWorker].morning.week2++;
+                    shiftCounts[assignedWorker].morning.total++;
+                }
+            }
+        });
+    });
+    
+    // Log results
+    console.log('📊 SOC TOTAL SHIFTS:');
+    workers.forEach(worker => {
+        const counts = shiftCounts[worker].total;
+        console.log(`  ${worker}: Week1=${counts.week1} Week2=${counts.week2} Total=${counts.overall}`);
+    });
+    
+    console.log('🌙 SOC NIGHT SHIFTS:');
+    workers.forEach(worker => {
+        const counts = shiftCounts[worker].night;
+        const week1Status = counts.week1 <= 2 ? '✅' : '❌';
+        const week2Status = counts.week2 <= 2 ? '✅' : '❌';
+        console.log(`  ${worker}: Week1=${counts.week1}${week1Status} Week2=${counts.week2}${week2Status} Total=${counts.total}`);
+    });
+    
+    console.log('🌅 SOC MORNING SHIFTS:');
+    workers.forEach(worker => {
+        const counts = shiftCounts[worker].morning;
+        const week1Status = counts.week1 >= 1 ? '✅' : '❌';
+        const week2Status = counts.week2 >= 1 ? '✅' : '❌';
+        console.log(`  ${worker}: Week1=${counts.week1}${week1Status} Week2=${counts.week2}${week2Status} Total=${counts.total}`);
+    });
+    
+    // Check violations
+    const nightViolations = workers.filter(worker => 
+        shiftCounts[worker].night.week1 > 2 || shiftCounts[worker].night.week2 > 2
+    );
+    
+    const morningViolations = workers.filter(worker => 
+        shiftCounts[worker].morning.week1 === 0 || shiftCounts[worker].morning.week2 === 0
+    );
+    
+    if (nightViolations.length > 0) {
+        console.log('⚠️ SOC NIGHT SHIFT VIOLATIONS:', nightViolations);
+    } else {
+        console.log('✅ SOC: All workers have ≤2 night shifts per week');
+    }
+    
+    if (morningViolations.length > 0) {
+        console.log('⚠️ SOC MISSING MORNING SHIFTS:', morningViolations);
+    } else {
+        console.log('✅ SOC: All workers have ≥1 morning shift per week');
+    }
+    
+    // Count empty shifts
+    let emptyShifts = 0;
+    [schedule.week1, schedule.week2].forEach(week => {
+        week.days.forEach(day => {
+            ['morning', 'evening', 'night'].forEach(shift => {
+                if (!day.shifts[shift]) {
+                    emptyShifts++;
+                }
+            });
+        });
+    });
+    
+    console.log(`📈 SOC COVERAGE: ${42 - emptyShifts}/42 shifts filled (${((42 - emptyShifts) / 42 * 100).toFixed(1)}%)`);
+    console.log(`❌ SOC EMPTY SHIFTS: ${emptyShifts}`);
+    console.log('=== SOC ANALYSIS COMPLETE ===');
+    
+    return shiftCounts;
+}
+
+function displaySchedule(schedule) {
+    // Log shift distribution for debugging
+            logShiftDistribution(schedule);
+
+            // DIAGNOSTIC: Analyze why shifts are empty
+            if (schedule.coverage < 100) {
+                // Reconstruct worker stats for analysis
+                const workers = schedule.workers.map(name => ({
+                    name: name,
+                    preferences: {} // This would need to be passed from generation
+                }));
+                
+                // Find the worker preferences from original submissions
+                const submissions = workerSubmissions.filter(s => s.approved);
+                submissions.forEach(submission => {
+                    const worker = workers.find(w => w.name === submission.name);
+                    if (worker) {
+                        worker.preferences = submission.preferences;
+                    }
+                });
+
+                const workerStats = {};
+                schedule.workers.forEach(name => {
+                    workerStats[name] = {
+                        totalShifts: 0,
+                        nightShifts: 0,
+                        morningShifts: 0,
+                        weekendShifts: 0,
+                        premiumShifts: 0,
+                        lastAssignedDay: -1,
+                        lastShiftEnd: null
+                    };
+                });
+
+                // Rebuild worker stats by scanning the schedule IN CHRONOLOGICAL ORDER
+                [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+                    week.days.forEach((day, dayIndex) => {
+                        const globalDay = weekIndex * 7 + dayIndex;
+                        
+                        // Process shifts in order: morning, evening, night
+                        ['morning', 'evening', 'night'].forEach(shift => {
+                            const assignedWorker = day.shifts[shift];
+                            if (assignedWorker && workerStats[assignedWorker]) {
+                                const stats = workerStats[assignedWorker];
+                                stats.totalShifts++;
+                                if (shift === 'night') stats.nightShifts++;
+                                if (shift === 'morning') stats.morningShifts++;
+                                if (dayIndex === 5 || dayIndex === 6) stats.weekendShifts++;
+                                
+                                if (isPremiumWeekendShift(dayIndex, shift)) {
+                                    stats.premiumShifts++;
+                                }
+                                
+                                // CRITICAL: Only update lastShiftEnd if this shift is LATER than previous
+                                const shiftTimes = {
+                                    morning: { start: 7, end: 15 },
+                                    evening: { start: 15, end: 23 },
+                                    night: { start: 23, end: 7 }
+                                };
+                                
+                                const thisShiftEnd = calculateShiftEndTime(globalDay, shift, shiftTimes);
+                                
+                                // Only update if this is the worker's latest shift so far
+                                if (stats.lastShiftEnd === null || thisShiftEnd > stats.lastShiftEnd) {
+                                    stats.lastAssignedDay = globalDay;
+                                    stats.lastShiftEnd = thisShiftEnd;
+                                    console.log(`📊 Updated ${assignedWorker} last shift: ${shift} on day ${globalDay} ends ${new Date(thisShiftEnd).toLocaleString()}`);
+                                }
+                            }
+                        });
+                    });
+                  });
+            }
+    
+    let html = `
+                <div style="margin-top: 30px;">
+                    <h4>📊 לוח משמרות שנוצר (כיסוי: ${schedule.coverage.toFixed(1)}%)</h4>
+                    <div style="margin: 10px 0; padding: 15px; background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%); border-radius: 8px; border: 2px solid #4caf50;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 24px;">🎲</span>
+                                    <div>
+                                        <div style="font-weight: bold; color: #2e7d32; font-size: 18px;">
+                                            ${schedule.variations ? schedule.variations.estimated : 'N/A'} אפשרויות
+                                        </div>
+                                        <div style="font-size: 12px; color: #558b2f;">
+                                            לוחות זמנים שונים אפשריים
+                                        </div>
+                                    </div>
+                                </div>
+                                ${schedule.attemptNumber ? `
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 20px;">🎯</span>
+                                        <div>
+                                            <div style="font-weight: bold; color: #1976d2; font-size: 16px;">
+                                                ${schedule.coverage >= 100 ? 'מושלם!' : 'הטוב ביותר'}
+                                            </div>
+                                            <div style="font-size: 12px; color: #1565c0;">
+                                                ${schedule.attemptNumber} מתוך ${schedule.totalAttempts} ניסיונות
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <button class="btn" onclick="copyScheduleToExcel()" style="margin: 0;">📋 העתק לאקסל</button>
+                        </div>
+                        ${schedule.variations ? `
+                            <div style="margin-top: 10px; font-size: 11px; color: #666; text-align: center;">
+                                ${schedule.variations.constrainedShifts} משמרות מוגבלות • ${schedule.variations.impossibleShifts} משמרות בלתי אפשריות
+                                ${schedule.coverage >= 100 ? ' • 🏆 כיסוי מושלם הושג!' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+    // Week 1
+    html += createWeekTable(1, schedule.week1, schedule.workers);
+    html += createWeekStats('שבוע 1', schedule.week1, schedule.workers);
+    
+    // Week 2
+    html += createWeekTable(2, schedule.week2, schedule.workers);
+    html += createWeekStats('שבוע 2', schedule.week2, schedule.workers);
+
+    // Log shift distribution for debugging
+    logShiftDistribution(schedule);
+
+    document.getElementById('scheduleOutput').innerHTML = html;
+    
+    // Store for Excel export
+    window.currentSchedule = schedule;
+    
+    console.log('📋 SOC schedule display completed');
+}
+
+function createWeekStats(weekTitle, week, workers) {
+    const workerShiftCounts = {};
+    const workerPremiumCounts = {};
+    const workerMorningCounts = {};
+    const workerNightCounts = {};
+    
+    workers.forEach(worker => {
+        workerShiftCounts[worker] = 0;
+        workerPremiumCounts[worker] = 0;
+        workerMorningCounts[worker] = 0;
+        workerNightCounts[worker] = 0;
+    });
+    
+    week.days.forEach((day, dayIndex) => {
+        ['morning', 'evening', 'night'].forEach(shiftType => {
+            const assignedWorker = day.shifts[shiftType];
+            if (assignedWorker && workers.includes(assignedWorker)) {
+                workerShiftCounts[assignedWorker]++;
+                
+                if (shiftType === 'morning') {
+                    workerMorningCounts[assignedWorker]++;
+                }
+                if (shiftType === 'night') {
+                    workerNightCounts[assignedWorker]++;
+                }
+                
+                if (isPremiumWeekendShift(dayIndex, shiftType)) {
+                    workerPremiumCounts[assignedWorker]++;
+                }
+            }
+        });
+    });
+
+    let html = `
+        <div style="margin: 25px 0; padding: 25px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%); border-radius: 15px; border: 2px solid rgba(147, 197, 253, 0.3);">
+            <h5 style="color: #93c5fd; margin-bottom: 20px; text-align: center; font-size: 1.2em;">
+                <span class="security-icon">📈</span> סיכום משמרות SOC ${weekTitle}
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+    `;
+
+    const sortedWorkers = workers.sort((a, b) => workerShiftCounts[b] - workerShiftCounts[a]);
+
+    sortedWorkers.forEach(worker => {
+        const totalShifts = workerShiftCounts[worker];
+        const premiumShifts = workerPremiumCounts[worker];
+        const morningShifts = workerMorningCounts[worker];
+        const nightShifts = workerNightCounts[worker];
+        const workerColor = getWorkerColor(worker, workers);
+        
+        html += `
+            <div style="background: rgba(255, 255, 255, 0.15); padding: 18px; border-radius: 12px; 
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-right: 4px solid ${workerColor}; 
+                        transition: all 0.3s ease; backdrop-filter: blur(10px);"
+                 onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.2)'" 
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)'">
+                <div style="font-weight: bold; color: #e2e8f0; margin-bottom: 10px; font-size: 16px;">
+                    <span class="security-icon">👤</span> ${worker}
+                </div>
+                <div style="color: #dbeafe; font-size: 13px; line-height: 1.5;">
+                    <div style="margin-bottom: 6px;">
+                        <span style="color: #1a1a1a;">📊 סה"כ משמרות:</span> 
+                        <strong style="color: #1a1a1a;">${totalShifts}</strong>
+                    </div>
+                    ${morningShifts > 0 ? `
+                        <div style="margin-bottom: 6px; color: black;">
+                            <span>🌅 בוקר:</span> 
+                            <strong>${morningShifts}</strong>
+                        </div>
+                    ` : `
+                        <div style="margin-bottom: 6px; color: black;">
+                            <span>🌅 בוקר:</span> 
+                            <strong style="color: #000000;">0 ⚠️</strong>
+                        </div>
+                    `}
+                    ${nightShifts > 0 ? `
+                        <div style="margin-bottom: 6px; color: black;">
+                            <span>🌙 לילה:</span> 
+                            <strong>${nightShifts}</strong>
+                        </div>
+                    ` : ''}
+                    ${premiumShifts > 0 ? `
+                        <div style="color: black;">
+                            <span>💰 פרמיום:</span> 
+                            <strong>${premiumShifts}</strong>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div></div>';
+    return html;
+}
+
+function getWorkerColor(workerName, workers) {
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#96CEB4', '#FFEAA7', '#DDA0DD', 
+        '#98D8C8', '#F7DC6F', '#BB8FCE', '#F8C471', '#82E0AA', 
+        '#F1948A', '#B19CD9', '#FFB347', '#DEB887', '#F0E68C', 
+        '#FFE4E1', '#FFA07A', '#98FB98', '#F5DEB3', '#FFB6C1',
+        '#DA70D6', '#FF69B4', '#32CD32', '#FFD700', '#FF4500',
+        '#DC143C', '#00CED1', '#9370DB', '#FF1493', '#00FF7F'
+    ];
+    
+    const workerIndex = workers.indexOf(workerName);
+    return colors[workerIndex % colors.length];
+}
+
+function createWeekTable(weekNumber, week, workers = []) {
+    // Generate dynamic title based on actual dates
+    const periodConfig = getCurrentPeriodConfig();
+    let title = `שבוע ${weekNumber}`;
+    
+    if (periodConfig && week.days && week.days.length > 0) {
+        const firstDay = week.days[0];
+        const lastDay = week.days[week.days.length - 1];
+        
+        // Get the actual year from the period
+        const periodStartDate = new Date(periodConfig.startDate);
+        const year = periodStartDate.getFullYear();
+        
+        title = `שבוע SOC ${weekNumber} (${firstDay.dateStr} - ${lastDay.dateStr}, ${year})`;
+    }
+    
+    let html = `
+        <div style="margin: 30px 0;">
+            <h5 style="color: #e2e8f0; margin-bottom: 20px; font-size: 18px; text-align: center;">
+                <span class="security-icon">📅</span> ${title}
+            </h5>
+            <table style="width: 100%; border-collapse: collapse; background: rgba(255, 255, 255, 0.95); 
+                          border: 2px solid #1e40af; font-family: Arial, sans-serif; direction: rtl; 
+                          border-radius: 10px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);">
+                        <th style="border: 1px solid #1e40af; padding: 12px; text-align: center; 
+                                   color: white; font-weight: bold; min-width: 90px;">משמרת</th>
+    `;
+    
+    // Day headers - Sunday to Saturday (RTL)
+    week.days.forEach((day, index) => {
+        const isPremium = day.dayShort === 'שישי' || day.dayShort === 'שבת';
+        const bgColor = isPremium ? 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' : 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)';
+        
+        html += `<th style="border: 1px solid #1e40af; padding: 12px; text-align: center; 
+                           background: ${bgColor}; color: white; font-weight: bold; min-width: 110px;">
+            <div style="font-size: 14px; margin-bottom: 4px;">${day.dayShort}</div>
+            <div style="font-size: 12px; opacity: 0.9;">${day.dateStr}</div>
+            ${isPremium ? '<div style="font-size: 10px; margin-top: 2px;">💰 פרמיום</div>' : ''}
+        </th>`;
+    });
+    
+    html += '</tr></thead><tbody>';
+    
+    // Shift rows with Hebrew names and icons
+    const shifts = [
+        { key: 'morning', label: 'בוקר', time: '07-15', icon: '🌅' },
+        { key: 'evening', label: 'ערב', time: '15-23', icon: '🌆' },
+        { key: 'night', label: 'לילה', time: '23-07', icon: '🌙' }
+    ];
+    
+    shifts.forEach((shift, shiftIndex) => {
+        html += '<tr>';
+        
+        // Shift label column
+        html += `<td style="border: 1px solid #1e40af; padding: 14px; text-align: center; 
+                           background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+                           font-weight: bold; font-size: 14px; color: #1e40af;">
+            <div style="margin-bottom: 2px;">${shift.icon} ${shift.label}</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">${shift.time}</div>
+        </td>`;
+        
+        // Worker assignments for each day
+        week.days.forEach(day => {
+            const assignment = day.shifts[shift.key];
+            
+            if (assignment) {
+                const workerColor = getWorkerColor(assignment, workers);
+                html += `<td style="border: 1px solid #1e40af; padding: 14px; text-align: center; 
+                                   height: 55px; background: ${workerColor}; font-weight: bold; 
+                                   font-size: 14px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                    ${assignment}
+                </td>`;
+            } else {
+                html += `<td style="border: 1px solid #1e40af; padding: 14px; text-align: center; 
+                                   height: 55px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); 
+                                   font-style: italic; color: #64748b; font-size: 13px;">
+                    לא מוקצה
+                </td>`;
+            }
+        });
+        
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    return html;
+}
+
+function copyScheduleToExcel() {
+    if (!window.currentSchedule) {
+        showAlert('❌ No SOC schedule to copy!', 'warning');
+        return;
+    }
+
+    const periodConfig = getCurrentPeriodConfig();
+    const periodLabel = periodConfig ? periodConfig.label : 'Unknown Period';
+    
+    let excelText = `לוח משמרות SOC - ${periodLabel}\n`;
+    excelText += `נוצר ב${new Date().toLocaleDateString('he-IL')} | כיסוי: ${window.currentSchedule.coverage.toFixed(1)}%\n`;
+    excelText += `מערכת ניהול SOC | מכבי\n\n`;
+    
+    excelText += 'שבוע 1\n';
+    excelText += generateWeekExcelFormat(window.currentSchedule.week1);
+    excelText += '\n';
+    
+    excelText += 'שבוע 2\n';
+    excelText += generateWeekExcelFormat(window.currentSchedule.week2);
+
+    navigator.clipboard.writeText(excelText).then(() => {
+        showAlert('✅ SOC schedule copied to clipboard! You can paste it directly into Excel.', 'success');
+        console.log('📋 SOC schedule exported to clipboard');
+    }).catch(() => {
+        showAlert('❌ Copy failed. Please try again.', 'warning');
+    });
+}
+
+function generateWeekExcelFormat(week) {
+    let text = '';
+    
+    // Header row - shift names first, then days (left to right)
+    text += 'משמרת\t';
+    for (let i = 0; i < week.days.length; i++) {
+        const day = week.days[i];
+        text += `${day.dayShort} ${day.dateStr}\t`;
+    }
+    text += '\n';
+    
+    // Shift rows (left to right)
+    const shifts = [
+        { key: 'morning', label: 'בוקר (07:00-15:00)' },
+        { key: 'evening', label: 'ערב (15:00-23:00)' },
+        { key: 'night', label: 'לילה (23:00-07:00)' }
+    ];
+    
+    shifts.forEach(shift => {
+        // Shift name first (leftmost column)
+        text += `${shift.label}\t`;
+        
+        // Then worker assignments for each day (left to right)
+        for (let i = 0; i < week.days.length; i++) {
+            const day = week.days[i];
+            const assignment = day.shifts[shift.key];
+            text += `${assignment || 'לא מוקצה'}\t`;
+        }
+        
+        text += '\n';
+    });
+    
+    return text;
+}
+    
+const workerColors = {};
+const colorPalette = [
+  "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4",
+  "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", "#008080", "#e6beff",
+  "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
+  "#000075", "#808080"
+];
+
+function getWorkerColor(name) {
+  if (!workerColors[name]) {
+    const index = Object.keys(workerColors).length % colorPalette.length;
+    workerColors[name] = colorPalette[index];
+  }
+  return workerColors[name];
+}
+
+</script>
+</body>
 </html>
