@@ -1,16 +1,218 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel</title>
-  <link rel="stylesheet" href="admin.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Maccabi SOC - Admin Dashboard</title>
+
 </head>
 <body>
-  <div id="app">
-    <!-- Your admin interface goes here -->
-    <h1>Admin Panel</h1>
-  </div>
   <script type="module" src="admin.js"></script>
+  <link rel="stylesheet" href="admin.css">
+<div class="security-lines"></div>
+<div class="container">
+<div class="header">
+<div class="maccabi-logo">
+<div class="maccabi-shield">מכבי</div>
+</div>
+<h1><span class="security-icon">🔧</span> Admin Dashboard</h1>
+<p>Shift Schedule Management System</p>
+<div class="soc-subtitle">SOC OPERATIONS CENTER</div>
+</div>
+<div class="content">
+<!-- Login Section -->
+<div class="password-section" id="loginSection">
+<h3><span class="security-icon">🔒</span> SOC Admin Access Required</h3>
+<p>Enter the administrator password to access the SOC dashboard:</p>
+<div class="password-input">
+<input id="adminPassword" placeholder="Enter admin password" type="password"/>
+<button class="btn" onclick="login()">
+<span class="security-icon">🔐</span> Login
+                    </button>
+</div>
+<small>Default password: admin123</small>
+</div>
+<!-- Main Dashboard -->
+<div class="hidden" id="dashboard">
+<!-- Worker Management -->
+<div class="section">
+<h3><span class="security-icon">👥</span> Worker Access Management</h3>
+<div class="worker-input">
+<input id="workerNameInput" placeholder="Enter worker name" type="text"/>
+<button class="btn btn-success" onclick="addWorker()">
+<span class="security-icon">➕</span> Add Worker
+                        </button>
+<button class="btn" onclick="refreshData()">
+<span class="security-icon">🔄</span> Refresh Data
+                        </button>
+</div>
+<div class="worker-tags" id="workersList">
+<!-- Workers will be displayed here -->
+</div>
+</div>
+<!-- Schedule Period Management -->
+<div class="section">
+<h3><span class="security-icon">📅</span> Schedule Period Management</h3>
+<!-- Current Period Display -->
+<div class="lock-status" id="currentPeriodDisplay">
+<div style="text-align: center;">
+<strong>❌ No Active Period</strong><br/>
+<small>Workers cannot submit preferences until a new period is opened</small>
+</div>
+</div>
+<!-- New Period Creation -->
+<div class="period-form">
+<h4><span class="security-icon">📅</span> Open New 2-Week Period</h4>
+<div class="period-grid">
+<div>
+<label for="newPeriodStart">Start Date (Sunday):</label>
+<input id="newPeriodStart" type="date"/>
+</div>
+<div>
+<label for="newPeriodEnd">End Date (Saturday):</label>
+<input id="newPeriodEnd" readonly="" type="date"/>
+</div>
+<div>
+<label for="periodLabel">Period Label:</label>
+<input id="periodLabel" placeholder="e.g., June 15-28, 2025" type="text"/>
+</div>
+<button class="btn btn-success" onclick="openNewPeriod()" style="height: 44px;">
+<span class="security-icon">🚀</span> Open New Period
+                            </button>
+</div>
+<!-- Quick Period Buttons -->
+<div class="quick-actions">
+<h5>Quick Actions:</h5>
+<button class="btn" onclick="setNextTwoWeeks()">📅 Next 2 Weeks</button>
+<button class="btn" onclick="setSpecificDate('2025-06-15')">📅 June 15-28</button>
+<button class="btn" onclick="setSpecificDate('2025-07-01')">📅 July 1-14</button>
+</div>
+</div>
+<!-- Advanced Options -->
+<details class="advanced-options">
+<summary><span class="security-icon">⚙️</span> Advanced Options</summary>
+<div class="advanced-options-content">
+<label>
+<input checked="" id="archiveOldSubmissions" type="checkbox"/>
+                                Archive old worker submissions when opening new period
+                            </label>
+<label>
+<input checked="" id="clearOldSchedules" type="checkbox"/>
+                                Clear previously generated schedules
+                            </label>
+</div>
+</details>
+</div>
+<!-- Preference Lock Control -->
+<div class="section">
+<h3><span class="security-icon">🔒</span> Preference Submission Control</h3>
+<div class="lock-status" id="lockStatus">
+<!-- Lock status will be displayed here -->
+</div>
+<button class="btn" id="lockToggleBtn" onclick="toggleLock()">
+<!-- Button text will be set by JavaScript -->
+</button>
+</div>
+<!-- Worker Submissions -->
+<div class="section">
+<h3><span class="security-icon">📝</span> Worker Submissions</h3>
+<div class="submissions-grid" id="submissionsList">
+<!-- Submissions will be displayed here -->
+</div>
+</div>
+<!-- Schedule Generation -->
+<div class="section">
+<h3><span class="security-icon">📊</span> Generate Schedule</h3>
+<button class="btn btn-success" onclick="generateSchedule()" style="font-size: 18px; padding: 15px 40px;">
+<span class="security-icon">🔄</span> Generate Optimized Schedule
+                    </button>
+<div id="scheduleOutput">
+<!-- Generated schedule will be displayed here -->
+</div>
+</div>
+<!-- Status Messages -->
+<div id="statusMessages"></div>
+<!-- Schedule Generation Rules -->
+<div class="section rules-section">
+<div class="rules-header">
+<h3><span class="security-icon">📋</span> Schedule Generation Rules &amp; Constraints</h3>
+<div id="scheduleRulesPeriodStatus" style="margin-top: 15px; padding: 12px; border-radius: 8px;">
+<!-- Period status will be populated by JavaScript -->
+</div>
+</div>
+<div class="rules-content">
+<div class="rules-grid">
+<!-- Hard Constraints -->
+<div class="rule-card constraints">
+<h4 style="color: #fecaca;">🚫 Hard Constraints (Never Violated)</h4>
+<ul>
+<li><strong>Maximum 2 night shifts per week</strong> - Workers cannot be assigned more than 2 night shifts in any single week</li>
+<li><strong>Minimum 1 morning shift per week</strong> - Every worker must get at least 1 morning shift per week</li>
+<li><strong>One shift per day</strong> - Workers cannot work multiple shifts on the same day</li>
+<li><strong>8-hour minimum break</strong> - At least 8 hours must pass between the end of one shift and start of the next</li>
+<li><strong>Availability only</strong> - Workers are only assigned to shifts they marked as available</li>
+<li><strong>Approved workers only</strong> - Only workers with approved submissions can be scheduled</li>
+</ul>
+</div>
+<!-- Optimization Goals -->
+<div class="rule-card goals">
+<h4 style="color: #bbf7d0;">🎯 Optimization Goals</h4>
+<ul>
+<li><strong>Maximum coverage</strong> - Fill as many shifts as possible (3 aggressive passes)</li>
+<li><strong>Fair shift distribution</strong> - Balance total shifts across all workers</li>
+<li><strong>Morning shift guarantee</strong> - Aggressively ensure every worker gets morning shifts</li>
+<li><strong>Night shift balance</strong> - Distribute night shifts fairly while respecting limits</li>
+<li><strong>Premium shift fairness</strong> - Distribute premium weekend shifts equally</li>
+<li><strong>Minimize consecutive days</strong> - Avoid scheduling workers on consecutive days when possible</li>
+</ul>
+</div>
+<!-- Shift Details -->
+<div class="rule-card shifts">
+<h4 style="color: #dbeafe;">🕐 Shift Information</h4>
+<ul>
+<li><strong>Morning (בוקר):</strong> 07:00 - 15:00</li>
+<li><strong>Evening (ערב):</strong> 15:00 - 23:00</li>
+<li><strong>Night (לילה):</strong> 23:00 - 07:00 (next day)</li>
+<li><strong>Premium Period:</strong> Friday evening through Saturday evening (higher pay)</li>
+<li><strong>Total shifts:</strong> 42 shifts across 2 weeks (3 shifts × 7 days × 2 weeks)</li>
+</ul>
+</div>
+<!-- Algorithm Process -->
+<div class="rule-card process">
+<h4 style="color: #fef3c7;">⚙️ Generation Process</h4>
+<ol>
+<li><strong>Pass 1:</strong> Initial assignment with strict constraints and priorities</li>
+<li><strong>Pass 2:</strong> Fill empty shifts with relaxed morning constraint</li>
+<li><strong>Pass 3:</strong> Final aggressive filling with minimal constraints</li>
+<li><strong>Validation:</strong> Verify all hard constraints are met</li>
+<li><strong>Analysis:</strong> Detailed logging of coverage and constraint compliance</li>
+</ol>
+</div>
+<!-- Important Notes -->
+<div class="rule-card notes">
+<h4 style="color: #fed7aa;">⚠️ Important Notes</h4>
+<ul>
+<li><strong>Three-Pass Algorithm:</strong> Aggressive filling to maximize coverage</li>
+<li><strong>Real-time Validation:</strong> All constraints checked during assignment</li>
+<li><strong>Detailed Logging:</strong> Check browser console (F12) for detailed analysis</li>
+<li><strong>Auto-Lock:</strong> Preferences locked during generation</li>
+<li><strong>Export Ready:</strong> Generated schedules can be copied directly to Excel</li>
+</ul>
+</div>
+</div>
+<div class="algorithm-info">
+<p>
+<strong>🔧 Algorithm Version:</strong> Triple-Pass Maximum Coverage with Constraints v3.0 | 
+                                <strong>⏱️ Generation Time:</strong> Typically 2-5 seconds | 
+                                <strong>🎯 Target Coverage:</strong> 90-98%
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
 </body>
 </html>
