@@ -2161,10 +2161,8 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes, passN
                     if (scoredWorkers.length > 0) {
                         const bestWorker = scoredWorkers[0].worker;
                         assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
-                    const assignedWeekKey = globalDay < 7 ? 'week1Shifts' : 'week2Shifts';
-                    workerStats[bestWorker.name][assignedWeekKey]++;
-                    const assignedWeekKey = globalDay < 7 ? 'week1Shifts' : 'week2Shifts';
-                    workerStats[bestWorker.name][assignedWeekKey]++;
+                    workerStats[bestWorker.name][weekKey]++;
+                    workerStats[bestWorker.name][weekKey]++;
                         coverage++;
                     }
                 }
