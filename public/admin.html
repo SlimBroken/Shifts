@@ -3152,7 +3152,6 @@ function fillEmptyShifts(schedule, workers, workerStats) {
 </script>
 
 <script>
-// === Configurable Scheduling Constraints ===
 const CONSTRAINTS = {
     maxNightShiftsPerWeek: 2,
     minMorningShiftsPerWeek: 1,
@@ -3162,26 +3161,34 @@ const CONSTRAINTS = {
 };
 
 function isAssignmentAllowed(worker, dayIndex, shift, stats) {
-    const s = stats[worker];
-    if (!s || typeof s !== 'object' || !s.shiftsPerDay) {
-        console.warn(`⚠️ Worker stats missing or malformed for ${worker}`);
+    if (!stats || typeof stats !== 'object') {
+        console.error('🚨 Stats object is undefined or invalid:', stats);
         return false;
     }
+    const s = stats[worker];
+    if (!s || typeof s !== 'object') {
+        console.error(`🚨 Worker stat missing or invalid for: ${worker}`, s);
+        return false;
+    }
+    if (!s.shiftsPerDay) {
+        console.warn(`⚠️ shiftsPerDay undefined for: ${worker}, initializing`);
+        s.shiftsPerDay = {};
+    }
+
     if (s.total >= CONSTRAINTS.maxShiftsPerWeek * 2) return false;
     if (shift === 'night' && s.night >= CONSTRAINTS.maxNightShiftsPerWeek * 2) return false;
     if ((s.shiftsPerDay[dayIndex] || []).length >= CONSTRAINTS.dailyShiftCap) return false;
 
     if (shift === 'morning' && dayIndex > 0) {
-        const prevShifts = s.shiftsPerDay[dayIndex - 1];
-        if (prevShifts && prevShifts.includes('night') && CONSTRAINTS.preventNightToMorning) return false;
+        const prev = s.shiftsPerDay[dayIndex - 1];
+        if (prev && prev.includes('night') && CONSTRAINTS.preventNightToMorning) return false;
     }
-
     return true;
 }
 
-function performSchedulingPass(schedule, workers, workerStats, shiftTimes) {
-    let filled = 0;
+function performSchedulingPass(schedule, workers, stats, shiftTimes) {
     const days = [...schedule.week1.days, ...schedule.week2.days];
+    let filled = 0;
 
     for (let d = 0; d < days.length; d++) {
         const day = days[d];
@@ -3191,10 +3198,10 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes) {
             for (const w of workers) {
                 const name = w.name;
                 if (!w.preferences[d] || !w.preferences[d][shift]) continue;
-                if (!isAssignmentAllowed(name, d, shift, workerStats)) continue;
+                if (!isAssignmentAllowed(name, d, shift, stats)) continue;
 
                 day.shifts[shift] = name;
-                const s = workerStats[name];
+                const s = stats[name];
                 s.total++;
                 if (!s.shiftsPerDay[d]) s.shiftsPerDay[d] = [];
                 s.shiftsPerDay[d].push(shift);
@@ -3208,17 +3215,19 @@ function performSchedulingPass(schedule, workers, workerStats, shiftTimes) {
     return filled;
 }
 
-function fillEmptyShifts(schedule, workers, workerStats) {
+function fillEmptyShifts(schedule, workers, stats) {
     const days = [...schedule.week1.days, ...schedule.week2.days];
+
     for (let d = 0; d < days.length; d++) {
         const day = days[d];
         for (const shift of ['morning', 'evening', 'night']) {
             if (day.shifts[shift]) continue;
             for (const w of workers) {
                 const name = w.name;
-                if (!isAssignmentAllowed(name, d, shift, workerStats)) continue;
+                if (!isAssignmentAllowed(name, d, shift, stats)) continue;
+
                 day.shifts[shift] = name;
-                const s = workerStats[name];
+                const s = stats[name];
                 s.total++;
                 if (!s.shiftsPerDay[d]) s.shiftsPerDay[d] = [];
                 s.shiftsPerDay[d].push(shift);
