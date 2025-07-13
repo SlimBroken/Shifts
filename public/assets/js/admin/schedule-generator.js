@@ -1,9 +1,9 @@
 // Maccabi SOC Admin Dashboard - Schedule Generation Functions
 // Handles the complex scheduling algorithm and constraint management
 
-const MAX_SHIFTS_PER_WORKER = 6; // Maximum 6 shifts per worker across 2 weeks
-const ScheduleGenerator = {
 
+const ScheduleGenerator = {
+    const MAX_SHIFTS_PER_WORKER = 6; // Maximum 6 shifts per worker across 2 weeks
     generateSchedule: function() {
         const approvedSubmissions = workerSubmissions.filter(s => s.approved);
         
@@ -260,9 +260,9 @@ const ScheduleGenerator = {
     });
 
     return filledCount;
-}
+},
 
-    isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
+   isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
     // NEW: Check maximum shifts limit
     const currentShifts = workerStats[worker.name]?.totalShifts || 0;
     if (currentShifts >= MAX_SHIFTS_PER_WORKER) {
@@ -286,7 +286,7 @@ const ScheduleGenerator = {
     const currentDayShifts = week.days[day].shifts;
     if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-    // Max 2 night shifts per week (keep this as is)
+    // Max 2 night shifts per week
     if (shift === 'night') {
         const currentWeek = Math.floor(globalDay / 7);
         const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
