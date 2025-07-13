@@ -1,7 +1,7 @@
 // Maccabi SOC Admin Dashboard - Schedule Generation Functions
 // Handles the complex scheduling algorithm and constraint management
 
-const MAX_SHIFTS_PER_WORKER = 6; // Maximum 6 shifts per worker across 2 weeks
+javascriptconst MAX_SHIFTS_PER_WEEK = 6; // Maximum 6 shifts per worker per week
 const ScheduleGenerator = {
   
     generateSchedule: function() {
@@ -214,9 +214,10 @@ const ScheduleGenerator = {
                 if (week.days[day].shifts[shift]) return;
 
                 const availableWorkers = workers.filter(worker => {
-                    // NEW: Check maximum shifts limit
-                    const currentShifts = workerStats[worker.name]?.totalShifts || 0;
-                    if (currentShifts >= MAX_SHIFTS_PER_WORKER) {
+                    // NEW: Check maximum shifts per week limit
+                    const currentWeek = Math.floor(globalDay / 7);
+                    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+                    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
                         return false;
                     }
                     
@@ -226,7 +227,6 @@ const ScheduleGenerator = {
                     if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
                     if (shift === 'night') {
-                        const currentWeek = Math.floor(globalDay / 7);
                         const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
                         if (nightShiftsThisWeek >= 2) return false;
 
@@ -263,10 +263,11 @@ const ScheduleGenerator = {
 },
 
    isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-    // NEW: Check maximum shifts limit
-    const currentShifts = workerStats[worker.name]?.totalShifts || 0;
-    if (currentShifts >= MAX_SHIFTS_PER_WORKER) {
-        console.log(`❌ ${worker.name} already has ${currentShifts} shifts (max: ${MAX_SHIFTS_PER_WORKER})`);
+    // NEW: Check maximum shifts per week limit
+    const currentWeek = Math.floor(globalDay / 7);
+    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        console.log(`❌ ${worker.name} already has ${shiftsThisWeek} shifts in week ${currentWeek + 1} (max: ${MAX_SHIFTS_PER_WEEK})`);
         return false;
     }
     
@@ -288,7 +289,6 @@ const ScheduleGenerator = {
 
     // Max 2 night shifts per week
     if (shift === 'night') {
-        const currentWeek = Math.floor(globalDay / 7);
         const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
         if (nightShiftsThisWeek >= 2) return false;
 
@@ -309,6 +309,26 @@ const ScheduleGenerator = {
     return true;
 },
 
+countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
+    let week;
+    if (weekNumber === 0) {
+        week = schedule.week1;
+    } else if (weekNumber === 1) {
+        week = schedule.week2;
+    }
+    
+    if (!week) return 0;
+    
+    let shiftCount = 0;
+    week.days.forEach(day => {
+        if (day.shifts.morning === workerName) shiftCount++;
+        if (day.shifts.evening === workerName) shiftCount++;
+        if (day.shifts.night === workerName) shiftCount++;
+    });
+    
+    return shiftCount;
+},
+  
     assignWorkerToShift: function(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
         const existingShifts = week.days[day].shifts;
         if (Object.values(existingShifts).includes(worker.name)) {
