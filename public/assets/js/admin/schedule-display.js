@@ -7,6 +7,21 @@ const ScheduleDisplay = {
     // Reset color mapping for new schedule to ensure consistency
     window.workerColorMap = {};
     
+    // Pre-assign colors to all workers to ensure consistency
+    schedule.workers.forEach((worker, index) => {
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#96CEB4', '#FFEAA7', '#DDA0DD', 
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#F8C471', '#82E0AA', 
+            '#F1948A', '#B19CD9', '#FFB347', '#DEB887', '#F0E68C', 
+            '#FFE4E1', '#FFA07A', '#98FB98', '#F5DEB3', '#FFB6C1',
+            '#DA70D6', '#FF69B4', '#32CD32', '#FFD700', '#FF4500',
+            '#DC143C', '#00CED1', '#9370DB', '#FF1493', '#00FF7F'
+        ];
+        window.workerColorMap[worker] = colors[index % colors.length];
+    });
+    
+    console.log('🎨 Color assignments:', window.workerColorMap);
+    
     // Log shift distribution for debugging
     this.logShiftDistribution(schedule);
         
@@ -276,14 +291,35 @@ const ScheduleDisplay = {
         '#DC143C', '#00CED1', '#9370DB', '#FF1493', '#00FF7F'
     ];
     
-    // Assign color based on worker's index in the workers array
-    const workerIndex = workers.indexOf(workerName);
-    const color = colors[workerIndex % colors.length];
+    // Get all currently assigned colors to avoid duplicates
+    const usedColors = Object.values(window.workerColorMap);
     
-    // Store the color mapping for future use
-    window.workerColorMap[workerName] = color;
+    // Find the first available color that hasn't been used
+    let assignedColor;
+    for (let i = 0; i < colors.length; i++) {
+        if (!usedColors.includes(colors[i])) {
+            assignedColor = colors[i];
+            break;
+        }
+    }
     
-    return color;
+    // Fallback: if somehow all colors are used, use a generated color
+    if (!assignedColor) {
+        // Generate a unique color based on worker name
+        let hash = 0;
+        for (let i = 0; i < workerName.length; i++) {
+            hash = workerName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        assignedColor = `hsl(${hue}, 70%, 60%)`;
+    }
+    
+    // Store the color mapping for this worker
+    window.workerColorMap[workerName] = assignedColor;
+    
+    console.log(`🎨 Assigned color ${assignedColor} to worker: ${workerName}`);
+    
+    return assignedColor;
 },
 
     copyScheduleToExcel: function() {
