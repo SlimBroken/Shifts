@@ -2,6 +2,14 @@
 // Handles the complex scheduling algorithm and constraint management
 
 const MAX_SHIFTS_PER_WEEK = 6; // Maximum 6 shifts per worker per week
+
+// Shift priority order (1 = highest priority, 3 = lowest)
+const SHIFT_PRIORITIES = {
+    night: 1,    // Highest priority - critical coverage
+    morning: 2,  // High priority - important for operations  
+    evening: 3   // Lower priority - can be left empty if needed
+};
+
 const ScheduleGenerator = {
   
     generateSchedule: function() {
@@ -162,44 +170,49 @@ const ScheduleGenerator = {
     },
 
     performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
-        let coverage = 0;
+    let coverage = 0;
 
-        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-            const weekStartDay = weekIndex * 7;
+    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+        const weekStartDay = weekIndex * 7;
+        
+        for (let day = 0; day < 7; day++) {
+            const globalDay = weekStartDay + day;
             
-            for (let day = 0; day < 7; day++) {
-                const globalDay = weekStartDay + day;
-                
-                ['morning', 'evening', 'night'].forEach(shift => {
-                    if (week.days[day].shifts[shift]) {
-                        coverage++;
-                        return; // Already assigned
-                    }
+            // PRIORITY ORDER: Process shifts by priority (night first, then morning, then evening)
+            const shiftsByPriority = ['night', 'morning', 'evening'];
+            
+            shiftsByPriority.forEach(shift => {
+                if (week.days[day].shifts[shift]) {
+                    coverage++;
+                    return; // Already assigned
+                }
 
-                    const availableWorkers = workers.filter(worker => {
-                        return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
-                    });
-
-                    if (availableWorkers.length > 0) {
-                        const scoredWorkers = availableWorkers.map(worker => ({
-                            worker: worker,
-                            score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
-                        }))
-                        .filter(sw => sw.score > -500)
-                        .sort((a, b) => b.score - a.score);
-
-                        if (scoredWorkers.length > 0) {
-                            const bestWorker = scoredWorkers[0].worker;
-                            this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
-                            coverage++;
-                        }
-                    }
+                const availableWorkers = workers.filter(worker => {
+                    return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
                 });
-            }
-        });
 
-        return coverage;
-    },
+                if (availableWorkers.length > 0) {
+                    const scoredWorkers = availableWorkers.map(worker => ({
+                        worker: worker,
+                        score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
+                    }))
+                    .filter(sw => sw.score > -500)
+                    .sort((a, b) => b.score - a.score);
+
+                    if (scoredWorkers.length > 0) {
+                        const bestWorker = scoredWorkers[0].worker;
+                        this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                        coverage++;
+                        
+                        console.log(`🎯 Pass ${passNumber}: Assigned ${bestWorker.name} to ${shift} (priority ${SHIFT_PRIORITIES[shift]}) on day ${globalDay}`);
+                    }
+                }
+            });
+        }
+    });
+
+    return coverage;
+},
 
     fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
     let filledCount = 0;
@@ -210,11 +223,14 @@ const ScheduleGenerator = {
         for (let day = 0; day < 7; day++) {
             const globalDay = weekStartDay + day;
 
-            ['morning', 'evening', 'night'].forEach(shift => {
+            // PRIORITY ORDER: Fill shifts by priority (night first, then morning, then evening)
+            const shiftsByPriority = ['night', 'morning', 'evening'];
+
+            shiftsByPriority.forEach(shift => {
                 if (week.days[day].shifts[shift]) return;
 
                 const availableWorkers = workers.filter(worker => {
-                    // NEW: Check maximum shifts per week limit
+                    // Check maximum shifts per week limit
                     const currentWeek = Math.floor(globalDay / 7);
                     const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
                     if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
@@ -254,6 +270,8 @@ const ScheduleGenerator = {
                     const selected = sorted[0];
                     this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
                     filledCount++;
+                    
+                    console.log(`🔄 Fill Pass: Assigned ${selected.name} to ${shift} (priority ${SHIFT_PRIORITIES[shift]}) on day ${globalDay}`);
                 }
             });
         }
