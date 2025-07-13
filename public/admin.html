@@ -3079,5 +3079,76 @@ function getWorkerColor(name) {
 }
 
 </script>
+
+<script>
+// === Configurable Scheduling Constraints ===
+const CONSTRAINTS = {
+    maxNightShiftsPerWeek: 2,
+    minMorningShiftsPerWeek: 1,
+    maxShiftsPerWeek: 6,
+    dailyShiftCap: 1,
+    preventNightToMorning: true
+};
+
+function isAssignmentAllowed(worker, dayIndex, shift, stats) {
+    const s = stats[worker] || { total: 0, night: 0, morning: 0, shiftsPerDay: {} };
+    if (s.total >= CONSTRAINTS.maxShiftsPerWeek * 2) return false;
+    if (shift === 'night' && s.night >= CONSTRAINTS.maxNightShiftsPerWeek * 2) return false;
+    if ((s.shiftsPerDay[dayIndex] || []).length >= CONSTRAINTS.dailyShiftCap) return false;
+    if (shift === 'morning' && dayIndex > 0) {
+        const prevShifts = s.shiftsPerDay[dayIndex - 1];
+        if (prevShifts && prevShifts.includes('night') && CONSTRAINTS.preventNightToMorning) return false;
+    }
+    return true;
+}
+
+function performSchedulingPass(schedule, workers, workerStats, shiftTimes) {
+    let filled = 0;
+    const days = [...schedule.week1.days, ...schedule.week2.days];
+    for (let d = 0; d < days.length; d++) {
+        const day = days[d];
+        for (const shift of ['morning', 'evening', 'night']) {
+            if (day.shifts[shift]) continue;
+            for (const w of workers) {
+                const name = w.name;
+                if (!w.preferences[d] || !w.preferences[d][shift]) continue;
+                if (!isAssignmentAllowed(name, d, shift, workerStats)) continue;
+                day.shifts[shift] = name;
+                const s = workerStats[name];
+                s.total++;
+                if (!s.shiftsPerDay[d]) s.shiftsPerDay[d] = [];
+                s.shiftsPerDay[d].push(shift);
+                if (shift === 'night') s.night++;
+                if (shift === 'morning') s.morning++;
+                filled++;
+                break;
+            }
+        }
+    }
+    return filled;
+}
+
+function fillEmptyShifts(schedule, workers, workerStats) {
+    const days = [...schedule.week1.days, ...schedule.week2.days];
+    for (let d = 0; d < days.length; d++) {
+        const day = days[d];
+        for (const shift of ['morning', 'evening', 'night']) {
+            if (day.shifts[shift]) continue;
+            for (const w of workers) {
+                const name = w.name;
+                if (!isAssignmentAllowed(name, d, shift, workerStats)) continue;
+                day.shifts[shift] = name;
+                const s = workerStats[name];
+                s.total++;
+                if (!s.shiftsPerDay[d]) s.shiftsPerDay[d] = [];
+                s.shiftsPerDay[d].push(shift);
+                if (shift === 'night') s.night++;
+                if (shift === 'morning') s.morning++;
+                break;
+            }
+        }
+    }
+}
+</script>
 </body>
 </html>
