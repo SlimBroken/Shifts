@@ -11,31 +11,47 @@ const SHIFT_PRIORITIES = {
 };
 
 const ScheduleGenerator = {
-  
+
     generateSchedule: function() {
-        const approvedSubmissions = workerSubmissions.filter(s => s.approved);
-        
-        if (approvedSubmissions.length === 0) {
-            showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
-            return;
+        try {
+            console.log('🚀 Starting schedule generation...');
+            
+            const approvedSubmissions = workerSubmissions.filter(s => s.approved);
+            
+            if (approvedSubmissions.length === 0) {
+                showAlert('No approved submissions found. Please approve some submissions first.', 'warning');
+                return;
+            }
+
+            localStorage.setItem('preferencesLocked', 'true');
+            localStorage.setItem('lockTimestamp', Date.now().toString());
+            updateDisplay();
+
+            // Calculate possible variations before generating
+            const variations = this.calculatePossibleVariations(approvedSubmissions);
+
+            // Show loading message
+            showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
+
+            // Generate multiple schedules and pick the best one
+            const bestSchedule = this.generateBestCoverageSchedule(approvedSubmissions, variations);
+            
+            if (!bestSchedule) {
+                console.error('❌ Failed to generate schedule');
+                showAlert('❌ Failed to generate schedule. Check console for errors.', 'danger');
+                return;
+            }
+            
+            ScheduleDisplay.displaySchedule(bestSchedule);
+            
+            showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
+            
+            console.log('✅ Schedule generation completed successfully');
+            
+        } catch (error) {
+            console.error('❌ Error in schedule generation:', error);
+            showAlert(`❌ Schedule generation failed: ${error.message}`, 'danger');
         }
-
-        localStorage.setItem('preferencesLocked', 'true');
-        localStorage.setItem('lockTimestamp', Date.now().toString());
-        updateDisplay();
-
-        // Calculate possible variations before generating
-        const variations = this.calculatePossibleVariations(approvedSubmissions);
-
-        // Show loading message
-        showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
-
-        // Generate multiple schedules and pick the best one
-        const bestSchedule = this.generateBestCoverageSchedule(approvedSubmissions, variations);
-        
-        ScheduleDisplay.displaySchedule(bestSchedule);
-        
-        showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
     },
 
     generateBestCoverageSchedule: function(submissions, variations) {
@@ -43,7 +59,7 @@ const ScheduleGenerator = {
         
         let bestSchedule = null;
         let bestCoverage = 0;
-        const maxAttempts = 15; // Try up to 15 different schedules
+        const maxAttempts = 15;
         let attempt = 1;
 
         while (attempt <= maxAttempts) {
@@ -51,6 +67,12 @@ const ScheduleGenerator = {
             
             try {
                 const schedule = this.generateOptimizedSchedule(submissions);
+                
+                if (!schedule) {
+                    console.log(`❌ Attempt ${attempt} returned null schedule`);
+                    attempt++;
+                    continue;
+                }
                 
                 console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
                 
@@ -89,264 +111,295 @@ const ScheduleGenerator = {
     },
 
     generateOptimizedSchedule: function(submissions) {
-        // Validate that we have an active period
-        const periodConfig = PeriodManagement.getCurrentPeriodConfig();
-        if (!periodConfig || !periodConfig.isActive) {
-            showAlert('❌ Cannot generate schedule: No active SOC period found. Please open a new period first.', 'danger');
+        try {
+            // Validate that we have an active period
+            const periodConfig = PeriodManagement.getCurrentPeriodConfig();
+            if (!periodConfig || !periodConfig.isActive) {
+                showAlert('❌ Cannot generate schedule: No active SOC period found. Please open a new period first.', 'danger');
+                return null;
+            }
+            
+            console.log('📅 SOC generating schedule for period:', periodConfig.label);
+            
+            const workers = submissions.map(s => ({
+                name: s.name,
+                preferences: s.preferences
+            }));
+
+            const schedule = {
+                week1: this.initializeWeek(0),
+                week2: this.initializeWeek(7),
+                workers: workers.map(w => w.name),
+                periodInfo: {
+                    label: periodConfig.label,
+                    startDate: periodConfig.startDate,
+                    endDate: periodConfig.endDate
+                }
+            };
+
+            // Clear any existing global schedule
+            if (window.currentScheduleBeingGenerated) {
+                delete window.currentScheduleBeingGenerated;
+            }
+            window.currentScheduleBeingGenerated = schedule;
+
+            const workerStats = {};
+            workers.forEach(worker => {
+                workerStats[worker.name] = {
+                    totalShifts: 0,
+                    nightShifts: 0,
+                    morningShifts: 0,
+                    weekendShifts: 0,
+                    premiumShifts: 0,
+                    lastAssignedDay: -1,
+                    lastShiftEnd: null
+                };
+            });
+
+            let totalCoverage = 0;
+            const totalPossibleShifts = 42;
+
+            const shiftTimes = {
+                morning: { start: 7, end: 15 },
+                evening: { start: 15, end: 23 },
+                night: { start: 23, end: 7 }
+            };
+
+            // PASS 1: Normal assignment with all constraints
+            console.log('📋 SOC PASS 1: Initial assignment...');
+            totalCoverage = this.performSchedulingPass(schedule, workers, workerStats, shiftTimes, 1);
+            console.log(`✅ Pass 1: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}% coverage`);
+
+            // PASS 2: Fill empty shifts
+            console.log('📋 SOC PASS 2: Filling empty shifts...');
+            const pass2Filled = this.fillEmptyShifts(schedule, workers, workerStats, shiftTimes, false);
+            totalCoverage += pass2Filled;
+            console.log(`✅ Pass 2: +${pass2Filled} shifts, ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}% total`);
+
+            // PASS 3: Final aggressive filling
+            console.log('📋 SOC PASS 3: Aggressive filling...');
+            const pass3Filled = this.fillEmptyShifts(schedule, workers, workerStats, shiftTimes, true);
+            totalCoverage += pass3Filled;
+            console.log(`✅ Pass 3: +${pass3Filled} shifts, ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}% final`);
+
+            // Clean up global variable
+            if (window.currentScheduleBeingGenerated) {
+                delete window.currentScheduleBeingGenerated;
+            }
+
+            console.log('🎯 SOC SCHEDULE GENERATION COMPLETE!');
+            return {
+                ...schedule,
+                coverage: (totalCoverage / totalPossibleShifts) * 100,
+                totalAssignedShifts: totalCoverage,
+                totalPossibleShifts: totalPossibleShifts,
+                generatedAt: new Date().toISOString(),
+                generatedBy: 'SOC Admin'
+            };
+            
+        } catch (error) {
+            console.error('❌ Error in generateOptimizedSchedule:', error);
+            // Clean up on error
+            if (window.currentScheduleBeingGenerated) {
+                delete window.currentScheduleBeingGenerated;
+            }
             return null;
         }
-        
-        console.log('📅 SOC generating schedule for period:', periodConfig.label);
-        console.log('📊 SOC period dates:', periodConfig.startDate, 'to', periodConfig.endDate);
-        
-        const workers = submissions.map(s => ({
-            name: s.name,
-            preferences: s.preferences
-        }));
-
-        const schedule = {
-            week1: this.initializeWeek(0),
-            week2: this.initializeWeek(7),
-            workers: workers.map(w => w.name),
-            periodInfo: {
-                label: periodConfig.label,
-                startDate: periodConfig.startDate,
-                endDate: periodConfig.endDate
-            }
-        };
-
-        window.currentScheduleBeingGenerated = schedule;
-
-        const workerStats = {};
-        workers.forEach(worker => {
-            workerStats[worker.name] = {
-                totalShifts: 0,
-                nightShifts: 0,
-                morningShifts: 0,
-                weekendShifts: 0,
-                premiumShifts: 0,
-                lastAssignedDay: -1,
-                lastShiftEnd: null
-            };
-        });
-
-        let totalCoverage = 0;
-        const totalPossibleShifts = 42; // 3 shifts × 7 days × 2 weeks
-
-        const shiftTimes = {
-            morning: { start: 7, end: 15 },
-            evening: { start: 15, end: 23 },
-            night: { start: 23, end: 7 }
-        };
-
-        // PASS 1: Normal assignment with all constraints
-        console.log('📋 SOC PASS 1: Initial assignment with full constraints...');
-        totalCoverage = this.performSchedulingPass(schedule, workers, workerStats, shiftTimes, 1);
-        console.log(`✅ SOC Pass 1 complete. Coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
-
-        // PASS 2: Fill empty shifts with relaxed morning constraint
-        console.log('📋 SOC PASS 2: Filling empty shifts with relaxed morning constraint...');
-        const pass2Filled = this.fillEmptyShifts(schedule, workers, workerStats, shiftTimes, false);
-        totalCoverage += pass2Filled;
-        console.log(`✅ SOC Pass 2 complete. Additional filled: ${pass2Filled}. Total coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
-
-        // PASS 3: Final aggressive filling
-        console.log('📋 SOC PASS 3: Final aggressive filling with minimal constraints...');
-        const pass3Filled = this.fillEmptyShifts(schedule, workers, workerStats, shiftTimes, true);
-        totalCoverage += pass3Filled;
-        console.log(`✅ SOC Pass 3 complete. Additional filled: ${pass3Filled}. Final coverage: ${(totalCoverage / totalPossibleShifts * 100).toFixed(1)}%`);
-
-        delete window.currentScheduleBeingGenerated;
-
-        console.log('🎯 SOC SCHEDULE GENERATION COMPLETE!');
-        return {
-            ...schedule,
-            coverage: (totalCoverage / totalPossibleShifts) * 100,
-            totalAssignedShifts: totalCoverage,
-            totalPossibleShifts: totalPossibleShifts,
-            generatedAt: new Date().toISOString(),
-            generatedBy: 'SOC Admin'
-        };
     },
 
     performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
-    let coverage = 0;
+        let coverage = 0;
 
-    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-        const weekStartDay = weekIndex * 7;
-        
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            const weekStartDay = weekIndex * 7;
             
-            // PRIORITY ORDER: Process shifts by priority (night first, then morning, then evening)
-            const shiftsByPriority = ['night', 'morning', 'evening'];
-            
-            shiftsByPriority.forEach(shift => {
-                if (week.days[day].shifts[shift]) {
-                    coverage++;
-                    return; // Already assigned
-                }
-
-                const availableWorkers = workers.filter(worker => {
-                    return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
-                });
-
-                if (availableWorkers.length > 0) {
-                    const scoredWorkers = availableWorkers.map(worker => ({
-                        worker: worker,
-                        score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
-                    }))
-                    .filter(sw => sw.score > -500)
-                    .sort((a, b) => b.score - a.score);
-
-                    if (scoredWorkers.length > 0) {
-                        const bestWorker = scoredWorkers[0].worker;
-                        this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+            for (let day = 0; day < 7; day++) {
+                const globalDay = weekStartDay + day;
+                
+                // PRIORITY ORDER: night, morning, evening
+                const shiftsByPriority = ['night', 'morning', 'evening'];
+                
+                shiftsByPriority.forEach(shift => {
+                    if (week.days[day].shifts[shift]) {
                         coverage++;
-                        
-                        console.log(`🎯 Pass ${passNumber}: Assigned ${bestWorker.name} to ${shift} (priority ${SHIFT_PRIORITIES[shift]}) on day ${globalDay}`);
+                        return;
                     }
-                }
-            });
-        }
-    });
 
-    return coverage;
-},
+                    const availableWorkers = workers.filter(worker => {
+                        return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
+                    });
 
-    fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
-    let filledCount = 0;
+                    if (availableWorkers.length > 0) {
+                        const scoredWorkers = availableWorkers.map(worker => ({
+                            worker: worker,
+                            score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
+                        }))
+                        .filter(sw => sw.score > -500)
+                        .sort((a, b) => b.score - a.score);
 
-    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-        const weekStartDay = weekIndex * 7;
-
-        for (let day = 0; day < 7; day++) {
-            const globalDay = weekStartDay + day;
-
-            // PRIORITY ORDER: Fill shifts by priority (night first, then morning, then evening)
-            const shiftsByPriority = ['night', 'morning', 'evening'];
-
-            shiftsByPriority.forEach(shift => {
-                if (week.days[day].shifts[shift]) return;
-
-                const availableWorkers = workers.filter(worker => {
-                    // Check maximum shifts per week limit
-                    const currentWeek = Math.floor(globalDay / 7);
-                    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-                    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
-                        return false;
-                    }
-                    
-                    if (!worker.preferences[globalDay]?.[shift]) return false;
-
-                    const currentDayShifts = week.days[day].shifts;
-                    if (Object.values(currentDayShifts).includes(worker.name)) return false;
-
-                    if (shift === 'night') {
-                        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                        if (nightShiftsThisWeek >= 2) return false;
-
-                        // Avoid 2 nights in a row
-                        if (globalDay > 0) {
-                            const prevDay = globalDay - 1;
-                            const prevWeekIndex = Math.floor(prevDay / 7);
-                            const prevDayIndex = prevDay % 7;
-                            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
-
-                            if (prevShifts && prevShifts.night === worker.name) {
-                                return false;
-                            }
+                        if (scoredWorkers.length > 0) {
+                            const bestWorker = scoredWorkers[0].worker;
+                            this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                            coverage++;
                         }
                     }
-
-                    return true;
                 });
+            }
+        });
 
-                if (availableWorkers.length > 0) {
-                    const sorted = availableWorkers.sort((a, b) =>
-                        (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
-                    );
-                    const selected = sorted[0];
-                    this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
-                    filledCount++;
-                    
-                    console.log(`🔄 Fill Pass: Assigned ${selected.name} to ${shift} (priority ${SHIFT_PRIORITIES[shift]}) on day ${globalDay}`);
+        return coverage;
+    },
+
+    fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
+        let filledCount = 0;
+
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            const weekStartDay = weekIndex * 7;
+
+            for (let day = 0; day < 7; day++) {
+                const globalDay = weekStartDay + day;
+                const shiftsByPriority = ['night', 'morning', 'evening'];
+
+                shiftsByPriority.forEach(shift => {
+                    if (week.days[day].shifts[shift]) return;
+
+                    const availableWorkers = workers.filter(worker => {
+                        return this.isWorkerAvailableForFill(worker, shift, globalDay, week, workerStats, schedule);
+                    });
+
+                    if (availableWorkers.length > 0) {
+                        const sorted = availableWorkers.sort((a, b) =>
+                            (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
+                        );
+                        const selected = sorted[0];
+                        this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
+                        filledCount++;
+                    }
+                });
+            }
+        });
+
+        return filledCount;
+    },
+
+    // Separate function for fill passes to avoid conflicts
+    isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
+        const currentWeek = Math.floor(globalDay / 7);
+        const day = globalDay % 7;
+        
+        // Check weekly shift limit
+        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+            return false;
+        }
+        
+        // Check if worker wants this shift
+        if (!worker.preferences[globalDay]?.[shift]) return false;
+
+        // Check if already working this day
+        const currentDayShifts = week.days[day].shifts;
+        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+        // Night shift specific checks
+        if (shift === 'night') {
+            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+            if (nightShiftsThisWeek >= 2) return false;
+        }
+
+        return true;
+    },
+
+    isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
+        const currentWeek = Math.floor(globalDay / 7);
+        
+        // Check weekly limit using consistent method
+        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+            return false;
+        }
+        
+        // Check availability
+        if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+
+        // Check if already working this day
+        const currentDayShifts = week.days[day].shifts;
+        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+        // Night shift constraints
+        if (shift === 'night') {
+            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+            if (nightShiftsThisWeek >= 2) return false;
+
+            // Avoid consecutive nights
+            if (globalDay > 0) {
+                const prevDay = globalDay - 1;
+                const prevWeekIndex = Math.floor(prevDay / 7);
+                const prevDayIndex = prevDay % 7;
+                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+                if (prevShifts && prevShifts.night === worker.name) {
+                    return false;
                 }
-            });
-        }
-    });
-
-    return filledCount;
-},
-
-   isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-    // NEW: Check maximum shifts per week limit
-    const currentWeek = Math.floor(globalDay / 7);
-    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
-        console.log(`❌ ${worker.name} already has ${shiftsThisWeek} shifts in week ${currentWeek + 1} (max: ${MAX_SHIFTS_PER_WEEK})`);
-        return false;
-    }
-    
-    // Prevent night-to-morning double shift
-    if (shift === 'morning') {
-        if (day > 0) {
-            const prevDayShifts = week.days[day - 1]?.shifts || {};
-            if (prevDayShifts.night === worker.name) return false;
-        } else if (week === schedule.week2) {
-            const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
-            if (prevWeekLastDayShifts.night === worker.name) return false;
-        }
-    }
-
-    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
-
-    const currentDayShifts = week.days[day].shifts;
-    if (Object.values(currentDayShifts).includes(worker.name)) return false;
-
-    // Max 2 night shifts per week
-    if (shift === 'night') {
-        const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
-        if (nightShiftsThisWeek >= 2) return false;
-
-        // Avoid two consecutive nights
-        if (globalDay > 0) {
-            const prevDay = globalDay - 1;
-            const prevWeekIndex = Math.floor(prevDay / 7);
-            const prevDayIndex = prevDay % 7;
-            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
-
-            if (prevShifts && prevShifts.night === worker.name) {
-                return false;
             }
         }
-    }
 
-    return true;
-},
+        // Morning shift after night shift check
+        if (shift === 'morning') {
+            if (day > 0) {
+                const prevDayShifts = week.days[day - 1]?.shifts || {};
+                if (prevDayShifts.night === worker.name) return false;
+            } else if (week === schedule.week2) {
+                const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
+                if (prevWeekLastDayShifts.night === worker.name) return false;
+            }
+        }
 
-countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
-    let week;
-    if (weekNumber === 0) {
-        week = schedule.week1;
-    } else if (weekNumber === 1) {
-        week = schedule.week2;
-    }
-    
-    if (!week) return 0;
-    
-    let shiftCount = 0;
-    week.days.forEach(day => {
-        if (day.shifts.morning === workerName) shiftCount++;
-        if (day.shifts.evening === workerName) shiftCount++;
-        if (day.shifts.night === workerName) shiftCount++;
-    });
-    
-    return shiftCount;
-},
-  
+        return true;
+    },
+
+    // FIXED: Use consistent schedule parameter for all counting functions
+    countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
+        let week;
+        if (weekNumber === 0) {
+            week = schedule.week1;
+        } else if (weekNumber === 1) {
+            week = schedule.week2;
+        }
+        
+        if (!week) return 0;
+        
+        let shiftCount = 0;
+        week.days.forEach(day => {
+            if (day.shifts.morning === workerName) shiftCount++;
+            if (day.shifts.evening === workerName) shiftCount++;
+            if (day.shifts.night === workerName) shiftCount++;
+        });
+        
+        return shiftCount;
+    },
+
+    countNightShiftsInCurrentSchedule: function(workerName, weekNumber, schedule) {
+        let week;
+        if (weekNumber === 0) {
+            week = schedule.week1;
+        } else if (weekNumber === 1) {
+            week = schedule.week2;
+        }
+        
+        if (!week) return 0;
+        
+        let nightShiftCount = 0;
+        week.days.forEach(day => {
+            if (day.shifts.night === workerName) {
+                nightShiftCount++;
+            }
+        });
+        
+        return nightShiftCount;
+    },
+
+    // Keep the other helper functions the same...
     assignWorkerToShift: function(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
         const existingShifts = week.days[day].shifts;
         if (Object.values(existingShifts).includes(worker.name)) {
@@ -367,15 +420,10 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         }
         
         stats.lastAssignedDay = globalDay;
-        
-        // Update the last shift end time
-        const shiftEndTime = this.calculateShiftEndTime(globalDay, shift, shiftTimes);
-        stats.lastShiftEnd = shiftEndTime;
-        
-        const endDate = new Date(shiftEndTime);
-        console.log(`✅ Assigned ${worker.name} to ${shift} on day ${globalDay}. Shift ends: ${endDate.toLocaleString()}`);
+        stats.lastShiftEnd = this.calculateShiftEndTime(globalDay, shift, shiftTimes);
     },
 
+    // ... rest of your helper functions stay the same
     calculatePossibleVariations: function(submissions) {
         console.log('🔢 CALCULATING POSSIBLE SCHEDULE VARIATIONS...');
         
@@ -388,10 +436,8 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         let constrainedShifts = 0;
         let impossibleShifts = 0;
 
-        // Analyze each shift slot
         for (let globalDay = 0; globalDay < 14; globalDay++) {
             ['morning', 'evening', 'night'].forEach(shift => {
-                // Count available workers for this specific shift
                 const availableWorkers = workers.filter(worker => {
                     return worker.preferences[globalDay] && worker.preferences[globalDay][shift];
                 });
@@ -401,10 +447,7 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
                 } else if (availableWorkers.length === 1) {
                     constrainedShifts++;
                 } else {
-                    // Multiple workers available = variations possible
                     totalVariations *= availableWorkers.length;
-                    
-                    // Cap the calculation to prevent overflow
                     if (totalVariations > 1000000) {
                         totalVariations = 1000000;
                     }
@@ -412,9 +455,6 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
             });
         }
 
-        console.log(`📊 Analysis: ${constrainedShifts} constrained shifts, ${impossibleShifts} impossible shifts`);
-        
-        // Estimate realistic variations considering constraints
         let estimatedVariations;
         if (totalVariations >= 1000000) {
             estimatedVariations = "1,000,000+";
@@ -434,7 +474,6 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         };
     },
 
-    // Helper functions
     initializeWeek: function(globalStartDay) {
         const week = { days: [] };
         
@@ -471,17 +510,16 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
     calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
         let score = 100;
         
-        // HARD CONSTRAINT: Maximum 2 night shifts per week
         if (shift === 'night') {
             const currentWeek = Math.floor(globalDay / 7);
-            const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
+            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, window.currentScheduleBeingGenerated);
             
             if (nightShiftsThisWeek >= 2) {
-                return -1000; // Impossible score
+                return -1000;
             }
             
             if (nightShiftsThisWeek === 1) {
-                score -= 500; // Heavy penalty
+                score -= 500;
             }
             
             score -= stats.nightShifts * 20;
@@ -491,35 +529,28 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
             }
         }
         
-        // CRITICAL: Morning shift distribution - ensure everyone gets at least 1 per week
         if (shift === 'morning') {
             const currentWeek = Math.floor(globalDay / 7);
             const morningShiftsThisWeek = this.countMorningShiftsInWeek(worker.name, currentWeek);
             
-            // HIGHEST PRIORITY: Workers with 0 morning shifts this week
             if (morningShiftsThisWeek === 0) {
-                score += 1000; // Extremely high bonus
+                score += 1000;
                 
-                // Extra bonus if we're later in the week (urgency increases)
                 const dayInWeek = globalDay % 7;
-                if (dayInWeek >= 4) { // Thursday onwards
-                    score += 500; // Even higher priority
+                if (dayInWeek >= 4) {
+                    score += 500;
                 }
             } else {
-                // Heavily penalize workers who already have morning shifts this week
                 score -= morningShiftsThisWeek * 300;
             }
             
-            // Also consider overall morning shift balance
             if (stats.morningShifts === 0) {
-                score += 200; // High bonus for workers with no morning shifts overall
+                score += 200;
             }
         }
         
-        // Load balancing - prefer workers with fewer total shifts
         score -= stats.totalShifts * 5;
         
-        // Premium weekend shifts distribution (Friday evening to Saturday evening)
         const isPremiumShift = this.isPremiumWeekendShift(dayOfWeek, shift);
         if (isPremiumShift) {
             score -= stats.premiumShifts * 15;
@@ -528,12 +559,10 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
             }
         }
         
-        // Regular weekend consideration
         if (dayOfWeek === 5 || dayOfWeek === 6) {
             score -= stats.weekendShifts * 8;
         }
         
-        // Avoid consecutive days
         if (stats.lastAssignedDay === globalDay - 1) {
             score -= 20;
         }
@@ -591,28 +620,8 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         return morningShiftCount;
     },
 
-    countNightShiftsInCurrentSchedule: function(workerName, weekNumber, schedule) {
-        let week;
-        if (weekNumber === 0) {
-            week = schedule.week1;
-        } else if (weekNumber === 1) {
-            week = schedule.week2;
-        }
-        
-        if (!week) return 0;
-        
-        let nightShiftCount = 0;
-        week.days.forEach(day => {
-            if (day.shifts.night === workerName) {
-                nightShiftCount++;
-            }
-        });
-        
-        return nightShiftCount;
-    },
-
     calculateShiftStartTime: function(globalDay, shift, shiftTimes) {
-        const baseDate = new Date(2025, 5, 1); // June 1st, 2025
+        const baseDate = new Date(2025, 5, 1);
         const shiftDate = new Date(baseDate);
         shiftDate.setDate(baseDate.getDate() + globalDay);
         
@@ -623,18 +632,16 @@ countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
     },
 
     calculateShiftEndTime: function(globalDay, shift, shiftTimes) {
-        const baseDate = new Date(2025, 5, 1); // June 1st, 2025
+        const baseDate = new Date(2025, 5, 1);
         const shiftDate = new Date(baseDate);
         shiftDate.setDate(baseDate.getDate() + globalDay);
         
         const endHour = shiftTimes[shift].end;
         
         if (shift === 'night') {
-            // Night shift ends the next day at 07:00
             shiftDate.setDate(shiftDate.getDate() + 1);
             shiftDate.setHours(endHour, 0, 0, 0);
         } else {
-            // Morning/Evening shifts end same day
             shiftDate.setHours(endHour, 0, 0, 0);
         }
         
