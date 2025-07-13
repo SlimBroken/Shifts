@@ -1,6 +1,6 @@
 // Maccabi SOC Admin Dashboard - Core Functions
 // Handles login, initialization, and basic admin functionality
-
+console.log('✅ Admin Core JS loaded!');
 const ADMIN_PASSWORD = 'admin123';
 let workerSubmissions = [];
 let serverConnected = false;
