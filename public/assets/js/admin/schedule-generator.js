@@ -1,6 +1,7 @@
 // Maccabi SOC Admin Dashboard - Schedule Generation Functions
 // Handles the complex scheduling algorithm and constraint management
 
+const MAX_SHIFTS_PER_WORKER = 6; // Maximum 6 shifts per worker across 2 weeks
 const ScheduleGenerator = {
 
     generateSchedule: function() {
@@ -201,99 +202,112 @@ const ScheduleGenerator = {
     },
 
     fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
-        let filledCount = 0;
+    let filledCount = 0;
 
-        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-            const weekStartDay = weekIndex * 7;
+    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+        const weekStartDay = weekIndex * 7;
 
-            for (let day = 0; day < 7; day++) {
-                const globalDay = weekStartDay + day;
+        for (let day = 0; day < 7; day++) {
+            const globalDay = weekStartDay + day;
 
-                ['morning', 'evening', 'night'].forEach(shift => {
-                    if (week.days[day].shifts[shift]) return;
+            ['morning', 'evening', 'night'].forEach(shift => {
+                if (week.days[day].shifts[shift]) return;
 
-                    const availableWorkers = workers.filter(worker => {
-                        if (!worker.preferences[globalDay]?.[shift]) return false;
+                const availableWorkers = workers.filter(worker => {
+                    // NEW: Check maximum shifts limit
+                    const currentShifts = workerStats[worker.name]?.totalShifts || 0;
+                    if (currentShifts >= MAX_SHIFTS_PER_WORKER) {
+                        return false;
+                    }
+                    
+                    if (!worker.preferences[globalDay]?.[shift]) return false;
 
-                        const currentDayShifts = week.days[day].shifts;
-                        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+                    const currentDayShifts = week.days[day].shifts;
+                    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-                        if (shift === 'night') {
-                            const currentWeek = Math.floor(globalDay / 7);
-                            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-                            if (nightShiftsThisWeek >= 3) return false;
+                    if (shift === 'night') {
+                        const currentWeek = Math.floor(globalDay / 7);
+                        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+                        if (nightShiftsThisWeek >= 2) return false;
 
-                            // Avoid 2 nights in a row
-                            if (globalDay > 0) {
-                                const prevDay = globalDay - 1;
-                                const prevWeekIndex = Math.floor(prevDay / 7);
-                                const prevDayIndex = prevDay % 7;
-                                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+                        // Avoid 2 nights in a row
+                        if (globalDay > 0) {
+                            const prevDay = globalDay - 1;
+                            const prevWeekIndex = Math.floor(prevDay / 7);
+                            const prevDayIndex = prevDay % 7;
+                            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+                            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
 
-                                if (prevShifts && prevShifts.night === worker.name) {
-                                    return false;
-                                }
+                            if (prevShifts && prevShifts.night === worker.name) {
+                                return false;
                             }
                         }
-
-                        return true;
-                    });
-
-                    if (availableWorkers.length > 0) {
-                        const sorted = availableWorkers.sort((a, b) =>
-                            (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
-                        );
-                        const selected = sorted[0];
-                        this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
-                        filledCount++;
                     }
-                });
-            }
-        });
 
-        return filledCount;
-    },
+                    return true;
+                });
+
+                if (availableWorkers.length > 0) {
+                    const sorted = availableWorkers.sort((a, b) =>
+                        (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
+                    );
+                    const selected = sorted[0];
+                    this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
+                    filledCount++;
+                }
+            });
+        }
+    });
+
+    return filledCount;
+}
 
     isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-        // Prevent night-to-morning double shift
-        if (shift === 'morning') {
-            if (day > 0) {
-                const prevDayShifts = week.days[day - 1]?.shifts || {};
-                if (prevDayShifts.night === worker.name) return false;
-            } else if (week === schedule.week2) {
-                const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
-                if (prevWeekLastDayShifts.night === worker.name) return false;
+    // NEW: Check maximum shifts limit
+    const currentShifts = workerStats[worker.name]?.totalShifts || 0;
+    if (currentShifts >= MAX_SHIFTS_PER_WORKER) {
+        console.log(`❌ ${worker.name} already has ${currentShifts} shifts (max: ${MAX_SHIFTS_PER_WORKER})`);
+        return false;
+    }
+    
+    // Prevent night-to-morning double shift
+    if (shift === 'morning') {
+        if (day > 0) {
+            const prevDayShifts = week.days[day - 1]?.shifts || {};
+            if (prevDayShifts.night === worker.name) return false;
+        } else if (week === schedule.week2) {
+            const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
+            if (prevWeekLastDayShifts.night === worker.name) return false;
+        }
+    }
+
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+    // Max 2 night shifts per week (keep this as is)
+    if (shift === 'night') {
+        const currentWeek = Math.floor(globalDay / 7);
+        const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
+        if (nightShiftsThisWeek >= 2) return false;
+
+        // Avoid two consecutive nights
+        if (globalDay > 0) {
+            const prevDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevDay / 7);
+            const prevDayIndex = prevDay % 7;
+            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+
+            if (prevShifts && prevShifts.night === worker.name) {
+                return false;
             }
         }
+    }
 
-        if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
-
-        const currentDayShifts = week.days[day].shifts;
-        if (Object.values(currentDayShifts).includes(worker.name)) return false;
-
-        // Max 3 night shifts per week
-        if (shift === 'night') {
-            const currentWeek = Math.floor(globalDay / 7);
-            const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek);
-            if (nightShiftsThisWeek >= 3) return false;
-
-            // Avoid two consecutive nights
-            if (globalDay > 0) {
-                const prevDay = globalDay - 1;
-                const prevWeekIndex = Math.floor(prevDay / 7);
-                const prevDayIndex = prevDay % 7;
-                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
-
-                if (prevShifts && prevShifts.night === worker.name) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    },
+    return true;
+},
 
     assignWorkerToShift: function(worker, shift, day, globalDay, week, workerStats, shiftTimes) {
         const existingShifts = week.days[day].shifts;
