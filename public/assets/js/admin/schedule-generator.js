@@ -454,93 +454,134 @@ const ScheduleGenerator = {
         return filledCount;
     },
 
-    // Separate function for fill passes to avoid conflicts
-    isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
-        const currentWeek = Math.floor(globalDay / 7);
-        const day = globalDay % 7;
+    // REPLACE your isWorkerAvailableForFill function with this:
+isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
+    const currentWeek = Math.floor(globalDay / 7);
+    const day = globalDay % 7;
+    
+    // Check weekly shift limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
+    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        return false;
+    }
+    
+    // CRITICAL: Check for 888 pattern prevention in fill passes too!
+    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+        return false;
+    }
+    
+    // ENHANCED: Additional consecutive day pattern prevention
+    if (globalDay >= 2) {
+        // Check if assigning this worker would create any worker-gap-worker pattern across 3 days
+        const twoDaysAgo = globalDay - 2;
+        const yesterday = globalDay - 1;
         
-        // Check weekly shift limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
-        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        if (this.workerWorkedOnDay(worker.name, twoDaysAgo, schedule) && 
+            !this.workerWorkedOnDay(worker.name, yesterday, schedule)) {
+            console.log(`🚫 ENHANCED FILL: Blocked ${worker.name} - would create gap pattern (worked 2 days ago, gap yesterday, work today)`);
             return false;
         }
-        
-        // CRITICAL: Check for 888 pattern prevention in fill passes too!
-        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-            console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-            return false;
-        }
-        
-        // Check if worker wants this shift
-        if (!worker.preferences[globalDay]?.[shift]) return false;
+    }
+    
+    // Check if worker wants this shift
+    if (!worker.preferences[globalDay]?.[shift]) return false;
 
-        // Check if already working this day (one shift per day rule)
-        const currentDayShifts = week.days[day].shifts;
-        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+    // Check if already working this day (one shift per day rule)
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-        // CRITICAL: Check 8-hour minimum break between consecutive shifts
-        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
-            return false;
-        }
+    // CRITICAL: Check 8-hour minimum break between consecutive shifts
+    if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+        return false;
+    }
 
-        // Night shift specific checks
-        if (shift === 'night') {
-            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-            if (nightShiftsThisWeek >= 2) return false;
-        }
+    // Night shift specific checks
+    if (shift === 'night') {
+        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+        if (nightShiftsThisWeek >= 2) return false;
+    }
 
-        return true;
-    },
+    return true;
+},
 
     isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-        const currentWeek = Math.floor(globalDay / 7);
+    const currentWeek = Math.floor(globalDay / 7);
+    
+    // Check weekly limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
+    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        return false;
+    }
+    
+    // CRITICAL: Check for 888 pattern prevention
+    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+        return false;
+    }
+    
+    // ENHANCED: Additional consecutive day pattern prevention
+    if (globalDay >= 2) {
+        // Check if assigning this worker would create any worker-gap-worker pattern across 3 days
+        const twoDaysAgo = globalDay - 2;
+        const yesterday = globalDay - 1;
         
-        // Check weekly limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
-        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        if (this.workerWorkedOnDay(worker.name, twoDaysAgo, schedule) && 
+            !this.workerWorkedOnDay(worker.name, yesterday, schedule)) {
+            console.log(`🚫 ENHANCED MAIN: Blocked ${worker.name} - would create gap pattern (worked 2 days ago, gap yesterday, work today)`);
             return false;
         }
-        
-        // CRITICAL: Check for 888 pattern prevention
-        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-            console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-            return false;
-        }
-        
-        // Check availability
-        if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+    }
+    
+    // Check availability
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-        // Check if already working this day (one shift per day rule)
-        const currentDayShifts = week.days[day].shifts;
-        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+    // Check if already working this day (one shift per day rule)
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-        // CRITICAL: Check 8-hour minimum break between consecutive shifts
-        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
-            return false;
-        }
+    // CRITICAL: Check 8-hour minimum break between consecutive shifts
+    if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+        return false;
+    }
 
-        // Night shift constraints
-        if (shift === 'night') {
-            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-            if (nightShiftsThisWeek >= 2) return false;
+    // Night shift constraints
+    if (shift === 'night') {
+        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+        if (nightShiftsThisWeek >= 2) return false;
 
-            // Avoid consecutive nights
-            if (globalDay > 0) {
-                const prevDay = globalDay - 1;
-                const prevWeekIndex = Math.floor(prevDay / 7);
-                const prevDayIndex = prevDay % 7;
-                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+        // Avoid consecutive nights
+        if (globalDay > 0) {
+            const prevDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevDay / 7);
+            const prevDayIndex = prevDay % 7;
+            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
 
-                if (prevShifts && prevShifts.night === worker.name) {
-                    return false;
-                }
+            if (prevShifts && prevShifts.night === worker.name) {
+                return false;
             }
         }
+    }
 
-        return true;
-    },
+    return true;
+},
 
+
+    // ADD this new helper function (place it anywhere in your ScheduleGenerator object):
+workerWorkedOnDay: function(workerName, globalDay, schedule) {
+    if (globalDay < 0 || globalDay > 13) return false;
+    
+    const weekIndex = Math.floor(globalDay / 7);
+    const dayIndex = globalDay % 7;
+    const week = weekIndex === 0 ? schedule.week1 : schedule.week2;
+    
+    if (!week || !week.days[dayIndex]) return false;
+    
+    const shifts = week.days[dayIndex].shifts;
+    return Object.values(shifts).includes(workerName);
+}
+    
     // FIXED: Use consistent schedule parameter for all counting functions
     countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         let week;
