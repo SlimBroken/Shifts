@@ -303,6 +303,9 @@ const ScheduleGenerator = {
             // FINAL VALIDATION: Check for any 888 patterns that might have slipped through
             this.validateNo888Patterns(schedule);
             
+            // FINAL VALIDATION: Check for consecutive shift violations  
+            this.validateNoConsecutiveShiftViolations(schedule);
+            
             return {
                 ...schedule,
                 coverage: (totalCoverage / totalPossibleShifts) * 100,
@@ -471,9 +474,14 @@ const ScheduleGenerator = {
         // Check if worker wants this shift
         if (!worker.preferences[globalDay]?.[shift]) return false;
 
-        // Check if already working this day
+        // Check if already working this day (one shift per day rule)
         const currentDayShifts = week.days[day].shifts;
         if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+        // CRITICAL: Check 8-hour minimum break between consecutive shifts
+        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+            return false;
+        }
 
         // Night shift specific checks
         if (shift === 'night') {
@@ -502,9 +510,14 @@ const ScheduleGenerator = {
         // Check availability
         if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-        // Check if already working this day
+        // Check if already working this day (one shift per day rule)
         const currentDayShifts = week.days[day].shifts;
         if (Object.values(currentDayShifts).includes(worker.name)) return false;
+
+        // CRITICAL: Check 8-hour minimum break between consecutive shifts
+        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+            return false;
+        }
 
         // Night shift constraints
         if (shift === 'night') {
@@ -522,17 +535,6 @@ const ScheduleGenerator = {
                 if (prevShifts && prevShifts.night === worker.name) {
                     return false;
                 }
-            }
-        }
-
-        // Morning shift after night shift check
-        if (shift === 'morning') {
-            if (day > 0) {
-                const prevDayShifts = week.days[day - 1]?.shifts || {};
-                if (prevDayShifts.night === worker.name) return false;
-            } else if (week === schedule.week2) {
-                const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
-                if (prevWeekLastDayShifts.night === worker.name) return false;
             }
         }
 
@@ -848,6 +850,80 @@ const ScheduleGenerator = {
         return shiftDate.getTime();
     },
 
+    hasMinimumBreakTime: function(workerName, globalDay, shift, schedule) {
+        // Check if worker had a shift yesterday that would violate 8-hour break rule
+        
+        // Get previous day's shifts
+        let prevDayShifts = null;
+        
+        if (globalDay > 0) {
+            const prevGlobalDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevGlobalDay / 7);
+            const prevDayIndex = prevGlobalDay % 7;
+            
+            let prevWeek;
+            if (prevWeekIndex === 0) {
+                prevWeek = schedule.week1;
+            } else if (prevWeekIndex === 1) {
+                prevWeek = schedule.week2;
+            }
+            
+            if (prevWeek && prevWeek.days[prevDayIndex]) {
+                prevDayShifts = prevWeek.days[prevDayIndex].shifts;
+            }
+        }
+        
+        if (!prevDayShifts) return true; // No previous day to check
+        
+        // Check each possible previous shift
+        for (const [prevShiftType, prevWorker] of Object.entries(prevDayShifts)) {
+            if (prevWorker === workerName) {
+                // Found worker had a shift yesterday, check if current assignment violates break rule
+                if (!this.isValidShiftTransition(prevShiftType, shift)) {
+                    console.log(`⏰ BREAK VIOLATION: ${workerName} - ${prevShiftType} yesterday → ${shift} today violates 8-hour break rule`);
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    },
+
+    isValidShiftTransition: function(prevShift, currentShift) {
+        // Shift times: Morning 07:00-15:00, Evening 15:00-23:00, Night 23:00-07:00+1
+        
+        // The only problematic transition is: Night → Morning (same day)
+        // Night ends at 07:00, Morning starts at 07:00 = 0 hours break
+        if (prevShift === 'night' && currentShift === 'morning') {
+            return false; // 0 hours break - VIOLATION
+        }
+        
+        // All other transitions are OK:
+        // Night → Evening: Night ends 07:00, Evening starts 15:00 = 8 hours break ✅
+        // Evening → Morning: Evening ends 23:00, Morning starts 07:00 next day = 8 hours break ✅  
+        // Morning → Any: Morning ends 15:00, next shift starts next day = 16+ hours break ✅
+        
+        return true;
+    },
+
+    calculateBreakHours: function(prevShift, currentShift) {
+        // Simplified break calculation for logging purposes
+        if (prevShift === 'night' && currentShift === 'morning') {
+            return 0; // Night ends 07:00, Morning starts 07:00
+        }
+        if (prevShift === 'night' && currentShift === 'evening') {
+            return 8; // Night ends 07:00, Evening starts 15:00
+        }
+        if (prevShift === 'evening' && currentShift === 'morning') {
+            return 8; // Evening ends 23:00, Morning starts 07:00 next day
+        }
+        if (prevShift === 'morning') {
+            return 16; // Morning ends 15:00, next shift starts next day minimum 07:00
+        }
+        
+        return 24; // Default safe value
+    },
+
     analyzeEmptyShifts: function(schedule) {
         console.log('📊 SOC EMPTY SHIFT ANALYSIS:');
         
@@ -988,6 +1064,68 @@ const ScheduleGenerator = {
         }
         
         return patternsFound.length === 0;
+    },
+
+    validateNoConsecutiveShiftViolations: function(schedule) {
+        console.log('⏰ FINAL VALIDATION: Checking for consecutive shift violations...');
+        
+        let violationsFound = [];
+        
+        // Create flat array of all shifts with worker assignments
+        const allShifts = [];
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            week.days.forEach((day, dayIndex) => {
+                const globalDay = weekIndex * 7 + dayIndex;
+                ['morning', 'evening', 'night'].forEach((shiftType) => {
+                    allShifts.push({
+                        worker: day.shifts[shiftType],
+                        globalDay: globalDay,
+                        shiftType: shiftType,
+                        dayName: day.dayShort,
+                        date: day.dateStr,
+                        weekIndex: weekIndex,
+                        dayIndex: dayIndex
+                    });
+                });
+            });
+        });
+        
+        // Check each shift against the next day's shifts
+        for (let i = 0; i < allShifts.length; i++) {
+            const currentShift = allShifts[i];
+            if (!currentShift.worker) continue; // Skip empty shifts
+            
+            // Check next day's shifts (3 shifts later in the array)
+            const nextDayStartIndex = (currentShift.globalDay + 1) * 3;
+            
+            for (let j = nextDayStartIndex; j < nextDayStartIndex + 3 && j < allShifts.length; j++) {
+                const nextDayShift = allShifts[j];
+                
+                if (nextDayShift.worker === currentShift.worker) {
+                    // Same worker has shifts on consecutive days - check if it violates break rule
+                    if (!this.isValidShiftTransition(currentShift.shiftType, nextDayShift.shiftType)) {
+                        violationsFound.push({
+                            worker: currentShift.worker,
+                            firstShift: `${currentShift.dayName} ${currentShift.date} ${currentShift.shiftType}`,
+                            secondShift: `${nextDayShift.dayName} ${nextDayShift.date} ${nextDayShift.shiftType}`,
+                            breakHours: this.calculateBreakHours(currentShift.shiftType, nextDayShift.shiftType)
+                        });
+                    }
+                }
+            }
+        }
+        
+        if (violationsFound.length === 0) {
+            console.log('✅ VALIDATION PASSED: No consecutive shift violations found');
+        } else {
+            console.log(`🚨 VALIDATION FAILED: Found ${violationsFound.length} consecutive shift violations:`);
+            violationsFound.forEach((violation, index) => {
+                console.log(`   ${index + 1}. ${violation.worker}: ${violation.firstShift} → ${violation.secondShift} (${violation.breakHours} hours break)`);
+            });
+            console.log('⚠️ This indicates a bug in the break time prevention logic');
+        }
+        
+        return violationsFound.length === 0;
     },
 
     calculateShiftEndTime: function(globalDay, shift, shiftTimes) {
