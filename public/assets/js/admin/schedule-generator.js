@@ -451,13 +451,10 @@ const ScheduleGenerator = {
     isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
         const currentWeek = Math.floor(globalDay / 7);
         const day = globalDay % 7;
-        const totalWorkers = schedule.workers.length;
-        const isSmallTeam = totalWorkers <= 4;
         
-        // Check weekly shift limit - be more lenient for small teams
-        const maxShiftsPerWeek = isSmallTeam ? MAX_SHIFTS_PER_WEEK + 1 : MAX_SHIFTS_PER_WEEK; // Allow 7 shifts for small teams
+        // Check weekly shift limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
         const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= maxShiftsPerWeek) {
+        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
             return false;
         }
         
@@ -480,7 +477,7 @@ const ScheduleGenerator = {
     isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
         const currentWeek = Math.floor(globalDay / 7);
         
-        // Check weekly limit using consistent method
+        // Check weekly limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
         const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
         if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
             return false;
@@ -910,7 +907,7 @@ const ScheduleGenerator = {
             console.log(`🎯 Saturday Evening Issue: With only ${totalWorkers} workers, Saturday evening coverage is challenging. Consider:`);
             console.log(`   • Adding more workers`);
             console.log(`   • Ensuring workers mark Saturday evening as available`);
-            console.log(`   • Accepting that some premium shifts may be empty`);
+            console.log(`   • Note: 6 shifts/week limit prevents overworking individual workers`);
         }
 
         // Calculate percentage by shift type
