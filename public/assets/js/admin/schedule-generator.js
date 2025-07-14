@@ -174,63 +174,48 @@ const ScheduleGenerator = {
         return Object.values(shifts).includes(workerName);
     },
 
-    // Comprehensive function to prevent ANY worker-gap-worker patterns
+    // BULLETPROOF: Prevent ANY problematic worker patterns
     wouldCreateAnyGapPattern: function(workerName, globalDay, schedule) {
-        // Check all possible worker-gap-worker patterns that could be created
+        // STRATEGY: If a worker already worked once this week, 
+        // only allow them to work on CONSECUTIVE days to avoid gaps
         
-        // Pattern 1: Worker worked 2 days ago, gap yesterday, working today
-        if (globalDay >= 2) {
-            const twoDaysAgo = globalDay - 2;
-            const yesterday = globalDay - 1;
-            
-            if (this.workerWorkedOnDay(workerName, twoDaysAgo, schedule) && 
-                !this.workerWorkedOnDay(workerName, yesterday, schedule)) {
-                console.log(`🔍 Gap Pattern 1: ${workerName} worked day ${twoDaysAgo}, gap day ${yesterday}, would work day ${globalDay}`);
+        const currentWeek = Math.floor(globalDay / 7);
+        const weekStartDay = currentWeek * 7;
+        const weekEndDay = weekStartDay + 6;
+        
+        // Get all days this worker has worked in the current week
+        const workedDays = [];
+        for (let day = weekStartDay; day <= weekEndDay; day++) {
+            if (day !== globalDay && this.workerWorkedOnDay(workerName, day, schedule)) {
+                workedDays.push(day);
+            }
+        }
+        
+        // If worker hasn't worked this week yet, allow this assignment
+        if (workedDays.length === 0) {
+            return false;
+        }
+        
+        // If worker has worked before, only allow consecutive assignments
+        const allDays = [...workedDays, globalDay].sort((a, b) => a - b);
+        
+        // Check if adding this day creates any gaps
+        for (let i = 0; i < allDays.length - 1; i++) {
+            const gap = allDays[i + 1] - allDays[i];
+            if (gap > 1) {
+                console.log(`🚫 GAP PREVENTION: ${workerName} would create gap - worked days: [${workedDays.join(', ')}], trying day ${globalDay}`);
                 return true;
             }
         }
         
-        // Pattern 2: Worker working today, gap tomorrow, worked day after tomorrow
-        if (globalDay <= 11) {
-            const tomorrow = globalDay + 1;
-            const dayAfterTomorrow = globalDay + 2;
+        // Additional check: Don't allow more than 3 consecutive days
+        if (allDays.length >= 3) {
+            const firstDay = allDays[0];
+            const lastDay = allDays[allDays.length - 1];
+            const span = lastDay - firstDay + 1;
             
-            if (!this.workerWorkedOnDay(workerName, tomorrow, schedule) && 
-                this.workerWorkedOnDay(workerName, dayAfterTomorrow, schedule)) {
-                console.log(`🔍 Gap Pattern 2: ${workerName} would work day ${globalDay}, gap day ${tomorrow}, works day ${dayAfterTomorrow}`);
-                return true;
-            }
-        }
-        
-        // Pattern 3: Check if this creates a middle position in worker-gap-worker
-        if (globalDay >= 1 && globalDay <= 12) {
-            const yesterday = globalDay - 1;
-            const tomorrow = globalDay + 1;
-            
-            if (this.workerWorkedOnDay(workerName, yesterday, schedule) && 
-                this.workerWorkedOnDay(workerName, tomorrow, schedule)) {
-                console.log(`🔍 Gap Pattern 3: ${workerName} worked day ${yesterday}, would work day ${globalDay}, works day ${tomorrow} - creating consecutive pattern`);
-                return true;
-            }
-        }
-        
-        // Pattern 4: Comprehensive 5-day 888 pattern check
-        // Check all possible 5-day windows that include this assignment
-        for (let startDay = Math.max(0, globalDay - 4); startDay <= Math.min(9, globalDay); startDay++) {
-            const sequence = [];
-            let hasCurrentAssignment = false;
-            
-            for (let day = startDay; day < startDay + 5; day++) {
-                if (day === globalDay) {
-                    sequence.push(workerName);
-                    hasCurrentAssignment = true;
-                } else {
-                    sequence.push(this.workerWorkedOnDay(workerName, day, schedule) ? workerName : null);
-                }
-            }
-            
-            if (hasCurrentAssignment && this.is888Pattern(sequence, workerName)) {
-                console.log(`🔍 Gap Pattern 4: ${workerName} would create 888 in 5-day window ${startDay}-${startDay+4}: [${sequence.join(', ')}]`);
+            if (span === allDays.length && span > 3) {
+                console.log(`🚫 CONSECUTIVE LIMIT: ${workerName} would work ${span} consecutive days - max 3 allowed`);
                 return true;
             }
         }
