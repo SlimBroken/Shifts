@@ -5,9 +5,9 @@ const MAX_SHIFTS_PER_WEEK = 6; // Maximum 6 shifts per worker per week
 
 // Shift priority order (1 = highest priority, 3 = lowest)
 const SHIFT_PRIORITIES = {
-    night: 1,    // Highest priority - critical coverage
-    morning: 2,  // High priority - important for operations  
-    evening: 3   // Lower priority - can be left empty if needed
+    night: 1,    // Highest priority - critical security coverage
+    morning: 2,  // High priority - essential for operations start
+    evening: 3   // Lowest priority - day workers still present, can be left empty
 };
 
 const ScheduleGenerator = {
@@ -295,6 +295,10 @@ const ScheduleGenerator = {
             }
 
             console.log('🎯 SOC SCHEDULE GENERATION COMPLETE!');
+            
+            // Analyze empty shifts and provide strategic summary
+            this.analyzeEmptyShifts(schedule);
+            
             return {
                 ...schedule,
                 coverage: (totalCoverage / totalPossibleShifts) * 100,
@@ -323,7 +327,10 @@ const ScheduleGenerator = {
             for (let day = 0; day < 7; day++) {
                 const globalDay = weekStartDay + day;
                 
-                // PRIORITY ORDER: night, morning, evening
+                // STRATEGIC PRIORITY ORDER: Fill critical shifts first, leave evening for last
+                // Night shifts are most critical (security coverage)
+                // Morning shifts are essential (operations start)  
+                // Evening shifts can be left empty (day workers still present)
                 const shiftsByPriority = ['night', 'morning', 'evening'];
                 
                 shiftsByPriority.forEach(shift => {
@@ -348,7 +355,12 @@ const ScheduleGenerator = {
                             const bestWorker = scoredWorkers[0].worker;
                             this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
                             coverage++;
+                            console.log(`✅ Assigned ${bestWorker.name} to ${shift} on day ${globalDay} (Priority: ${shift})`);
+                        } else {
+                            console.log(`⚠️ No suitable workers for ${shift} on day ${globalDay} after scoring`);
                         }
+                    } else {
+                        console.log(`❌ No available workers for ${shift} on day ${globalDay}`);
                     }
                 });
             }
@@ -359,16 +371,19 @@ const ScheduleGenerator = {
 
     fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
         let filledCount = 0;
+        const passName = isAggressivePass ? "AGGRESSIVE" : "FILL";
+        console.log(`🔄 ${passName} PASS: Prioritizing night & morning shifts, evening shifts last`);
 
         [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
             const weekStartDay = weekIndex * 7;
 
             for (let day = 0; day < 7; day++) {
                 const globalDay = weekStartDay + day;
+                // Same strategic priority: critical shifts first, evening last
                 const shiftsByPriority = ['night', 'morning', 'evening'];
 
                 shiftsByPriority.forEach(shift => {
-                    if (week.days[day].shifts[shift]) return;
+                    if (week.days[day].shifts[shift]) return; // Already filled
 
                     const availableWorkers = workers.filter(worker => {
                         return this.isWorkerAvailableForFill(worker, shift, globalDay, week, workerStats, schedule);
@@ -381,6 +396,13 @@ const ScheduleGenerator = {
                         const selected = sorted[0];
                         this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
                         filledCount++;
+                        console.log(`✅ ${passName}: Filled ${shift} on day ${globalDay} with ${selected.name}`);
+                    } else {
+                        if (shift === 'evening') {
+                            console.log(`🎯 Strategic: Leaving ${shift} empty on day ${globalDay} (day workers present)`);
+                        } else {
+                            console.log(`⚠️ Unable to fill critical ${shift} shift on day ${globalDay}`);
+                        }
                     }
                 });
             }
@@ -623,12 +645,15 @@ const ScheduleGenerator = {
     calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
         let score = 100;
         
+        // SHIFT TYPE PRIORITY BONUSES
         if (shift === 'night') {
+            score += 50; // Highest priority - critical security coverage
+            
             const currentWeek = Math.floor(globalDay / 7);
             const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, window.currentScheduleBeingGenerated);
             
             if (nightShiftsThisWeek >= 2) {
-                return -1000;
+                return -1000; // Hard limit
             }
             
             if (nightShiftsThisWeek === 1) {
@@ -643,15 +668,17 @@ const ScheduleGenerator = {
         }
         
         if (shift === 'morning') {
+            score += 30; // High priority - essential for operations
+            
             const currentWeek = Math.floor(globalDay / 7);
             const morningShiftsThisWeek = this.countMorningShiftsInWeek(worker.name, currentWeek);
             
             if (morningShiftsThisWeek === 0) {
-                score += 1000;
+                score += 1000; // Very important to ensure morning coverage
                 
                 const dayInWeek = globalDay % 7;
                 if (dayInWeek >= 4) {
-                    score += 500;
+                    score += 500; // Urgent if it's late in the week
                 }
             } else {
                 score -= morningShiftsThisWeek * 300;
@@ -660,6 +687,11 @@ const ScheduleGenerator = {
             if (stats.morningShifts === 0) {
                 score += 200;
             }
+        }
+        
+        if (shift === 'evening') {
+            score -= 20; // Lower priority - can be left empty (day workers present)
+            // This makes evening shifts less attractive when workers are scarce
         }
         
         score -= stats.totalShifts * 5;
@@ -743,6 +775,70 @@ const ScheduleGenerator = {
         shiftDate.setHours(startHour, 0, 0, 0);
         
         return shiftDate.getTime();
+    },
+
+    analyzeEmptyShifts: function(schedule) {
+        console.log('📊 SOC EMPTY SHIFT ANALYSIS:');
+        
+        let emptyShifts = {
+            morning: [],
+            evening: [],
+            night: [],
+            total: 0
+        };
+
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            week.days.forEach((day, dayIndex) => {
+                const globalDay = weekIndex * 7 + dayIndex;
+                
+                ['morning', 'evening', 'night'].forEach(shift => {
+                    if (!day.shifts[shift]) {
+                        emptyShifts[shift].push({
+                            week: weekIndex + 1,
+                            day: day.dayShort,
+                            date: day.dateStr,
+                            globalDay: globalDay
+                        });
+                        emptyShifts.total++;
+                    }
+                });
+            });
+        });
+
+        if (emptyShifts.total === 0) {
+            console.log('✅ Perfect coverage! All 42 shifts filled.');
+            return;
+        }
+
+        console.log(`📈 Coverage Summary: ${42 - emptyShifts.total}/42 shifts filled (${emptyShifts.total} empty)`);
+        
+        if (emptyShifts.night.length > 0) {
+            console.log(`🚨 CRITICAL: ${emptyShifts.night.length} night shifts empty:`, 
+                emptyShifts.night.map(s => `${s.day} ${s.date}`).join(', '));
+        }
+        
+        if (emptyShifts.morning.length > 0) {
+            console.log(`⚠️ WARNING: ${emptyShifts.morning.length} morning shifts empty:`, 
+                emptyShifts.morning.map(s => `${s.day} ${s.date}`).join(', '));
+        }
+        
+        if (emptyShifts.evening.length > 0) {
+            console.log(`🎯 STRATEGIC: ${emptyShifts.evening.length} evening shifts empty (day workers present):`, 
+                emptyShifts.evening.map(s => `${s.day} ${s.date}`).join(', '));
+        }
+
+        // Calculate percentage by shift type
+        const eveningPercent = (emptyShifts.evening.length / emptyShifts.total * 100).toFixed(1);
+        const morningPercent = (emptyShifts.morning.length / emptyShifts.total * 100).toFixed(1);
+        const nightPercent = (emptyShifts.night.length / emptyShifts.total * 100).toFixed(1);
+
+        console.log(`📊 Empty shift distribution: Evening ${eveningPercent}%, Morning ${morningPercent}%, Night ${nightPercent}%`);
+        
+        if (emptyShifts.evening.length >= emptyShifts.morning.length + emptyShifts.night.length) {
+            console.log('✅ Optimal strategy: Most empty shifts are evening (day workers can cover)');
+        } else {
+            console.log('⚠️ Suboptimal: Critical morning/night shifts empty - consider more workers');
+        }
     },
 
     calculateShiftEndTime: function(globalDay, shift, shiftTimes) {
