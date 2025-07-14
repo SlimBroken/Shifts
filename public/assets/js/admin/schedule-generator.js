@@ -455,6 +455,7 @@ const ScheduleGenerator = {
     },
 
     // REPLACE your isWorkerAvailableForFill function with this:
+// REPLACE your isWorkerAvailableForFill function with this:
 isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
     const currentWeek = Math.floor(globalDay / 7);
     const day = globalDay % 7;
@@ -580,7 +581,7 @@ workerWorkedOnDay: function(workerName, globalDay, schedule) {
     
     const shifts = week.days[dayIndex].shifts;
     return Object.values(shifts).includes(workerName);
-}
+},
     
     // FIXED: Use consistent schedule parameter for all counting functions
     countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
