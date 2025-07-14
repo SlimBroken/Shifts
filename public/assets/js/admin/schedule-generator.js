@@ -174,53 +174,49 @@ const ScheduleGenerator = {
         return Object.values(shifts).includes(workerName);
     },
 
-    // BULLETPROOF: Prevent ANY problematic worker patterns
+    // BALANCED: Prevent specific 888 patterns while allowing good coverage
     wouldCreateAnyGapPattern: function(workerName, globalDay, schedule) {
-        // STRATEGY: If a worker already worked once this week, 
-        // only allow them to work on CONSECUTIVE days to avoid gaps
+        // Strategy: Allow gaps, but prevent the specific problematic 888 pattern:
+        // Worker → Gap → Worker → Gap → Worker (in any 5-day window)
         
-        const currentWeek = Math.floor(globalDay / 7);
-        const weekStartDay = currentWeek * 7;
-        const weekEndDay = weekStartDay + 6;
-        
-        // Get all days this worker has worked in the current week
-        const workedDays = [];
-        for (let day = weekStartDay; day <= weekEndDay; day++) {
-            if (day !== globalDay && this.workerWorkedOnDay(workerName, day, schedule)) {
-                workedDays.push(day);
-            }
-        }
-        
-        // If worker hasn't worked this week yet, allow this assignment
-        if (workedDays.length === 0) {
-            return false;
-        }
-        
-        // If worker has worked before, only allow consecutive assignments
-        const allDays = [...workedDays, globalDay].sort((a, b) => a - b);
-        
-        // Check if adding this day creates any gaps
-        for (let i = 0; i < allDays.length - 1; i++) {
-            const gap = allDays[i + 1] - allDays[i];
-            if (gap > 1) {
-                console.log(`🚫 GAP PREVENTION: ${workerName} would create gap - worked days: [${workedDays.join(', ')}], trying day ${globalDay}`);
-                return true;
-            }
-        }
-        
-        // Additional check: Don't allow more than 3 consecutive days
-        if (allDays.length >= 3) {
-            const firstDay = allDays[0];
-            const lastDay = allDays[allDays.length - 1];
-            const span = lastDay - firstDay + 1;
+        // Check all possible 5-day windows that include this assignment
+        for (let windowStart = Math.max(0, globalDay - 4); windowStart <= Math.min(9, globalDay); windowStart++) {
+            const windowEnd = windowStart + 4;
             
-            if (span === allDays.length && span > 3) {
-                console.log(`🚫 CONSECUTIVE LIMIT: ${workerName} would work ${span} consecutive days - max 3 allowed`);
+            // Build the 5-day sequence
+            const sequence = [];
+            for (let day = windowStart; day <= windowEnd; day++) {
+                if (day === globalDay) {
+                    sequence.push(workerName); // This is the assignment we're testing
+                } else {
+                    sequence.push(this.workerWorkedOnDay(workerName, day, schedule) ? workerName : null);
+                }
+            }
+            
+            // Check if this sequence creates the specific 888 pattern
+            if (this.is888Pattern(sequence, workerName)) {
+                console.log(`🚫 888 PATTERN BLOCKED: ${workerName} would create [${sequence.join(', ')}] in days ${windowStart}-${windowEnd}`);
                 return true;
             }
         }
         
-        return false;
+        // Additional check: Prevent more than 2 assignments in any 3-day window 
+        // (this prevents excessive clustering while allowing flexibility)
+        if (globalDay >= 1 && globalDay <= 12) {
+            const dayBefore = globalDay - 1;
+            const dayAfter = globalDay + 1;
+            
+            let assignmentsIn3Days = 1; // Count today's assignment
+            if (this.workerWorkedOnDay(workerName, dayBefore, schedule)) assignmentsIn3Days++;
+            if (this.workerWorkedOnDay(workerName, dayAfter, schedule)) assignmentsIn3Days++;
+            
+            if (assignmentsIn3Days > 2) {
+                console.log(`🚫 CLUSTERING BLOCKED: ${workerName} would have ${assignmentsIn3Days} assignments in 3-day window (max 2)`);
+                return true;
+            }
+        }
+        
+        return false; // Allow this assignment
     },
 
     generateBestCoverageSchedule: function(submissions, variations) {
