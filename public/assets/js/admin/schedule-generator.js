@@ -23,6 +23,21 @@ const ScheduleGenerator = {
                 return;
             }
 
+            // Clear any previous schedule display
+            document.getElementById('scheduleOutput').innerHTML = '';
+            
+            // Clear global schedule variables
+            if (window.currentSchedule) {
+                delete window.currentSchedule;
+            }
+            if (window.currentScheduleBeingGenerated) {
+                delete window.currentScheduleBeingGenerated;
+            }
+            if (window.workerColorMap) {
+                window.workerColorMap = {};
+            }
+
+            // Lock preferences during generation
             localStorage.setItem('preferencesLocked', 'true');
             localStorage.setItem('lockTimestamp', Date.now().toString());
             updateDisplay();
@@ -35,6 +50,11 @@ const ScheduleGenerator = {
 
             // Generate multiple schedules and pick the best one
             const bestSchedule = this.generateBestCoverageSchedule(approvedSubmissions, variations);
+            
+            // Unlock preferences after generation (regardless of success/failure)
+            localStorage.setItem('preferencesLocked', 'false');
+            localStorage.setItem('lockTimestamp', '');
+            updateDisplay();
             
             if (!bestSchedule) {
                 console.error('❌ Failed to generate schedule');
@@ -50,88 +70,95 @@ const ScheduleGenerator = {
             
         } catch (error) {
             console.error('❌ Error in schedule generation:', error);
+            
+            // Make sure to unlock preferences even if there's an error
+            localStorage.setItem('preferencesLocked', 'false');
+            localStorage.setItem('lockTimestamp', '');
+            updateDisplay();
+            
             showAlert(`❌ Schedule generation failed: ${error.message}`, 'danger');
         }
     },
 
     // Function to check if assigning a worker would create an 888 pattern
-wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
-    // Convert day and shift to absolute shift index (0-41 for 42 total shifts)
-    const currentShiftIndex = globalDay * 3 + this.getShiftIndex(shift);
-    
-    // Check all possible 5-shift sequences that would include this assignment
-    for (let startShift = Math.max(0, currentShiftIndex - 4); 
-         startShift <= Math.min(37, currentShiftIndex); 
-         startShift++) {
+    wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
+        // Convert day and shift to absolute shift index (0-41 for 42 total shifts)
+        const currentShiftIndex = globalDay * 3 + this.getShiftIndex(shift);
         
-        // Create the 5-shift sequence
-        const sequence = [];
-        for (let i = 0; i < 5; i++) {
-            const shiftIndex = startShift + i;
-            const day = Math.floor(shiftIndex / 3);
-            const shiftType = this.getShiftTypeFromIndex(shiftIndex % 3);
+        // Check all possible 5-shift sequences that would include this assignment
+        for (let startShift = Math.max(0, currentShiftIndex - 4); 
+             startShift <= Math.min(37, currentShiftIndex); 
+             startShift++) {
             
-            if (shiftIndex === currentShiftIndex) {
-                // This is the shift we're trying to assign
-                sequence.push(workerName);
-            } else {
-                // Get the currently assigned worker for this shift
-                const assignedWorker = this.getAssignedWorker(day, shiftType, schedule);
-                sequence.push(assignedWorker);
+            // Create the 5-shift sequence
+            const sequence = [];
+            for (let i = 0; i < 5; i++) {
+                const shiftIndex = startShift + i;
+                const day = Math.floor(shiftIndex / 3);
+                const shiftType = this.getShiftTypeFromIndex(shiftIndex % 3);
+                
+                if (shiftIndex === currentShiftIndex) {
+                    // This is the shift we're trying to assign
+                    sequence.push(workerName);
+                } else {
+                    // Get the currently assigned worker for this shift
+                    const assignedWorker = this.getAssignedWorker(day, shiftType, schedule);
+                    sequence.push(assignedWorker);
+                }
+            }
+            
+            // Check if this sequence creates an 888 pattern for any worker
+            if (this.is888Pattern(sequence, workerName)) {
+                console.log(`❌ 888 Pattern detected! Would create: [${sequence.join(', ')}]`);
+                return true;
             }
         }
         
-        // Check if this sequence creates an 888 pattern for any worker
-        if (this.is888Pattern(sequence, workerName)) {
-            console.log(`❌ 888 Pattern detected! Would create: [${sequence.join(', ')}]`);
-            return true;
+        return false;
+    },
+
+    // Helper function to check if a sequence is an 888 pattern for a specific worker
+    is888Pattern: function(sequence, workerName) {
+        // Pattern: Worker → Gap → Worker → Gap → Worker
+        return sequence.length === 5 &&
+               sequence[0] === workerName &&
+               sequence[1] !== workerName && sequence[1] !== null &&
+               sequence[2] === workerName &&
+               sequence[3] !== workerName && sequence[3] !== null &&
+               sequence[4] === workerName;
+    },
+
+    // Helper function to get shift index (0=morning, 1=evening, 2=night)
+    getShiftIndex: function(shift) {
+        const shiftMap = { morning: 0, evening: 1, night: 2 };
+        return shiftMap[shift];
+    },
+
+    // Helper function to get shift type from index
+    getShiftTypeFromIndex: function(index) {
+        const shifts = ['morning', 'evening', 'night'];
+        return shifts[index];
+    },
+
+    // Helper function to get currently assigned worker for a specific shift
+    getAssignedWorker: function(globalDay, shiftType, schedule) {
+        const weekIndex = Math.floor(globalDay / 7);
+        const dayIndex = globalDay % 7;
+        
+        let week;
+        if (weekIndex === 0) {
+            week = schedule.week1;
+        } else if (weekIndex === 1) {
+            week = schedule.week2;
         }
-    }
-    
-    return false;
-},
+        
+        if (!week || !week.days[dayIndex]) {
+            return null;
+        }
+        
+        return week.days[dayIndex].shifts[shiftType] || null;
+    },
 
-// Helper function to check if a sequence is an 888 pattern for a specific worker
-is888Pattern: function(sequence, workerName) {
-    // Pattern: Worker → Gap → Worker → Gap → Worker
-    return sequence.length === 5 &&
-           sequence[0] === workerName &&
-           sequence[1] !== workerName && sequence[1] !== null &&
-           sequence[2] === workerName &&
-           sequence[3] !== workerName && sequence[3] !== null &&
-           sequence[4] === workerName;
-},
-
-// Helper function to get shift index (0=morning, 1=evening, 2=night)
-getShiftIndex: function(shift) {
-    const shiftMap = { morning: 0, evening: 1, night: 2 };
-    return shiftMap[shift];
-},
-
-// Helper function to get shift type from index
-getShiftTypeFromIndex: function(index) {
-    const shifts = ['morning', 'evening', 'night'];
-    return shifts[index];
-},
-
-// Helper function to get currently assigned worker for a specific shift
-getAssignedWorker: function(globalDay, shiftType, schedule) {
-    const weekIndex = Math.floor(globalDay / 7);
-    const dayIndex = globalDay % 7;
-    
-    let week;
-    if (weekIndex === 0) {
-        week = schedule.week1;
-    } else if (weekIndex === 1) {
-        week = schedule.week2;
-    }
-    
-    if (!week || !week.days[dayIndex]) {
-        return null;
-    }
-    
-    return week.days[dayIndex].shifts[shiftType] || null;
-},
     generateBestCoverageSchedule: function(submissions, variations) {
         console.log('🎯 SEARCHING FOR BEST COVERAGE SCHEDULE...');
         
@@ -141,9 +168,10 @@ getAssignedWorker: function(globalDay, shiftType, schedule) {
         let attempt = 1;
 
         while (attempt <= maxAttempts) {
-            console.log(`🔄 Attempt ${attempt}/${maxAttempts}...`);
+            console.log(`🔄 Internal Attempt ${attempt}/${maxAttempts}...`);
             
             try {
+                // Generate a fresh schedule for each attempt
                 const schedule = this.generateOptimizedSchedule(submissions);
                 
                 if (!schedule) {
@@ -215,12 +243,13 @@ getAssignedWorker: function(globalDay, shiftType, schedule) {
                 }
             };
 
-            // Clear any existing global schedule
+            // Clear any existing global schedule and set new one
             if (window.currentScheduleBeingGenerated) {
                 delete window.currentScheduleBeingGenerated;
             }
             window.currentScheduleBeingGenerated = schedule;
 
+            // Initialize fresh worker stats for each generation attempt
             const workerStats = {};
             workers.forEach(worker => {
                 workerStats[worker.name] = {
@@ -388,59 +417,59 @@ getAssignedWorker: function(globalDay, shiftType, schedule) {
     },
 
     isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-    const currentWeek = Math.floor(globalDay / 7);
-    
-    // Check weekly limit using consistent method
-    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
-        return false;
-    }
-    
-    // NEW: Check for 888 pattern prevention
-    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-        console.log(`🚫 Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-        return false;
-    }
-    
-    // Check availability
-    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+        const currentWeek = Math.floor(globalDay / 7);
+        
+        // Check weekly limit using consistent method
+        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+            return false;
+        }
+        
+        // NEW: Check for 888 pattern prevention
+        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+            console.log(`🚫 Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+            return false;
+        }
+        
+        // Check availability
+        if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-    // Check if already working this day
-    const currentDayShifts = week.days[day].shifts;
-    if (Object.values(currentDayShifts).includes(worker.name)) return false;
+        // Check if already working this day
+        const currentDayShifts = week.days[day].shifts;
+        if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-    // Night shift constraints
-    if (shift === 'night') {
-        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-        if (nightShiftsThisWeek >= 2) return false;
+        // Night shift constraints
+        if (shift === 'night') {
+            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+            if (nightShiftsThisWeek >= 2) return false;
 
-        // Avoid consecutive nights
-        if (globalDay > 0) {
-            const prevDay = globalDay - 1;
-            const prevWeekIndex = Math.floor(prevDay / 7);
-            const prevDayIndex = prevDay % 7;
-            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+            // Avoid consecutive nights
+            if (globalDay > 0) {
+                const prevDay = globalDay - 1;
+                const prevWeekIndex = Math.floor(prevDay / 7);
+                const prevDayIndex = prevDay % 7;
+                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
 
-            if (prevShifts && prevShifts.night === worker.name) {
-                return false;
+                if (prevShifts && prevShifts.night === worker.name) {
+                    return false;
+                }
             }
         }
-    }
 
-    // Morning shift after night shift check
-    if (shift === 'morning') {
-        if (day > 0) {
-            const prevDayShifts = week.days[day - 1]?.shifts || {};
-            if (prevDayShifts.night === worker.name) return false;
-        } else if (week === schedule.week2) {
-            const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
-            if (prevWeekLastDayShifts.night === worker.name) return false;
+        // Morning shift after night shift check
+        if (shift === 'morning') {
+            if (day > 0) {
+                const prevDayShifts = week.days[day - 1]?.shifts || {};
+                if (prevDayShifts.night === worker.name) return false;
+            } else if (week === schedule.week2) {
+                const prevWeekLastDayShifts = schedule.week1.days[6]?.shifts || {};
+                if (prevWeekLastDayShifts.night === worker.name) return false;
+            }
         }
-    }
 
-    return true;
-},
+        return true;
+    },
 
     // FIXED: Use consistent schedule parameter for all counting functions
     countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
@@ -651,7 +680,8 @@ getAssignedWorker: function(globalDay, shiftType, schedule) {
             score -= 20;
         }
         
-        return score + Math.random() * 5;
+        // Increase randomization for more variation between attempts
+        return score + Math.random() * 50; // Increased from 5 to 50 for more variation
     },
 
     isPremiumWeekendShift: function(dayOfWeek, shift) {
