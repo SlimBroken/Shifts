@@ -109,7 +109,8 @@ const ScheduleGenerator = {
             
             // Check if this sequence creates an 888 pattern for any worker
             if (this.is888Pattern(sequence, workerName)) {
-                console.log(`❌ 888 Pattern detected! Would create: [${sequence.join(', ')}]`);
+                console.log(`❌ 888 Pattern detected! Would create: [${sequence.join(', ')}] for ${workerName}`);
+                console.log(`   Sequence spans shifts ${startShift}-${startShift + 4} (days ${Math.floor(startShift/3)}-${Math.floor((startShift+4)/3)})`);
                 return true;
             }
         }
@@ -299,6 +300,9 @@ const ScheduleGenerator = {
             // Analyze empty shifts and provide strategic summary
             this.analyzeEmptyShifts(schedule);
             
+            // FINAL VALIDATION: Check for any 888 patterns that might have slipped through
+            this.validateNo888Patterns(schedule);
+            
             return {
                 ...schedule,
                 coverage: (totalCoverage / totalPossibleShifts) * 100,
@@ -458,6 +462,12 @@ const ScheduleGenerator = {
             return false;
         }
         
+        // CRITICAL: Check for 888 pattern prevention in fill passes too!
+        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+            console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+            return false;
+        }
+        
         // Check if worker wants this shift
         if (!worker.preferences[globalDay]?.[shift]) return false;
 
@@ -483,9 +493,9 @@ const ScheduleGenerator = {
             return false;
         }
         
-        // NEW: Check for 888 pattern prevention
+        // CRITICAL: Check for 888 pattern prevention
         if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-            console.log(`🚫 Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+            console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
             return false;
         }
         
@@ -922,6 +932,62 @@ const ScheduleGenerator = {
         } else {
             console.log('⚠️ Suboptimal: Critical morning/night shifts empty - consider more workers');
         }
+    },
+
+    validateNo888Patterns: function(schedule) {
+        console.log('🔍 FINAL VALIDATION: Checking for 888 patterns...');
+        
+        let patternsFound = [];
+        
+        // Create a flat array of all 42 shifts
+        const allShifts = [];
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            week.days.forEach((day, dayIndex) => {
+                const globalDay = weekIndex * 7 + dayIndex;
+                ['morning', 'evening', 'night'].forEach((shiftType, shiftTypeIndex) => {
+                    allShifts.push({
+                        worker: day.shifts[shiftType],
+                        globalDay: globalDay,
+                        shiftType: shiftType,
+                        shiftIndex: globalDay * 3 + shiftTypeIndex,
+                        dayName: day.dayShort,
+                        date: day.dateStr
+                    });
+                });
+            });
+        });
+        
+        // Check every possible 5-shift sequence
+        for (let startIndex = 0; startIndex <= 37; startIndex++) {
+            const sequence = allShifts.slice(startIndex, startIndex + 5);
+            const workers = sequence.map(s => s.worker);
+            
+            // Check each worker in the sequence
+            const uniqueWorkers = [...new Set(workers.filter(w => w !== null))];
+            uniqueWorkers.forEach(workerName => {
+                if (this.is888Pattern(workers, workerName)) {
+                    patternsFound.push({
+                        worker: workerName,
+                        sequence: workers,
+                        shifts: sequence.map(s => `${s.dayName} ${s.shiftType}`),
+                        startIndex: startIndex
+                    });
+                }
+            });
+        }
+        
+        if (patternsFound.length === 0) {
+            console.log('✅ VALIDATION PASSED: No 888 patterns found in final schedule');
+        } else {
+            console.log(`🚨 VALIDATION FAILED: Found ${patternsFound.length} 888 patterns:`);
+            patternsFound.forEach((pattern, index) => {
+                console.log(`   ${index + 1}. ${pattern.worker}: [${pattern.sequence.join(', ')}]`);
+                console.log(`      Shifts: ${pattern.shifts.join(' → ')}`);
+            });
+            console.log('⚠️ This indicates a bug in the 888 pattern prevention logic');
+        }
+        
+        return patternsFound.length === 0;
     },
 
     calculateShiftEndTime: function(globalDay, shift, shiftTimes) {
