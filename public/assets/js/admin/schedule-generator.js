@@ -372,7 +372,12 @@ const ScheduleGenerator = {
     fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
         let filledCount = 0;
         const passName = isAggressivePass ? "AGGRESSIVE" : "FILL";
+        const isSmallTeam = workers.length <= 4;
+        
         console.log(`🔄 ${passName} PASS: Prioritizing night & morning shifts, evening shifts last`);
+        if (isSmallTeam) {
+            console.log(`👥 Small team detected (${workers.length} workers) - using flexible premium shift strategy`);
+        }
 
         [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
             const weekStartDay = weekIndex * 7;
@@ -380,7 +385,13 @@ const ScheduleGenerator = {
             for (let day = 0; day < 7; day++) {
                 const globalDay = weekStartDay + day;
                 // Same strategic priority: critical shifts first, evening last
-                const shiftsByPriority = ['night', 'morning', 'evening'];
+                let shiftsByPriority = ['night', 'morning', 'evening'];
+                
+                // For small teams on Saturday, prioritize evening more to ensure weekend coverage
+                if (isSmallTeam && day === 6) {
+                    shiftsByPriority = ['night', 'morning', 'evening']; // Keep same but be more aggressive in scoring
+                    console.log(`🎯 Saturday with small team - ensuring weekend evening coverage`);
+                }
 
                 shiftsByPriority.forEach(shift => {
                     if (week.days[day].shifts[shift]) return; // Already filled
@@ -390,16 +401,41 @@ const ScheduleGenerator = {
                     });
 
                     if (availableWorkers.length > 0) {
-                        const sorted = availableWorkers.sort((a, b) =>
-                            (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
-                        );
-                        const selected = sorted[0];
+                        // For small teams and Saturday evening, use different sorting
+                        let selected;
+                        if (isSmallTeam && day === 6 && shift === 'evening') {
+                            // For Saturday evening with small teams, prefer workers with fewer premium shifts
+                            const sorted = availableWorkers.sort((a, b) => {
+                                const aPremium = workerStats[a.name]?.premiumShifts || 0;
+                                const bPremium = workerStats[b.name]?.premiumShifts || 0;
+                                const aTotal = workerStats[a.name]?.totalShifts || 0;
+                                const bTotal = workerStats[b.name]?.totalShifts || 0;
+                                
+                                // First priority: fewer premium shifts
+                                if (aPremium !== bPremium) return aPremium - bPremium;
+                                // Second priority: fewer total shifts
+                                return aTotal - bTotal;
+                            });
+                            selected = sorted[0];
+                            console.log(`🎯 Saturday evening: Selected ${selected.name} (Premium: ${workerStats[selected.name]?.premiumShifts || 0}, Total: ${workerStats[selected.name]?.totalShifts || 0})`);
+                        } else {
+                            // Normal selection by total shifts
+                            const sorted = availableWorkers.sort((a, b) =>
+                                (workerStats[a.name]?.totalShifts || 0) - (workerStats[b.name]?.totalShifts || 0)
+                            );
+                            selected = sorted[0];
+                        }
+                        
                         this.assignWorkerToShift(selected, shift, day, globalDay, week, workerStats, shiftTimes);
                         filledCount++;
                         console.log(`✅ ${passName}: Filled ${shift} on day ${globalDay} with ${selected.name}`);
                     } else {
                         if (shift === 'evening') {
-                            console.log(`🎯 Strategic: Leaving ${shift} empty on day ${globalDay} (day workers present)`);
+                            if (day === 6 && isSmallTeam) {
+                                console.log(`⚠️ Could not fill Saturday evening with small team - may need more workers`);
+                            } else {
+                                console.log(`🎯 Strategic: Leaving ${shift} empty on day ${globalDay} (day workers present)`);
+                            }
                         } else {
                             console.log(`⚠️ Unable to fill critical ${shift} shift on day ${globalDay}`);
                         }
@@ -415,10 +451,13 @@ const ScheduleGenerator = {
     isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
         const currentWeek = Math.floor(globalDay / 7);
         const day = globalDay % 7;
+        const totalWorkers = schedule.workers.length;
+        const isSmallTeam = totalWorkers <= 4;
         
-        // Check weekly shift limit
+        // Check weekly shift limit - be more lenient for small teams
+        const maxShiftsPerWeek = isSmallTeam ? MAX_SHIFTS_PER_WEEK + 1 : MAX_SHIFTS_PER_WEEK; // Allow 7 shifts for small teams
         const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        if (shiftsThisWeek >= maxShiftsPerWeek) {
             return false;
         }
         
@@ -645,6 +684,10 @@ const ScheduleGenerator = {
     calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
         let score = 100;
         
+        // Get total number of workers to adjust strategy for small teams
+        const totalWorkers = Object.keys(allWorkerStats).length;
+        const isSmallTeam = totalWorkers <= 4;
+        
         // SHIFT TYPE PRIORITY BONUSES
         if (shift === 'night') {
             score += 50; // Highest priority - critical security coverage
@@ -691,29 +734,50 @@ const ScheduleGenerator = {
         
         if (shift === 'evening') {
             score -= 20; // Lower priority - can be left empty (day workers present)
-            // This makes evening shifts less attractive when workers are scarce
+            // BUT: Don't penalize as much for small teams to ensure better coverage
+            if (isSmallTeam) {
+                score += 10; // Reduce the penalty for small teams
+            }
         }
         
         score -= stats.totalShifts * 5;
         
         const isPremiumShift = this.isPremiumWeekendShift(dayOfWeek, shift);
         if (isPremiumShift) {
-            score -= stats.premiumShifts * 15;
-            if (stats.premiumShifts === 0) {
-                score += 25;
+            if (isSmallTeam) {
+                // For small teams, be much more lenient with premium shift penalties
+                score -= stats.premiumShifts * 8; // Reduced from 15 to 8
+                if (stats.premiumShifts === 0) {
+                    score += 35; // Increased bonus for first premium shift
+                }
+                
+                // Special bonus for Saturday evening to ensure it gets filled
+                if (dayOfWeek === 6 && shift === 'evening') {
+                    score += 25;
+                    console.log(`🎯 Small team bonus: +25 for Saturday evening to ${worker.name}`);
+                }
+            } else {
+                // Normal premium shift handling for larger teams
+                score -= stats.premiumShifts * 15;
+                if (stats.premiumShifts === 0) {
+                    score += 25;
+                }
             }
         }
         
         if (dayOfWeek === 5 || dayOfWeek === 6) {
-            score -= stats.weekendShifts * 8;
+            // Reduced weekend penalty for small teams
+            const weekendPenalty = isSmallTeam ? 4 : 8;
+            score -= stats.weekendShifts * weekendPenalty;
         }
         
         if (stats.lastAssignedDay === globalDay - 1) {
             score -= 20;
         }
         
-        // Increase randomization for more variation between attempts
-        return score + Math.random() * 50; // Increased from 5 to 50 for more variation
+        // For small teams, increase randomization even more to ensure variation
+        const randomFactor = isSmallTeam ? 75 : 50;
+        return score + Math.random() * randomFactor;
     },
 
     isPremiumWeekendShift: function(dayOfWeek, shift) {
@@ -780,11 +844,15 @@ const ScheduleGenerator = {
     analyzeEmptyShifts: function(schedule) {
         console.log('📊 SOC EMPTY SHIFT ANALYSIS:');
         
+        const totalWorkers = schedule.workers.length;
+        const isSmallTeam = totalWorkers <= 4;
+        
         let emptyShifts = {
             morning: [],
             evening: [],
             night: [],
-            total: 0
+            total: 0,
+            saturdayEvening: false
         };
 
         [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
@@ -797,9 +865,15 @@ const ScheduleGenerator = {
                             week: weekIndex + 1,
                             day: day.dayShort,
                             date: day.dateStr,
-                            globalDay: globalDay
+                            globalDay: globalDay,
+                            dayIndex: dayIndex
                         });
                         emptyShifts.total++;
+                        
+                        // Flag Saturday evening specifically
+                        if (dayIndex === 6 && shift === 'evening') {
+                            emptyShifts.saturdayEvening = true;
+                        }
                     }
                 });
             });
@@ -811,6 +885,10 @@ const ScheduleGenerator = {
         }
 
         console.log(`📈 Coverage Summary: ${42 - emptyShifts.total}/42 shifts filled (${emptyShifts.total} empty)`);
+        
+        if (isSmallTeam) {
+            console.log(`👥 Small team mode (${totalWorkers} workers) - using flexible constraints`);
+        }
         
         if (emptyShifts.night.length > 0) {
             console.log(`🚨 CRITICAL: ${emptyShifts.night.length} night shifts empty:`, 
@@ -825,6 +903,14 @@ const ScheduleGenerator = {
         if (emptyShifts.evening.length > 0) {
             console.log(`🎯 STRATEGIC: ${emptyShifts.evening.length} evening shifts empty (day workers present):`, 
                 emptyShifts.evening.map(s => `${s.day} ${s.date}`).join(', '));
+        }
+
+        // Special warning for Saturday evening with small teams
+        if (emptyShifts.saturdayEvening && isSmallTeam) {
+            console.log(`🎯 Saturday Evening Issue: With only ${totalWorkers} workers, Saturday evening coverage is challenging. Consider:`);
+            console.log(`   • Adding more workers`);
+            console.log(`   • Ensuring workers mark Saturday evening as available`);
+            console.log(`   • Accepting that some premium shifts may be empty`);
         }
 
         // Calculate percentage by shift type
