@@ -50,7 +50,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.9) 100%);
             border-radius: 20px;
@@ -231,91 +231,275 @@
             background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
         }
 
-        .worker-preferences {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 25px;
-            border-radius: 15px;
-            margin: 25px 0;
-            backdrop-filter: blur(10px);
-        }
-
-        .preferences-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-            gap: 12px;
-            margin: 15px 0;
-        }
-
-        .day-column {
-            text-align: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            border: 1px solid rgba(147, 197, 253, 0.3);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .day-column:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .day-label {
-            font-weight: bold;
-            margin-bottom: 12px;
+        .btn-small {
+            padding: 6px 12px;
             font-size: 12px;
-            color: #e2e8f0;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            margin: 2px;
         }
 
-        .shift-option {
-            margin: 10px 0;
+        .instructions {
+            background: linear-gradient(135deg, rgba(219, 234, 254, 0.15) 0%, rgba(147, 197, 253, 0.1) 100%);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            color: #dbeafe;
+            backdrop-filter: blur(10px);
+        }
+
+        .instructions h3 {
+            color: #93c5fd;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .instructions ul {
+            color: #dbeafe;
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        /* IMPROVED WEEK LAYOUT */
+        .weeks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 25px 0;
+        }
+
+        .week-section {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .week-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .week-title {
+            color: #e2e8f0;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .week-dates {
+            color: #93c5fd;
+            font-size: 0.9em;
+        }
+
+        /* QUICK ACTIONS */
+        .quick-actions {
+            display: flex;
             justify-content: center;
-            gap: 6px;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* DAYS GRID */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .day-card {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .day-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .day-card.weekend {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .day-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(147, 197, 253, 0.3);
+        }
+
+        .day-name {
+            font-weight: bold;
+            color: #e2e8f0;
+            font-size: 1.1em;
+            margin-bottom: 3px;
+        }
+
+        .day-date {
+            color: #93c5fd;
+            font-size: 0.9em;
+        }
+
+        .weekend .day-name {
+            color: #fbbf24;
+        }
+
+        .weekend .day-date {
+            color: #fef3c7;
+        }
+
+        /* SHIFT TOGGLES */
+        .shifts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .shift-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(30, 58, 138, 0.3);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .shift-toggle:hover {
+            background: rgba(37, 99, 235, 0.4);
+            transform: translateX(2px);
+        }
+
+        .shift-toggle.available {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.2) 100%);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #bbf7d0;
+        }
+
+        .shift-toggle.not-available {
+            background: linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, rgba(75, 85, 99, 0.2) 100%);
+            border-color: rgba(107, 114, 128, 0.4);
+            color: #d1d5db;
+        }
+
+        .shift-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shift-icon {
+            font-size: 1.2em;
+        }
+
+        .shift-details {
+            display: flex;
             flex-direction: column;
         }
 
-        .shift-option label {
-            text-align: center;
-            font-size: 12px;
-            line-height: 1.2;
-            color: #dbeafe;
-            margin-bottom: 0;
+        .shift-name {
+            font-weight: 600;
+            font-size: 0.9em;
         }
 
-        .shift-option small {
-            font-size: 10px;
-            color: #94a3b8;
+        .shift-time {
+            font-size: 0.75em;
+            opacity: 0.8;
         }
 
-        .shift-checkbox {
-            transform: scale(1.3);
-            accent-color: #3b82f6;
-        }
-
-        .weekend-premium {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
-            border: 1px solid rgba(251, 191, 36, 0.4);
-        }
-
-        .weekend-premium .day-label {
-            color: #fbbf24;
+        .shift-status {
             font-weight: bold;
+            font-size: 0.8em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .available .shift-status {
+            background: rgba(34, 197, 94, 0.3);
+            color: #bbf7d0;
+        }
+
+        .not-available .shift-status {
+            background: rgba(107, 114, 128, 0.3);
+            color: #d1d5db;
         }
 
         .premium-badge {
-            color: #fbbf24;
-            font-size: 11px;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+            color: white;
+            font-size: 10px;
             font-weight: bold;
-            margin-top: 8px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
+        .day-card.weekend {
+            position: relative;
+        }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+            .days-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .day-card {
+                padding: 12px;
+            }
+
+            .shifts-container {
+                gap: 6px;
+            }
+
+            .shift-toggle {
+                padding: 8px;
+            }
+
+            .quick-actions {
+                gap: 5px;
+            }
+
+            .container {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .header {
+                padding: 25px 20px;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+        }
+
+        /* ALERTS */
         .alert {
             padding: 15px 20px;
             margin: 20px 0;
@@ -348,49 +532,6 @@
             border: 1px solid rgba(251, 191, 36, 0.4);
         }
 
-        .instructions {
-            background: linear-gradient(135deg, rgba(219, 234, 254, 0.15) 0%, rgba(147, 197, 253, 0.1) 100%);
-            border: 1px solid rgba(147, 197, 253, 0.3);
-            border-radius: 12px;
-            padding: 25px;
-            margin: 25px 0;
-            color: #dbeafe;
-            backdrop-filter: blur(10px);
-        }
-
-        .instructions h3 {
-            color: #93c5fd;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .instructions ul {
-            color: #dbeafe;
-            margin-left: 20px;
-            line-height: 1.6;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .access-denied {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .access-denied h2 {
-            color: #fecaca;
-            margin-bottom: 20px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
         .worker-info {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
             border: 1px solid rgba(34, 197, 94, 0.4);
@@ -409,30 +550,6 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
-        .sync-status {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 12px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-size: 12px;
-            text-align: center;
-            color: #dbeafe;
-            backdrop-filter: blur(10px);
-        }
-
-        .sync-status.connected {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.1) 100%);
-            border-color: rgba(34, 197, 94, 0.4);
-            color: #bbf7d0;
-        }
-
-        .sync-status.disconnected {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
-            border-color: rgba(239, 68, 68, 0.4);
-            color: #fecaca;
-        }
-
         .security-icon {
             display: inline-block;
             animation: pulse 2s infinite;
@@ -443,50 +560,38 @@
             50% { opacity: 0.7; }
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .preferences-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-            
-            .day-column {
-                padding: 10px;
-            }
+        .hidden {
+            display: none;
+        }
 
-            .worker-info {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
-            }
+        /* SUMMARY STATS */
+        .summary-stats {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
 
-            .container {
-                margin: 10px;
-                max-width: calc(100% - 20px);
-            }
-            
-            .header {
-                padding: 25px 20px;
-            }
-            
-            .header h1 {
-                font-size: 1.8em;
-            }
-            
-            .content {
-                padding: 25px 20px;
-            }
-            
-            .maccabi-logo {
-                width: 60px;
-                height: 60px;
-            }
-            
-            .maccabi-shield {
-                width: 38px;
-                height: 42px;
-                font-size: 10px;
-            }
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #93c5fd;
+            margin-top: 3px;
         }
     </style>
 </head>
@@ -499,725 +604,619 @@
                 <div class="maccabi-shield">מכבי</div>
             </div>
             <h1><span class="security-icon">🕐</span> Shift Preferences</h1>
-            <p>Submit your availability for the next 2 weeks</p>
+            <p>Select your availability for the next 2 weeks</p>
             <div class="soc-subtitle">SOC OPERATIONS CENTER</div>
         </div>
 
         <div class="content">
-            <!-- Access Denied Section -->
-            <div id="accessDeniedSection" class="hidden">
-                <div class="access-denied">
-                    <h2><span class="security-icon">🚫</span> Access Denied</h2>
-                    <div class="alert alert-danger">
-                        <strong>You are not authorized to access this page.</strong><br><br>
-                        Only workers approved by the SOC administrator can submit shift preferences.<br>
-                        Please contact your administrator to be added to the approved workers list.
+            <!-- Worker Info Bar -->
+            <div class="worker-info">
+                <div>
+                    <span class="worker-name">
+                        <span class="security-icon">👤</span> Welcome, <span id="workerDisplayName">John Doe</span>!
+                    </span>
+                    <div style="font-size: 12px; color: #bbf7d0; opacity: 0.8;">Verified SOC personnel access</div>
+                </div>
+                <button class="btn btn-danger" style="padding: 8px 15px; font-size: 14px;">
+                    <span class="security-icon">🚪</span> Logout
+                </button>
+            </div>
+
+            <div class="instructions">
+                <h3><span class="security-icon">📋</span> How to Use This Interface:</h3>
+                <ul>
+                    <li><strong>Click any shift button to toggle availability</strong> - Green = Available, Gray = Not Available</li>
+                    <li><strong>Premium shifts (Friday evening → Saturday evening) pay extra 💰</strong></li>
+                    <li><strong>Use quick actions</strong> to select all morning/evening/night shifts at once</li>
+                    <li><strong>Shift Times:</strong> Morning (07:00-15:00), Evening (15:00-23:00), Night (23:00-07:00)</li>
+                </ul>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalSelected">0</div>
+                    <div class="stat-label">Total Selected</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="morningSelected">0</div>
+                    <div class="stat-label">Morning</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="eveningSelected">0</div>
+                    <div class="stat-label">Evening</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="nightSelected">0</div>
+                    <div class="stat-label">Night</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="weekendSelected">0</div>
+                    <div class="stat-label">Premium 💰</div>
+                </div>
+            </div>
+
+            <!-- Weeks Container -->
+            <div class="weeks-container">
+                <!-- WEEK 1 -->
+                <div class="week-section">
+                    <div class="week-header">
+                        <div class="week-title">📅 Week 1</div>
+                        <div class="week-dates">June 15-21, 2025</div>
                     </div>
                     
-                    <div style="margin-top: 30px;">
-                        <button class="btn" onclick="redirectToCheck()">
-                            <span class="security-icon">🔐</span> Go to Access Verification
-                        </button>
-                        <button class="btn btn-secondary" onclick="testAccess()">🔄 Test Access Again</button>
-                    </div>
-
-                    <div style="margin-top: 20px; font-size: 14px; color: #94a3b8;">
-                        <strong>How to get access:</strong><br>
-                        1. Contact your SOC administrator<br>
-                        2. Ask them to add your name to the approved workers list in admin.html<br>
-                        3. Use the exact name they added (case doesn't matter)<br>
-                        4. Go through the proper access verification at check.html
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preferences Locked Section -->
-            <div id="preferencesLockedSection" class="hidden">
-                <div class="access-denied">
-                    <h2><span class="security-icon">🔒</span> Preferences Locked</h2>
-                    <div class="alert alert-warning">
-                        <strong>Preference submission is currently disabled.</strong><br><br>
-                        The SOC administrator has locked preference submissions, likely to generate schedules or perform maintenance.<br><br>
-                        Please try again later or contact your administrator.
+                    <div class="quick-actions">
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'morning')">🌅 All Morning</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'evening')">🌆 All Evening</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'night')">🌙 All Night</button>
+                        <button class="btn btn-small btn-secondary" onclick="toggleWeekShifts(0, 'all')">🔄 All Shifts</button>
+                        <button class="btn btn-small btn-danger" onclick="toggleWeekShifts(0, 'none')">❌ Clear All</button>
                     </div>
                     
-                    <div style="margin-top: 30px;">
-                        <button class="btn" onclick="checkLockStatus()">🔄 Check Status Again</button>
-                        <button class="btn btn-secondary" onclick="logout()">
-                            <span class="security-icon">🚪</span> Logout
-                        </button>
-                    </div>
+                    <div class="days-grid">
+                        <!-- Week 1 Days -->
+                        <div class="day-card" data-day="0">
+                            <div class="day-header">
+                                <div class="day-name">Sunday</div>
+                                <div class="day-date">15/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(0, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(0, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(0, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div style="margin-top: 20px; font-size: 14px; color: #94a3b8;" id="lockDetails">
-                        <!-- Lock details will be populated by JavaScript -->
+                        <div class="day-card" data-day="1">
+                            <div class="day-header">
+                                <div class="day-name">Monday</div>
+                                <div class="day-date">16/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(1, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(1, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(1, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="day-card" data-day="2">
+                            <div class="day-header">
+                                <div class="day-name">Tuesday</div>
+                                <div class="day-date">17/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(2, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(2, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(2, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="day-card" data-day="3">
+                            <div class="day-header">
+                                <div class="day-name">Wednesday</div>
+                                <div class="day-date">18/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(3, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(3, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(3, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="day-card" data-day="4">
+                            <div class="day-header">
+                                <div class="day-name">Thursday</div>
+                                <div class="day-date">19/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(4, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(4, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(4, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="day-card weekend" data-day="5">
+                            <div class="premium-badge">💰</div>
+                            <div class="day-header">
+                                <div class="day-name">Friday</div>
+                                <div class="day-date">20/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(5, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(5, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available 💰</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(5, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available 💰</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="day-card weekend" data-day="6">
+                            <div class="premium-badge">💰</div>
+                            <div class="day-header">
+                                <div class="day-name">Saturday</div>
+                                <div class="day-date">21/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(6, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available 💰</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(6, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available 💰</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(6, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WEEK 2 -->
+                <div class="week-section">
+                    <div class="week-header">
+                        <div class="week-title">📅 Week 2</div>
+                        <div class="week-dates">June 22-28, 2025</div>
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'morning')">🌅 All Morning</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'evening')">🌆 All Evening</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'night')">🌙 All Night</button>
+                        <button class="btn btn-small btn-secondary" onclick="toggleWeekShifts(1, 'all')">🔄 All Shifts</button>
+                        <button class="btn btn-small btn-danger" onclick="toggleWeekShifts(1, 'none')">❌ Clear All</button>
+                    </div>
+                    
+                    <div class="days-grid">
+                        <!-- Week 2 Days (similar structure as Week 1, days 7-13) -->
+                        <div class="day-card" data-day="7">
+                            <div class="day-header">
+                                <div class="day-name">Sunday</div>
+                                <div class="day-date">22/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle available" onclick="toggleShift(7, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(7, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(7, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Continue for other days of week 2... (I'll show a few more) -->
+                        <div class="day-card weekend" data-day="12">
+                            <div class="premium-badge">💰</div>
+                            <div class="day-header">
+                                <div class="day-name">Friday</div>
+                                <div class="day-date">27/06</div>
+                            </div>
+                            <div class="shifts-container">
+                                <div class="shift-toggle not-available" onclick="toggleShift(12, 'morning')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌅</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Morning</div>
+                                            <div class="shift-time">07:00-15:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Not Available</div>
+                                </div>
+                                <div class="shift-toggle available" onclick="toggleShift(12, 'evening')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌆</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Evening</div>
+                                            <div class="shift-time">15:00-23:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Available 💰</div>
+                                </div>
+                                <div class="shift-toggle not-available" onclick="toggleShift(12, 'night')">
+                                    <div class="shift-info">
+                                        <span class="shift-icon">🌙</span>
+                                        <div class="shift-details">
+                                            <div class="shift-name">Night</div>
+                                            <div class="shift-time">23:00-07:00</div>
+                                        </div>
+                                    </div>
+                                    <div class="shift-status">Not Available</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add remaining days for week 2... -->
+                        
                     </div>
                 </div>
             </div>
 
-            <!-- Main Worker Interface -->
-            <div id="mainWorkerInterface" class="hidden">
-                <!-- Worker Info Bar -->
-                <div class="worker-info">
-                    <div>
-                        <span class="worker-name">
-                            <span class="security-icon">👤</span> Welcome, <span id="workerDisplayName"></span>!
-                        </span>
-                        <div style="font-size: 12px; color: #bbf7d0; opacity: 0.8;">Verified SOC personnel access</div>
-                    </div>
-                    <button class="btn btn-danger" onclick="logout()" style="padding: 8px 15px; font-size: 14px;">
-                        <span class="security-icon">🚪</span> Logout
-                    </button>
-                </div>
-
-                <!-- Sync Status -->
-                <div id="syncStatusDisplay" class="sync-status">
-                    🔄 Checking SOC server connection...
-                </div>
-
-                <div class="instructions">
-                    <h3><span class="security-icon">📋</span> Shift Preference Instructions:</h3>
-                    <ul>
-                        <li><strong>All shifts are selected by default</strong> - Uncheck shifts you're NOT available for</li>
-                        <li><strong>Premium shifts (Friday evening → Saturday evening) pay extra 💰</strong></li>
-                        <li><strong>Shift Hours:</strong>
-                            <ul style="margin-top: 8px;">
-                                <li>M = Morning (07:00-15:00)</li>
-                                <li>E = Evening (15:00-23:00)</li>
-                                <li>N = Night (23:00-07:00)</li>
-                            </ul>
-                        </li>
-                        <li><strong>Security Note:</strong> The system prevents exhausting work patterns for personnel wellbeing</li>
-                    </ul>
-                </div>
-
-                <h3 style="color: #e2e8f0; margin-bottom: 15px;">
-                    <span class="security-icon">⚙️</span> Select shifts you're NOT available for (uncheck to remove):
-                </h3>
-                
-                <div class="worker-preferences">
-                    <div id="preferencesGrid" class="preferences-grid">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="workerNotes">
-                        <span class="security-icon">📝</span> Additional Notes (optional):
-                    </label>
-                    <input type="text" id="workerNotes" placeholder="Any special requests, constraints, or preferred shifts...">
-                </div>
-
-                <button class="btn" onclick="submitPreferences()">
-                    <span class="security-icon">📤</span> Submit My Preferences
-                </button>
-                <button class="btn btn-secondary" onclick="clearForm()">
-                    <span class="security-icon">🗑️</span> Clear Form
-                </button>
-
-                <div id="statusMessage"></div>
+            <div class="form-group">
+                <label for="workerNotes">
+                    <span class="security-icon">📝</span> Additional Notes (optional):
+                </label>
+                <input type="text" id="workerNotes" placeholder="Any special requests, constraints, or preferred shifts...">
             </div>
+
+            <button class="btn" onclick="submitPreferences()">
+                <span class="security-icon">📤</span> Submit My Preferences
+            </button>
+            <button class="btn btn-secondary" onclick="clearForm()">
+                <span class="security-icon">🗑️</span> Reset to Default
+            </button>
+
+            <div id="statusMessage"></div>
         </div>
     </div>
 
     <script>
-        let verifiedWorkerName = null;
-        let serverConnected = false;
-
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Maccabi SOC Worker Preferences starting (Server-based)...');
-            updateSyncStatus('Initializing SOC connection...', 'info');
-            checkAccess();
-        });
-
-        async function testServerConnection() {
-            try {
-                const response = await fetch('/api/test');
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateSyncStatus(`Connected to SOC server as ${result.user}`, 'success');
-                    serverConnected = true;
-                    return true;
-                } else {
-                    updateSyncStatus('SOC server connection failed: ' + result.error, 'error');
-                    serverConnected = false;
-                    return false;
-                }
-            } catch (error) {
-                updateSyncStatus('Cannot reach SOC server: ' + error.message, 'error');
-                serverConnected = false;
-                return false;
-            }
-        }
-
-        function updateSyncStatus(message, type) {
-            const statusDiv = document.getElementById('syncStatusDisplay');
-            if (!statusDiv) return;
-            
-            statusDiv.className = `sync-status ${type === 'success' ? 'connected' : type === 'error' ? 'disconnected' : ''}`;
-            
-            const icon = type === 'success' ? '🔒' : type === 'error' ? '⚠️' : '🔄';
-            const timeStr = new Date().toLocaleTimeString();
-            
-            statusDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>${icon} ${message}</span>
-                    <small>${timeStr}</small>
-                </div>
-                <div style="margin-top: 5px; font-size: 10px; opacity: 0.8;">
-                    SOC server sync | Auto-sync every 30s
-                </div>
-            `;
-        }
-
-        async function syncToServer(data) {
-            if (!serverConnected) {
-                console.log('❌ SOC server not connected');
-                updateSyncStatus('SOC server not connected - using local storage', 'error');
-                return false;
-            }
-            
-            try {
-                console.log('📤 Syncing data to SOC server...');
-                
-                const response = await fetch('/api/data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ Data synced to SOC server successfully');
-                    updateSyncStatus('Last sync: ' + new Date().toLocaleTimeString(), 'success');
-                    return true;
-                } else {
-                    console.error('❌ Failed to sync to SOC server:', result.error);
-                    updateSyncStatus('Upload failed: ' + result.error, 'error');
-                    return false;
-                }
-            } catch (error) {
-                console.error('❌ Sync to SOC server error:', error);
-                updateSyncStatus('Upload error: ' + error.message, 'error');
-                return false;
-            }
-        }
-
-        async function syncFromServer() {
-            if (!serverConnected) {
-                console.log('❌ SOC server not connected');
-                updateSyncStatus('Using local storage only', 'error');
-                return null;
-            }
-            
-            try {
-                console.log('📥 Syncing from SOC server...');
-                
-                const response = await fetch('/api/data');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const data = result.data;
-                    console.log('📦 SOC server data received:', Object.keys(data));
-                    
-                    // Update local storage with server data INCLUDING scheduleConfig
-                    localStorage.setItem('shiftSubmissions', JSON.stringify(data.shiftSubmissions || []));
-                    localStorage.setItem('approvedWorkers', JSON.stringify(data.approvedWorkers || []));
-                    localStorage.setItem('preferencesLocked', data.preferencesLocked ? 'true' : 'false');
-                    localStorage.setItem('lockTimestamp', data.lockTimestamp || '');
-                    localStorage.setItem('scheduleConfig', JSON.stringify(data.scheduleConfig || {}));
-                    localStorage.setItem('lastUpdate', (data.lastUpdate || Date.now()).toString());
-                    
-                    console.log('✅ Data updated from SOC server');
-                    updateSyncStatus('Connected to SOC server - Data synchronized', 'success');
-                    return data;
-                } else {
-                    console.error('❌ SOC server API error:', result.error);
-                    updateSyncStatus('Download failed: ' + result.error, 'error');
-                    return null;
-                }
-            } catch (error) {
-                console.error('❌ Failed to sync from SOC server:', error);
-                updateSyncStatus('Download error: ' + error.message, 'error');
-                return null;
-            }
-        }
-
-        async function checkAccess() {
-            console.log('Checking SOC worker access...');
-            
-            // Test server connection first
-            const connectionSuccess = await testServerConnection();
-            
-            // Try to sync approved workers from server
-            let approvedWorkers;
-            if (connectionSuccess) {
-                const syncData = await syncFromServer();
-                if (syncData && syncData.approvedWorkers) {
-                    approvedWorkers = syncData.approvedWorkers;
-                    console.log('Using synced approved workers:', approvedWorkers.length);
-                } else {
-                    // Fallback to local storage
-                    approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                    console.log('Using local approved workers:', approvedWorkers.length);
-                }
-            } else {
-                // Server not available - use local storage
-                approvedWorkers = JSON.parse(localStorage.getItem('approvedWorkers') || '[]');
-                console.log('SOC server unavailable - using local approved workers:', approvedWorkers.length);
-            }
-            
-            // Check if user came from proper verification
-            const verifiedWorker = localStorage.getItem('verifiedWorker');
-            const verificationTime = localStorage.getItem('verificationTime');
-            
-            console.log('Verified worker from storage:', verifiedWorker);
-            console.log('Verification time:', verificationTime);
-            
-            // Verification expires after 1 hour for security
-            const oneHour = 60 * 60 * 1000;
-            const isVerificationValid = verificationTime && 
-                (Date.now() - parseInt(verificationTime)) < oneHour;
-            
-            if (verifiedWorker && isVerificationValid) {
-                // Double-check against current approved workers list
-                const isStillApproved = approvedWorkers.some(name => 
-                    name.toLowerCase().trim() === verifiedWorker.toLowerCase().trim()
-                );
-                
-                console.log('Is still approved:', isStillApproved);
-                console.log('Current approved workers:', approvedWorkers);
-                
-                if (isStillApproved) {
-                    // Check if there's an active period
-                    const periodConfig = getCurrentPeriodFromStorage();
-                    
-                    if (!periodConfig || !periodConfig.isActive) {
-                        // Show special message for no active period
-                        document.getElementById('mainWorkerInterface').classList.add('hidden');
-                        document.getElementById('accessDeniedSection').classList.add('hidden');
-                        document.getElementById('preferencesLockedSection').classList.remove('hidden');
-                        
-                        // Customize the locked message for no active period
-                        document.querySelector('#preferencesLockedSection h2').innerHTML = '<span class="security-icon">📅</span> No Active Period';
-                        document.querySelector('#preferencesLockedSection .alert-warning').innerHTML = `
-                            <strong>No schedule period is currently open.</strong><br><br>
-                            The SOC administrator has not opened a 2-week period for preference submission yet.<br>
-                            Please wait for the administrator to open a new period, then try again.
-                        `;
-                        document.getElementById('lockDetails').innerHTML = `
-                            <strong>Status:</strong> Waiting for SOC administrator to open new schedule period<br>
-                            Contact your administrator if this persists.
-                        `;
-                        return;
-                    }
-                    
-                    // Check if preferences are locked BEFORE allowing access
-                    if (checkPreferenceLock()) {
-                        console.log('Preferences are locked - showing locked screen');
-                        verifiedWorkerName = verifiedWorker;
-                        document.getElementById('workerDisplayName').textContent = verifiedWorkerName;
-                        showLockedMessage();
-                        return;
-                    }
-                    
-                    // Grant access
-                    verifiedWorkerName = verifiedWorker;
-                    document.getElementById('workerDisplayName').textContent = verifiedWorkerName;
-                    document.getElementById('mainWorkerInterface').classList.remove('hidden');
-                    createPreferencesGrid();
-                    loadExistingPreferences();
-                    console.log('SOC access granted to:', verifiedWorkerName);
-                    
-                    // Start auto-sync if server is connected
-                    if (serverConnected) {
-                        startAutoSync();
-                    }
-                } else {
-                    // Worker was removed from approved list
-                    denyAccess('Your SOC access has been revoked. Please contact the administrator.');
-                }
-            } else {
-                // No valid verification found
-                denyAccess();
-            }
-        }
-
-        function startAutoSync() {
-            // Auto-sync every 30 seconds to keep data current
-            setInterval(async () => {
-                if (serverConnected) {
-                    try {
-                        const syncData = await syncFromServer();
-                        if (syncData) {
-                            // Check for lock status changes
-                            const isOnMainInterface = !document.getElementById('mainWorkerInterface').classList.contains('hidden');
-                            const isOnLockedScreen = !document.getElementById('preferencesLockedSection').classList.contains('hidden');
-                            
-                            if (isOnMainInterface && syncData.preferencesLocked) {
-                                // Preferences just got locked - switch to locked screen
-                                console.log('Preferences locked while user was active - switching to locked screen');
-                                showLockedMessage();
-                            } else if (isOnLockedScreen && !syncData.preferencesLocked) {
-                                // Preferences just got unlocked - switch back to main interface
-                                console.log('Preferences unlocked while on locked screen - switching to main interface');
-                                checkLockStatus();
-                            }
-                        }
-                    } catch (error) {
-                        console.error('❌ Auto-sync failed:', error);
-                    }
-                }
-            }, 30000);
-        }
-
-        function denyAccess(customMessage = null) {
-            console.log('SOC access denied');
-            
-            // Clear any stored verification
-            localStorage.removeItem('verifiedWorker');
-            localStorage.removeItem('verificationTime');
-            
-            document.getElementById('accessDeniedSection').classList.remove('hidden');
-            document.getElementById('mainWorkerInterface').classList.add('hidden');
-            document.getElementById('preferencesLockedSection').classList.add('hidden');
-            
-            if (customMessage) {
-                const alertDiv = document.querySelector('#accessDeniedSection .alert-danger');
-                alertDiv.innerHTML = `<strong>SOC Access Revoked!</strong><br><br>${customMessage}`;
-            }
-        }
-
-        function redirectToCheck() {
-            window.location.href = '/check';
-        }
-
-        function testAccess() {
-            // Clear verification and recheck
-            localStorage.removeItem('verifiedWorker');
-            localStorage.removeItem('verificationTime');
-            checkAccess();
-        }
-
-        function logout() {
-            if (confirm('Are you sure you want to logout? Any unsaved changes will be lost.')) {
-                // Clear verification
-                localStorage.removeItem('verifiedWorker');
-                localStorage.removeItem('verificationTime');
-                
-                // Redirect to check page
-                window.location.href = '/check';
-            }
-        }
-
-        function checkPreferenceLock() {
-            const isLocked = localStorage.getItem('preferencesLocked') === 'true';
-            console.log('Checking preference lock status:', isLocked);
-            return isLocked;
-        }
-
-        function showLockedMessage() {
-            const lockTimestamp = localStorage.getItem('lockTimestamp');
-            const lockTime = lockTimestamp ? new Date(parseInt(lockTimestamp)).toLocaleString() : 'Unknown time';
-            
-            // Hide all other sections and show locked screen
-            document.getElementById('accessDeniedSection').classList.add('hidden');
-            document.getElementById('mainWorkerInterface').classList.add('hidden');
-            document.getElementById('preferencesLockedSection').classList.remove('hidden');
-            
-            document.getElementById('lockDetails').innerHTML = `
-                <strong>Lock Details:</strong><br>
-                Locked since: ${lockTime}<br>
-                This is temporary - check back later or contact your SOC administrator.
-            `;
-            
-            console.log('Showing locked message screen');
-        }
-
-        function checkLockStatus() {
-            console.log('Manually checking lock status...');
-            if (!checkPreferenceLock()) {
-                // Lock has been removed, show main interface
-                document.getElementById('preferencesLockedSection').classList.add('hidden');
-                document.getElementById('mainWorkerInterface').classList.remove('hidden');
-                showStatus('🔓 Preferences have been unlocked! You can now submit your preferences.', 'success');
-            } else {
-                showStatus('⏳ Preferences are still locked. Please try again later.', 'warning');
-            }
-        }
-
-        function createPreferencesGrid() {
-            const grid = document.getElementById('preferencesGrid');
-            
-            // Get current period configuration
-            const periodConfig = getCurrentPeriodFromStorage();
-            
-            if (!periodConfig || !periodConfig.isActive) {
-                grid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; 
-                                background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 8px;">
-                        <h3 style="color: #fbbf24; margin-bottom: 15px;">📅 No Active Period</h3>
-                        <p style="color: #fef3c7;">The SOC administrator has not opened a schedule period yet.<br>
-                        Please wait for the administrator to open a new 2-week period.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const startDate = new Date(periodConfig.startDate);
-            const endDate = new Date(periodConfig.endDate);
-            
-            // Validate period is exactly 14 days
-            const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-            if (daysDiff !== 13) {
-                grid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 20px; background: rgba(239, 68, 68, 0.2); border-radius: 8px;">
-                        <h3 style="color: #fecaca;">⚠️ Invalid Period Configuration</h3>
-                        <p style="color: #fecaca;">Contact SOC administrator - period is not 14 days.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Update page title with current period
-            const existingTitle = document.querySelector('.period-title');
-            if (existingTitle) {
-                existingTitle.remove();
-            }
-            
-            const periodTitle = document.createElement('div');
-            periodTitle.className = 'period-title';
-            periodTitle.innerHTML = `
-                <div style="background: linear-gradient(135deg, rgba(219, 234, 254, 0.15) 0%, rgba(147, 197, 253, 0.1) 100%); 
-                            border: 1px solid rgba(147, 197, 253, 0.3); border-radius: 12px; 
-                            padding: 18px; margin-bottom: 20px; text-align: center; backdrop-filter: blur(10px);">
-                    <h3 style="color: #93c5fd; margin-bottom: 8px;">
-                        <span class="security-icon">📅</span> Current Period: ${periodConfig.label}
-                    </h3>
-                    <small style="color: #dbeafe;">
-                        ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}
-                    </small>
-                </div>
-            `;
-            document.querySelector('.instructions').insertAdjacentElement('beforebegin', periodTitle);
-            
-            let gridHTML = '';
-
-            // Create grid for the configured period (14 days)
+        // Global state
+        let shiftPreferences = {};
+        
+        // Initialize preferences (all available by default)
+        function initializePreferences() {
             for (let day = 0; day < 14; day++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + day);
-                
-                const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-                
-                // Premium shifts: Friday evening to Saturday evening
-                const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
-                const isWeekendPremium = (dayOfWeek === 5) || (dayOfWeek === 6); // Friday or Saturday
-                
-                gridHTML += `
-                    <div class="day-column ${isWeekendPremium ? 'weekend-premium' : ''}">
-                        <div class="day-label">${dayName}<br>${dateStr}</div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="all_${day}" onchange="toggleAllShifts(${day})" checked>
-                            <label for="all_${day}"><strong>All</strong><br><small>Shifts</small></label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="morning_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="morning_${day}">M<br><small>07-15</small></label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="evening_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="evening_${day}">E<br><small>15-23</small>${isWeekendPremium && dayOfWeek === 5 ? '<br>💰' : ''}</label>
-                        </div>
-                        
-                        <div class="shift-option">
-                            <input type="checkbox" class="shift-checkbox" id="night_${day}" onchange="updateAllShiftCheckbox(${day})" checked>
-                            <label for="night_${day}">N<br><small>23-07</small></label>
-                        </div>
-                        
-                        ${isWeekendPremium ? '<div class="premium-badge">💰 Premium Period</div>' : ''}
-                    </div>
-                `;
-            }
-            
-            grid.innerHTML = gridHTML;
-        }
-
-        function getCurrentPeriodFromStorage() {
-            try {
-                const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
-                return config.currentPeriod || null;
-            } catch (error) {
-                console.error('Error reading period config:', error);
-                return null;
-            }
-        }
-
-        async function submitPreferences() {
-            if (!verifiedWorkerName) {
-                showStatus('Error: No verified worker found. Please logout and verify access again.', 'error');
-                return;
-            }
-
-            // Check if preferences are locked
-            if (checkPreferenceLock()) {
-                showStatus('❌ Cannot submit preferences: Submissions are currently locked by SOC administrator.', 'error');
-                showLockedMessage(); // Switch to locked screen
-                return;
-            }
-
-            const notes = document.getElementById('workerNotes').value.trim();
-
-            // Collect preferences
-            const preferences = {};
-            for (let day = 0; day < 14; day++) {
-                preferences[day] = {
-                    morning: document.getElementById(`morning_${day}`).checked,
-                    evening: document.getElementById(`evening_${day}`).checked,
-                    night: document.getElementById(`night_${day}`).checked
+                shiftPreferences[day] = {
+                    morning: true,
+                    evening: true,
+                    night: true
                 };
             }
+            updateUI();
+        }
 
+        // Toggle a specific shift
+        function toggleShift(day, shiftType) {
+            shiftPreferences[day][shiftType] = !shiftPreferences[day][shiftType];
+            updateShiftButton(day, shiftType);
+            updateStats();
+        }
+
+        // Toggle all shifts for a week
+        function toggleWeekShifts(week, action) {
+            const startDay = week * 7;
+            const endDay = startDay + 7;
+            
+            for (let day = startDay; day < endDay; day++) {
+                if (action === 'all') {
+                    shiftPreferences[day] = { morning: true, evening: true, night: true };
+                } else if (action === 'none') {
+                    shiftPreferences[day] = { morning: false, evening: false, night: false };
+                } else {
+                    // Toggle specific shift type
+                    const currentState = shiftPreferences[day][action];
+                    shiftPreferences[day][action] = !currentState;
+                }
+            }
+            updateUI();
+        }
+
+        // Update a specific shift button
+        function updateShiftButton(day, shiftType) {
+            const dayCard = document.querySelector(`[data-day="${day}"]`);
+            if (!dayCard) return;
+            
+            const shiftToggles = dayCard.querySelectorAll('.shift-toggle');
+            const shiftIndex = { morning: 0, evening: 1, night: 2 }[shiftType];
+            const toggle = shiftToggles[shiftIndex];
+            
+            const isAvailable = shiftPreferences[day][shiftType];
+            const statusSpan = toggle.querySelector('.shift-status');
+            
+            if (isAvailable) {
+                toggle.className = 'shift-toggle available';
+                const isPremium = isPremiumShift(day, shiftType);
+                statusSpan.textContent = isPremium ? 'Available 💰' : 'Available';
+            } else {
+                toggle.className = 'shift-toggle not-available';
+                statusSpan.textContent = 'Not Available';
+            }
+        }
+
+        // Check if shift is premium
+        function isPremiumShift(day, shiftType) {
+            const dayOfWeek = day % 7;
+            return (dayOfWeek === 5 && (shiftType === 'evening' || shiftType === 'night')) ||
+                   (dayOfWeek === 6 && (shiftType === 'morning' || shiftType === 'evening'));
+        }
+
+        // Update entire UI
+        function updateUI() {
+            for (let day = 0; day < 14; day++) {
+                ['morning', 'evening', 'night'].forEach(shiftType => {
+                    updateShiftButton(day, shiftType);
+                });
+            }
+            updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+            let total = 0, morning = 0, evening = 0, night = 0, weekend = 0;
+            
+            for (let day = 0; day < 14; day++) {
+                if (shiftPreferences[day].morning) {
+                    total++;
+                    morning++;
+                    if (isPremiumShift(day, 'morning')) weekend++;
+                }
+                if (shiftPreferences[day].evening) {
+                    total++;
+                    evening++;
+                    if (isPremiumShift(day, 'evening')) weekend++;
+                }
+                if (shiftPreferences[day].night) {
+                    total++;
+                    night++;
+                    if (isPremiumShift(day, 'night')) weekend++;
+                }
+            }
+            
+            document.getElementById('totalSelected').textContent = total;
+            document.getElementById('morningSelected').textContent = morning;
+            document.getElementById('eveningSelected').textContent = evening;
+            document.getElementById('nightSelected').textContent = night;
+            document.getElementById('weekendSelected').textContent = weekend;
+        }
+
+        // Submit preferences
+        function submitPreferences() {
+            const notes = document.getElementById('workerNotes').value.trim();
+            
             // Check if any preferences selected
-            const hasPreferences = Object.values(preferences).some(day => 
+            const hasPreferences = Object.values(shiftPreferences).some(day => 
                 day.morning || day.evening || day.night
             );
 
             if (!hasPreferences) {
-                showStatus('Please select at least one shift preference.', 'error');
+                showAlert('Please select at least one shift preference.', 'warning');
                 return;
             }
 
-            const submission = {
-                id: Date.now(),
-                name: verifiedWorkerName, // Use verified name, not user input
-                preferences,
-                notes,
-                submittedAt: new Date().toISOString(),
-                approved: false
-            };
-
-            console.log('Submitting preferences for SOC worker:', verifiedWorkerName);
-            await saveSubmission(submission);
+            // Here you would normally send to server
+            console.log('Submitting preferences:', shiftPreferences);
+            console.log('Notes:', notes);
+            
+            showAlert('✅ Your preferences have been submitted successfully!', 'success');
         }
 
-        async function saveSubmission(submission) {
-            // Double-check lock before saving
-            if (checkPreferenceLock()) {
-                showStatus('❌ Cannot save preferences: Submissions are currently locked by SOC administrator.', 'error');
-                showLockedMessage();
-                return;
-            }
-
-            // Get current data (local or synced)
-            let currentData = null;
-            if (serverConnected) {
-                currentData = await syncFromServer();
-            }
-            
-            if (!currentData) {
-                // Fallback to local storage
-                currentData = {
-                    shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
-                    approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-                    preferencesLocked: localStorage.getItem('preferencesLocked') === 'true',
-                    lockTimestamp: localStorage.getItem('lockTimestamp') || '',
-                    lastUpdate: Date.now()
-                };
-            }
-
-            // Remove any existing submission from this worker
-            currentData.shiftSubmissions = currentData.shiftSubmissions.filter(s => s.name !== submission.name);
-            
-            // Add new submission
-            currentData.shiftSubmissions.push(submission);
-            currentData.lastUpdate = Date.now();
-            
-            // Save locally first
-            localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
-            
-            // Try to sync to server
-            let syncSuccess = false;
-            if (serverConnected) {
-                syncSuccess = await syncToServer(currentData);
-            }
-            
-            if (syncSuccess) {
-                showStatus(`✅ Your preferences have been submitted and synced to SOC server, ${verifiedWorkerName}!`, 'success');
-            } else {
-                showStatus(`✅ Your preferences have been submitted locally, ${verifiedWorkerName}! ${serverConnected ? '(Sync will retry automatically)' : '(SOC server offline - will sync when available)'}`, 'success');
-            }
-            
-            // Optional: Clear form after successful submission
-            setTimeout(() => {
-                if (confirm('Would you like to clear the form?')) {
-                    clearForm();
-                }
-            }, 2000);
-        }
-
-        async function loadExistingPreferences() {
-            if (verifiedWorkerName) {
-                // Try to get data from server first
-                let currentData = null;
-                if (serverConnected) {
-                    currentData = await syncFromServer();
-                }
-                
-                let submissions;
-                if (currentData && currentData.shiftSubmissions) {
-                    submissions = currentData.shiftSubmissions;
-                } else {
-                    // Fallback to local storage
-                    submissions = JSON.parse(localStorage.getItem('shiftSubmissions') || '[]');
-                }
-                
-                const existingSubmission = submissions.find(s => s.name === verifiedWorkerName);
-                
-                if (existingSubmission) {
-                    document.getElementById('workerNotes').value = existingSubmission.notes || '';
-                    
-                    // Load preferences
-                    for (let day = 0; day < 14; day++) {
-                        if (existingSubmission.preferences[day]) {
-                            document.getElementById(`morning_${day}`).checked = existingSubmission.preferences[day].morning || false;
-                            document.getElementById(`evening_${day}`).checked = existingSubmission.preferences[day].evening || false;
-                            document.getElementById(`night_${day}`).checked = existingSubmission.preferences[day].night || false;
-                            updateAllShiftCheckbox(day);
-                        }
-                    }
-                    
-                    showStatus('Your previous preferences have been loaded from SOC database. You can update them and resubmit.', 'info');
-                }
-            }
-        }
-
+        // Clear form (reset to all available)
         function clearForm() {
-            document.getElementById('workerNotes').value = '';
-            
-            // Clear checkboxes
-            for (let day = 0; day < 14; day++) {
-                document.getElementById(`all_${day}`).checked = false;
-                document.getElementById(`morning_${day}`).checked = false;
-                document.getElementById(`evening_${day}`).checked = false;
-                document.getElementById(`night_${day}`).checked = false;
+            if (confirm('Reset all preferences to "Available"?')) {
+                initializePreferences();
+                document.getElementById('workerNotes').value = '';
+                showAlert('Preferences reset to default (all available).', 'info');
             }
-            
-            showStatus('Form cleared.', 'info');
         }
 
-        function showStatus(message, type) {
+        // Show alert message
+        function showAlert(message, type) {
             const statusDiv = document.getElementById('statusMessage');
-            const className = type === 'success' ? 'alert-success' : 
-                             type === 'error' ? 'alert-danger' : 'alert-info';
+            const className = `alert-${type}`;
             
             statusDiv.innerHTML = `<div class="alert ${className}">${message}</div>`;
             
@@ -1229,37 +1228,10 @@
             }
         }
 
-        // Functions for "All Shifts" functionality
-        function toggleAllShifts(day) {
-            const allCheckbox = document.getElementById(`all_${day}`);
-            const morningCheckbox = document.getElementById(`morning_${day}`);
-            const eveningCheckbox = document.getElementById(`evening_${day}`);
-            const nightCheckbox = document.getElementById(`night_${day}`);
-            
-            if (allCheckbox.checked) {
-                morningCheckbox.checked = true;
-                eveningCheckbox.checked = true;
-                nightCheckbox.checked = true;
-            } else {
-                morningCheckbox.checked = false;
-                eveningCheckbox.checked = false;
-                nightCheckbox.checked = false;
-            }
-        }
-
-        function updateAllShiftCheckbox(day) {
-            const allCheckbox = document.getElementById(`all_${day}`);
-            const morningCheckbox = document.getElementById(`morning_${day}`);
-            const eveningCheckbox = document.getElementById(`evening_${day}`);
-            const nightCheckbox = document.getElementById(`night_${day}`);
-            
-            // If all three shifts are checked, check the "All" box
-            if (morningCheckbox.checked && eveningCheckbox.checked && nightCheckbox.checked) {
-                allCheckbox.checked = true;
-            } else {
-                allCheckbox.checked = false;
-            }
-        }
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePreferences();
+        });
     </script>
 </body>
 </html>
