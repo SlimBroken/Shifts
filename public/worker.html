@@ -408,10 +408,6 @@
             gap: 8px;
         }
 
-        .shift-icon {
-            font-size: 1.2em;
-        }
-
         .shift-details {
             display: flex;
             flex-direction: column;
@@ -666,289 +662,15 @@
                     </div>
                     
                     <div class="quick-actions">
-                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'morning')">🌅 All Morning</button>
-                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'evening')">🌆 All Evening</button>
-                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'night')">🌙 All Night</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'morning')">All Morning</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'evening')">All Evening</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(0, 'night')">All Night</button>
                         <button class="btn btn-small btn-secondary" onclick="toggleWeekShifts(0, 'all')">🔄 All Shifts</button>
                         <button class="btn btn-small btn-danger" onclick="toggleWeekShifts(0, 'none')">❌ Clear All</button>
                     </div>
                     
-                    <div class="days-grid">
-                        <!-- Week 1 Days -->
-                        <div class="day-card" data-day="0">
-                            <div class="day-header">
-                                <div class="day-name">Sunday</div>
-                                <div class="day-date">15/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(0, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(0, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(0, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card" data-day="1">
-                            <div class="day-header">
-                                <div class="day-name">Monday</div>
-                                <div class="day-date">16/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(1, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(1, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(1, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card" data-day="2">
-                            <div class="day-header">
-                                <div class="day-name">Tuesday</div>
-                                <div class="day-date">17/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(2, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(2, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(2, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card" data-day="3">
-                            <div class="day-header">
-                                <div class="day-name">Wednesday</div>
-                                <div class="day-date">18/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(3, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(3, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(3, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card" data-day="4">
-                            <div class="day-header">
-                                <div class="day-name">Thursday</div>
-                                <div class="day-date">19/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(4, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(4, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(4, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card weekend" data-day="5">
-                            <div class="premium-badge">💰</div>
-                            <div class="day-header">
-                                <div class="day-name">Friday</div>
-                                <div class="day-date">20/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(5, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(5, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available 💰</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(5, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available 💰</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="day-card weekend" data-day="6">
-                            <div class="premium-badge">💰</div>
-                            <div class="day-header">
-                                <div class="day-name">Saturday</div>
-                                <div class="day-date">21/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(6, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available 💰</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(6, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available 💰</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(6, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="days-grid" id="week1Grid">
+                        <!-- Week 1 days will be generated by JavaScript -->
                     </div>
                 </div>
 
@@ -960,97 +682,15 @@
                     </div>
                     
                     <div class="quick-actions">
-                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'morning')">🌅 All Morning</button>
-                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'evening')">🌆 All Evening</button>
-                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'night')">🌙 All Night</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'morning')">All Morning</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'evening')">All Evening</button>
+                        <button class="btn btn-small" onclick="toggleWeekShifts(1, 'night')">All Night</button>
                         <button class="btn btn-small btn-secondary" onclick="toggleWeekShifts(1, 'all')">🔄 All Shifts</button>
                         <button class="btn btn-small btn-danger" onclick="toggleWeekShifts(1, 'none')">❌ Clear All</button>
                     </div>
                     
-                    <div class="days-grid">
-                        <!-- Week 2 Days (similar structure as Week 1, days 7-13) -->
-                        <div class="day-card" data-day="7">
-                            <div class="day-header">
-                                <div class="day-name">Sunday</div>
-                                <div class="day-date">22/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle available" onclick="toggleShift(7, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(7, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(7, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Continue for other days of week 2... (I'll show a few more) -->
-                        <div class="day-card weekend" data-day="12">
-                            <div class="premium-badge">💰</div>
-                            <div class="day-header">
-                                <div class="day-name">Friday</div>
-                                <div class="day-date">27/06</div>
-                            </div>
-                            <div class="shifts-container">
-                                <div class="shift-toggle not-available" onclick="toggleShift(12, 'morning')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌅</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Morning</div>
-                                            <div class="shift-time">07:00-15:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Not Available</div>
-                                </div>
-                                <div class="shift-toggle available" onclick="toggleShift(12, 'evening')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌆</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Evening</div>
-                                            <div class="shift-time">15:00-23:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Available 💰</div>
-                                </div>
-                                <div class="shift-toggle not-available" onclick="toggleShift(12, 'night')">
-                                    <div class="shift-info">
-                                        <span class="shift-icon">🌙</span>
-                                        <div class="shift-details">
-                                            <div class="shift-name">Night</div>
-                                            <div class="shift-time">23:00-07:00</div>
-                                        </div>
-                                    </div>
-                                    <div class="shift-status">Not Available</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Add remaining days for week 2... -->
-                        
+                    <div class="days-grid" id="week2Grid">
+                        <!-- Week 2 days will be generated by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -1077,6 +717,13 @@
         // Global state
         let shiftPreferences = {};
         
+        // Day names and sample dates
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const sampleDates = [
+            '15/06', '16/06', '17/06', '18/06', '19/06', '20/06', '21/06', // Week 1
+            '22/06', '23/06', '24/06', '25/06', '26/06', '27/06', '28/06'  // Week 2
+        ];
+
         // Initialize preferences (all available by default)
         function initializePreferences() {
             for (let day = 0; day < 14; day++) {
@@ -1086,7 +733,64 @@
                     night: true
                 };
             }
-            updateUI();
+            generateDayCards();
+            updateStats();
+        }
+
+        // Generate day cards dynamically
+        function generateDayCards() {
+            generateWeekCards(0, 'week1Grid');
+            generateWeekCards(1, 'week2Grid');
+        }
+
+        function generateWeekCards(weekNumber, containerId) {
+            const container = document.getElementById(containerId);
+            const startDay = weekNumber * 7;
+            let html = '';
+
+            for (let i = 0; i < 7; i++) {
+                const day = startDay + i;
+                const dayOfWeek = i;
+                const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
+                const dayName = dayNames[dayOfWeek];
+                const date = sampleDates[day];
+
+                html += `
+                    <div class="day-card ${isWeekend ? 'weekend' : ''}" data-day="${day}">
+                        ${isWeekend ? '<div class="premium-badge">💰</div>' : ''}
+                        <div class="day-header">
+                            <div class="day-name">${dayName}</div>
+                            <div class="day-date">${date}</div>
+                        </div>
+                        <div class="shifts-container">
+                            ${generateShiftToggle(day, 'morning', 'Morning', '07:00-15:00')}
+                            ${generateShiftToggle(day, 'evening', 'Evening', '15:00-23:00')}
+                            ${generateShiftToggle(day, 'night', 'Night', '23:00-07:00')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function generateShiftToggle(day, shiftType, shiftName, time) {
+            const isAvailable = shiftPreferences[day][shiftType];
+            const isPremium = isPremiumShift(day, shiftType);
+            const statusText = isAvailable ? (isPremium ? 'Available 💰' : 'Available') : 'Not Available';
+            const toggleClass = isAvailable ? 'available' : 'not-available';
+
+            return `
+                <div class="shift-toggle ${toggleClass}" onclick="toggleShift(${day}, '${shiftType}')">
+                    <div class="shift-info">
+                        <div class="shift-details">
+                            <div class="shift-name">${shiftName}</div>
+                            <div class="shift-time">${time}</div>
+                        </div>
+                    </div>
+                    <div class="shift-status">${statusText}</div>
+                </div>
+            `;
         }
 
         // Toggle a specific shift
@@ -1112,7 +816,8 @@
                     shiftPreferences[day][action] = !currentState;
                 }
             }
-            updateUI();
+            generateDayCards();
+            updateStats();
         }
 
         // Update a specific shift button
@@ -1142,16 +847,6 @@
             const dayOfWeek = day % 7;
             return (dayOfWeek === 5 && (shiftType === 'evening' || shiftType === 'night')) ||
                    (dayOfWeek === 6 && (shiftType === 'morning' || shiftType === 'evening'));
-        }
-
-        // Update entire UI
-        function updateUI() {
-            for (let day = 0; day < 14; day++) {
-                ['morning', 'evening', 'night'].forEach(shiftType => {
-                    updateShiftButton(day, shiftType);
-                });
-            }
-            updateStats();
         }
 
         // Update statistics
