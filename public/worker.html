@@ -618,6 +618,16 @@
                 </button>
             </div>
 
+            <div class="instructions">
+                <h3><span class="security-icon">📋</span> How to Use This Interface:</h3>
+                <ul>
+                    <li><strong>Click any shift button to toggle availability</strong> - Green = Available, Gray = Not Available</li>
+                    <li><strong>Premium shifts (Friday evening → Saturday evening) pay extra 💰</strong></li>
+                    <li><strong>Use quick actions</strong> to select all morning/evening/night shifts at once</li>
+                    <li><strong>Shift Times:</strong> Morning (07:00-15:00), Evening (15:00-23:00), Night (23:00-07:00)</li>
+                </ul>
+            </div>
+
             <!-- Summary Stats -->
             <div class="summary-stats">
                 <div class="stat-item">
@@ -648,7 +658,7 @@
                 <div class="week-section">
                     <div class="week-header">
                         <div class="week-title">📅 Week 1</div>
-                        <div class="week-dates">June 15-21, 2025</div>
+                        <div class="week-dates">Loading period...</div>
                     </div>
                     
                     <div class="quick-actions">
@@ -668,7 +678,7 @@
                 <div class="week-section">
                     <div class="week-header">
                         <div class="week-title">📅 Week 2</div>
-                        <div class="week-dates">June 22-28, 2025</div>
+                        <div class="week-dates">Loading period...</div>
                     </div>
                     
                     <div class="quick-actions">
@@ -706,16 +716,96 @@
     <script>
         // Global state
         let shiftPreferences = {};
+        let currentPeriodConfig = null;
+        let actualDates = [];
         
-        // Day names and sample dates
+        // Day names
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const sampleDates = [
-            '15/06', '16/06', '17/06', '18/06', '19/06', '20/06', '21/06', // Week 1
-            '22/06', '23/06', '24/06', '25/06', '26/06', '27/06', '28/06'  // Week 2
-        ];
+
+        // Get current period configuration from admin settings
+        function getCurrentPeriodConfig() {
+            try {
+                const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+                return config.currentPeriod || null;
+            } catch (error) {
+                console.error('Error reading period config:', error);
+                return null;
+            }
+        }
+
+        // Calculate actual dates based on period configuration
+        function calculateActualDates() {
+            currentPeriodConfig = getCurrentPeriodConfig();
+            
+            if (!currentPeriodConfig || !currentPeriodConfig.isActive) {
+                console.log('No active period found, using default dates');
+                // Fallback to next 2 weeks starting from next Sunday
+                const today = new Date();
+                const nextSunday = new Date(today);
+                const daysUntilSunday = (7 - today.getDay()) % 7;
+                nextSunday.setDate(today.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
+                
+                currentPeriodConfig = {
+                    startDate: nextSunday.toISOString().split('T')[0],
+                    label: 'Default Period',
+                    isActive: false
+                };
+            }
+            
+            const startDate = new Date(currentPeriodConfig.startDate);
+            actualDates = [];
+            
+            for (let i = 0; i < 14; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                actualDates.push({
+                    dayName: dayNames[currentDate.getDay()],
+                    dateStr: currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+                    fullDate: currentDate,
+                    dayOfWeek: currentDate.getDay()
+                });
+            }
+            
+            // Update week headers with actual dates
+            updateWeekHeaders();
+            
+            console.log('📅 SOC Period loaded:', currentPeriodConfig.label);
+            console.log('📊 Dates calculated:', actualDates.map(d => `${d.dayName} ${d.dateStr}`));
+        }
+
+        // Update week header dates
+        function updateWeekHeaders() {
+            if (actualDates.length >= 14) {
+                // Week 1
+                const week1Start = actualDates[0];
+                const week1End = actualDates[6];
+                const week1Title = document.querySelector('.week-section:first-child .week-title');
+                const week1Dates = document.querySelector('.week-section:first-child .week-dates');
+                
+                if (week1Title && week1Dates) {
+                    week1Title.textContent = '📅 Week 1';
+                    week1Dates.textContent = `${week1Start.fullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${week1End.fullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                }
+                
+                // Week 2
+                const week2Start = actualDates[7];
+                const week2End = actualDates[13];
+                const week2Title = document.querySelector('.week-section:last-child .week-title');
+                const week2Dates = document.querySelector('.week-section:last-child .week-dates');
+                
+                if (week2Title && week2Dates) {
+                    week2Title.textContent = '📅 Week 2';
+                    week2Dates.textContent = `${week2Start.fullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${week2End.fullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                }
+            }
+        }
 
         // Initialize preferences (all available by default)
         function initializePreferences() {
+            // First calculate the actual dates
+            calculateActualDates();
+            
+            // Then initialize preferences
             for (let day = 0; day < 14; day++) {
                 shiftPreferences[day] = {
                     morning: true,
@@ -725,6 +815,15 @@
             }
             generateDayCards();
             updateStats();
+            
+            // Show period info if available
+            if (currentPeriodConfig && currentPeriodConfig.isActive) {
+                showAlert(`📅 Current SOC Period: ${currentPeriodConfig.label}`, 'info');
+            } else if (currentPeriodConfig && !currentPeriodConfig.isActive) {
+                showAlert('⚠️ No active SOC period. Contact administrator to open a new period.', 'warning');
+            } else {
+                showAlert('⚠️ No SOC period configured. Using fallback dates until administrator sets up period.', 'warning');
+            }
         }
 
         // Generate day cards dynamically
@@ -740,10 +839,17 @@
 
             for (let i = 0; i < 7; i++) {
                 const day = startDay + i;
-                const dayOfWeek = i;
+                
+                if (day >= actualDates.length) {
+                    console.warn(`Day ${day} exceeds available dates`);
+                    continue;
+                }
+                
+                const dateInfo = actualDates[day];
+                const dayOfWeek = dateInfo.dayOfWeek;
                 const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
-                const dayName = dayNames[dayOfWeek];
-                const date = sampleDates[day];
+                const dayName = dateInfo.dayName;
+                const date = dateInfo.dateStr;
 
                 html += `
                     <div class="day-card ${isWeekend ? 'weekend' : ''}" data-day="${day}">
@@ -834,7 +940,9 @@
 
         // Check if shift is premium
         function isPremiumShift(day, shiftType) {
-            const dayOfWeek = day % 7;
+            if (day >= actualDates.length) return false;
+            
+            const dayOfWeek = actualDates[day].dayOfWeek;
             return (dayOfWeek === 5 && (shiftType === 'evening' || shiftType === 'night')) ||
                    (dayOfWeek === 6 && (shiftType === 'morning' || shiftType === 'evening'));
         }
@@ -916,6 +1024,28 @@
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
             initializePreferences();
+            
+            // Check for period updates every 30 seconds
+            setInterval(function() {
+                const newPeriodConfig = getCurrentPeriodConfig();
+                
+                // Check if period has changed
+                if (!currentPeriodConfig || !newPeriodConfig || 
+                    currentPeriodConfig.startDate !== newPeriodConfig.startDate ||
+                    currentPeriodConfig.label !== newPeriodConfig.label ||
+                    currentPeriodConfig.isActive !== newPeriodConfig.isActive) {
+                    
+                    console.log('📅 SOC Period updated, refreshing dates...');
+                    calculateActualDates();
+                    generateDayCards();
+                    
+                    if (newPeriodConfig && newPeriodConfig.isActive) {
+                        showAlert(`📅 Period updated: ${newPeriodConfig.label}`, 'info');
+                    } else {
+                        showAlert('⚠️ Period closed or changed. Please refresh if needed.', 'warning');
+                    }
+                }
+            }, 30000);
         });
     </script>
 </body>
