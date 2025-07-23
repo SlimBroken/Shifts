@@ -978,24 +978,45 @@
 
         // Submit preferences
         function submitPreferences() {
-            const notes = document.getElementById('workerNotes').value.trim();
-            
-            // Check if any preferences selected
-            const hasPreferences = Object.values(shiftPreferences).some(day => 
-                day.morning || day.evening || day.night
-            );
+    const notes = document.getElementById('workerNotes').value.trim();
 
-            if (!hasPreferences) {
-                showAlert('Please select at least one shift preference.', 'warning');
-                return;
-            }
+    const submission = {
+        name: localStorage.getItem('verifiedWorker') || 'Unknown',
+        submittedAt: Date.now(),
+        preferences: shiftPreferences,
+        notes: notes,
+        approved: false
+    };
 
-            // Here you would normally send to server
-            console.log('Submitting preferences:', shiftPreferences);
-            console.log('Notes:', notes);
-            
-            showAlert('✅ Your preferences have been submitted successfully!', 'success');
+    console.log('📝 Submitting preferences:', submission);
+
+    // Optional fallback: save locally in case of failure
+    localStorage.setItem('latestSubmission', JSON.stringify(submission));
+
+    // Send to backend API to save to GitHub Gist
+    fetch('/api/data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(submission)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Shift preferences submitted successfully!', 'success');
+            console.log('✅ Server response:', data);
+        } else {
+            showAlert('❌ Submission failed: ' + (data.message || data.error), 'danger');
+            console.error('❌ Submission error:', data);
         }
+    })
+    .catch(error => {
+        showAlert('❌ Failed to submit preferences. Please try again later.', 'danger');
+        console.error('❌ Network error submitting preferences:', error);
+    });
+}
+
 
         // Clear form (reset to all available)
         function clearForm() {
