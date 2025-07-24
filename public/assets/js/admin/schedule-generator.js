@@ -1,5 +1,5 @@
-// Maccabi SOC Admin Dashboard - Schedule Generation Functions
-// Handles the complex scheduling algorithm and constraint management
+// Maccabi SOC Admin Dashboard - Enhanced Schedule Generation Functions
+// Handles complex scheduling algorithm with gap pattern optimization
 
 const MAX_SHIFTS_PER_WEEK = 6; // Maximum 6 shifts per worker per week
 
@@ -14,7 +14,7 @@ const ScheduleGenerator = {
 
     generateSchedule: function() {
         try {
-            console.log('🚀 Starting schedule generation...');
+            console.log('🚀 Starting enhanced schedule generation with gap optimization...');
             
             const approvedSubmissions = workerSubmissions.filter(s => s.approved);
             
@@ -46,10 +46,10 @@ const ScheduleGenerator = {
             const variations = this.calculatePossibleVariations(approvedSubmissions);
 
             // Show loading message
-            showAlert('🔄 Generating multiple schedules to find best coverage...', 'info');
+            showAlert('🔄 Generating optimized schedules to minimize gap patterns...', 'info');
 
             // Generate multiple schedules and pick the best one
-            const bestSchedule = this.generateBestCoverageSchedule(approvedSubmissions, variations);
+            const bestSchedule = this.generateBestOptimizedSchedule(approvedSubmissions, variations);
             
             // Unlock preferences after generation (regardless of success/failure)
             localStorage.setItem('preferencesLocked', 'false');
@@ -64,9 +64,10 @@ const ScheduleGenerator = {
             
             ScheduleDisplay.displaySchedule(bestSchedule);
             
-            showAlert(`✅ Best schedule found with ${bestSchedule.coverage.toFixed(1)}% coverage!`, 'success');
+            const gapInfo = bestSchedule.gapAnalysis ? ` (${bestSchedule.gapAnalysis.totalSingleGaps} gap patterns)` : '';
+            showAlert(`✅ Optimized schedule generated with ${bestSchedule.coverage.toFixed(1)}% coverage${gapInfo}!`, 'success');
             
-            console.log('✅ Schedule generation completed successfully');
+            console.log('✅ Enhanced schedule generation completed successfully');
             
         } catch (error) {
             console.error('❌ Error in schedule generation:', error);
@@ -78,6 +79,200 @@ const ScheduleGenerator = {
             
             showAlert(`❌ Schedule generation failed: ${error.message}`, 'danger');
         }
+    },
+
+    generateBestOptimizedSchedule: function(submissions, variations) {
+        console.log('🎯 SEARCHING FOR BEST OPTIMIZED SCHEDULE...');
+        
+        let bestSchedule = null;
+        let bestCoverage = 0;
+        let bestGapScore = Infinity; // Lower is better for gap patterns
+        const maxAttempts = 20; // Increased attempts for optimization
+        let attempt = 1;
+        let perfectSchedules = []; // Store all 100% coverage schedules for comparison
+
+        while (attempt <= maxAttempts) {
+            console.log(`🔄 Optimization Attempt ${attempt}/${maxAttempts}...`);
+            
+            try {
+                // Generate a fresh schedule for each attempt
+                const schedule = this.generateOptimizedSchedule(submissions);
+                
+                if (!schedule) {
+                    console.log(`❌ Attempt ${attempt} returned null schedule`);
+                    attempt++;
+                    continue;
+                }
+                
+                console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
+                
+                // If we found 100% coverage, analyze gap patterns
+                if (schedule.coverage >= 100) {
+                    const gapAnalysis = this.analyzeGapPatterns(schedule);
+                    schedule.gapAnalysis = gapAnalysis;
+                    
+                    console.log(`🎯 PERFECT COVERAGE! Gap score: ${gapAnalysis.totalSingleGaps} single gaps, ${gapAnalysis.totalGapDays} gap days`);
+                    
+                    perfectSchedules.push({
+                        schedule: schedule,
+                        gapScore: gapAnalysis.totalSingleGaps,
+                        attempt: attempt
+                    });
+                    
+                    // If this is the first perfect schedule or has fewer gaps, it's our best so far
+                    if (gapAnalysis.totalSingleGaps < bestGapScore) {
+                        bestGapScore = gapAnalysis.totalSingleGaps;
+                        bestSchedule = schedule;
+                        console.log(`⭐ New best gap optimization: ${gapAnalysis.totalSingleGaps} single gaps`);
+                    }
+                    
+                    // If we found a schedule with 0 single gaps, use it immediately
+                    if (gapAnalysis.totalSingleGaps === 0) {
+                        console.log(`🏆 PERFECT! Found schedule with 0 single gaps on attempt ${attempt}`);
+                        break;
+                    }
+                } else {
+                    // For non-perfect coverage, use the old logic
+                    if (schedule.coverage > bestCoverage) {
+                        bestCoverage = schedule.coverage;
+                        bestSchedule = schedule;
+                        console.log(`⭐ New best coverage: ${bestCoverage.toFixed(1)}%`);
+                    }
+                }
+                
+            } catch (error) {
+                console.log(`❌ Attempt ${attempt} failed:`, error);
+            }
+            
+            attempt++;
+        }
+
+        // Final selection logic
+        if (perfectSchedules.length > 0) {
+            // We have perfect coverage schedules, pick the one with fewest gaps
+            const bestPerfect = perfectSchedules.reduce((best, current) => 
+                current.gapScore < best.gapScore ? current : best
+            );
+            
+            bestSchedule = bestPerfect.schedule;
+            bestSchedule.optimizationResult = {
+                totalAttempts: maxAttempts,
+                perfectSchedules: perfectSchedules.length,
+                selectedAttempt: bestPerfect.attempt,
+                finalGapScore: bestPerfect.gapScore
+            };
+            
+            console.log(`🏆 FINAL SELECTION: Attempt ${bestPerfect.attempt} with ${bestPerfect.gapScore} single gaps`);
+            console.log(`📊 Had ${perfectSchedules.length} perfect coverage options to choose from`);
+        }
+
+        // Add metadata to the best schedule found
+        if (bestSchedule) {
+            bestSchedule.variations = variations;
+            bestSchedule.attemptNumber = bestSchedule.optimizationResult ? 
+                `Optimized (${bestSchedule.optimizationResult.selectedAttempt}/${maxAttempts})` : 
+                `Best of ${maxAttempts}`;
+            bestSchedule.totalAttempts = maxAttempts;
+            
+            if (bestSchedule.coverage >= 100) {
+                console.log(`🎯 OPTIMIZATION COMPLETE: ${bestSchedule.coverage.toFixed(1)}% coverage with ${bestSchedule.gapAnalysis?.totalSingleGaps || 'unknown'} single gaps`);
+            } else {
+                console.log(`🏆 BEST RESULT: ${bestSchedule.coverage.toFixed(1)}% coverage (unable to achieve 100%)`);
+            }
+        }
+
+        return bestSchedule;
+    },
+
+    analyzeGapPatterns: function(schedule) {
+        console.log('🔍 ANALYZING GAP PATTERNS...');
+        
+        const analysis = {
+            singleGaps: [], // Array of {worker, day1, day2, daysBetween}
+            totalSingleGaps: 0,
+            totalGapDays: 0,
+            workerGapCounts: {}
+        };
+        
+        const workers = schedule.workers;
+        
+        // Initialize worker gap counts
+        workers.forEach(worker => {
+            analysis.workerGapCounts[worker] = 0;
+        });
+        
+        // Create a flat array of all assignments
+        const allAssignments = [];
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            week.days.forEach((day, dayIndex) => {
+                const globalDay = weekIndex * 7 + dayIndex;
+                ['morning', 'evening', 'night'].forEach((shiftType) => {
+                    if (day.shifts[shiftType]) {
+                        allAssignments.push({
+                            worker: day.shifts[shiftType],
+                            globalDay: globalDay,
+                            shiftType: shiftType,
+                            dayName: day.dayShort,
+                            date: day.dateStr
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Group assignments by worker
+        const workerAssignments = {};
+        workers.forEach(worker => {
+            workerAssignments[worker] = allAssignments
+                .filter(a => a.worker === worker)
+                .sort((a, b) => a.globalDay - b.globalDay);
+        });
+        
+        // Check for single-gap patterns for each worker
+        workers.forEach(worker => {
+            const assignments = workerAssignments[worker];
+            
+            for (let i = 0; i < assignments.length - 1; i++) {
+                const currentDay = assignments[i].globalDay;
+                const nextDay = assignments[i + 1].globalDay;
+                const daysBetween = nextDay - currentDay - 1;
+                
+                // Check if there's exactly 1 day gap (single gap pattern)
+                if (daysBetween === 1) {
+                    const gapPattern = {
+                        worker: worker,
+                        day1: currentDay,
+                        day2: nextDay,
+                        daysBetween: daysBetween,
+                        shift1: assignments[i].shiftType,
+                        shift2: assignments[i + 1].shiftType,
+                        day1Name: assignments[i].dayName,
+                        day2Name: assignments[i + 1].dayName
+                    };
+                    
+                    analysis.singleGaps.push(gapPattern);
+                    analysis.totalSingleGaps++;
+                    analysis.workerGapCounts[worker]++;
+                    analysis.totalGapDays++;
+                    
+                    console.log(`⚠️ Single gap: ${worker} works ${assignments[i].dayName} ${assignments[i].shiftType} → gap → ${assignments[i + 1].dayName} ${assignments[i + 1].shiftType}`);
+                }
+            }
+        });
+        
+        // Summary logging
+        if (analysis.totalSingleGaps === 0) {
+            console.log('✅ EXCELLENT: No single-gap patterns found!');
+        } else {
+            console.log(`⚠️ Found ${analysis.totalSingleGaps} single-gap patterns:`);
+            Object.entries(analysis.workerGapCounts).forEach(([worker, count]) => {
+                if (count > 0) {
+                    console.log(`   ${worker}: ${count} single gaps`);
+                }
+            });
+        }
+        
+        return analysis;
     },
 
     // Function to check if assigning a worker would create an 888 pattern
@@ -174,6 +369,47 @@ const ScheduleGenerator = {
         return Object.values(shifts).includes(workerName);
     },
 
+    // NEW: Calculate penalty for patterns that would create single gaps
+    calculateGapPatternPenalty: function(workerName, globalDay, schedule) {
+        let penalty = 0;
+        
+        if (!schedule) return 0;
+        
+        // Check if assigning this worker to this day would create single gaps
+        const workerDays = this.getWorkerAssignedDays(workerName, schedule);
+        
+        // Check for potential single gaps before and after this assignment
+        for (const assignedDay of workerDays) {
+            const dayDiff = Math.abs(globalDay - assignedDay);
+            
+            // If there would be exactly 1 day gap, apply penalty
+            if (dayDiff === 2) { // 2 days apart means 1 day gap in between
+                penalty += 30; // Moderate penalty for single gaps
+            }
+        }
+        
+        return penalty;
+    },
+
+    // Helper: Get all days where a worker is currently assigned
+    getWorkerAssignedDays: function(workerName, schedule) {
+        const assignedDays = [];
+        
+        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+            week.days.forEach((day, dayIndex) => {
+                const globalDay = weekIndex * 7 + dayIndex;
+                
+                if (day.shifts.morning === workerName || 
+                    day.shifts.evening === workerName || 
+                    day.shifts.night === workerName) {
+                    assignedDays.push(globalDay);
+                }
+            });
+        });
+        
+        return assignedDays;
+    },
+
     // BALANCED: Prevent specific 888 patterns while allowing good coverage
     wouldCreateAnyGapPattern: function(workerName, globalDay, schedule) {
         // Strategy: Allow gaps, but prevent the specific problematic 888 pattern:
@@ -217,63 +453,6 @@ const ScheduleGenerator = {
         }
         
         return false; // Allow this assignment
-    },
-
-    generateBestCoverageSchedule: function(submissions, variations) {
-        console.log('🎯 SEARCHING FOR BEST COVERAGE SCHEDULE...');
-        
-        let bestSchedule = null;
-        let bestCoverage = 0;
-        const maxAttempts = 15;
-        let attempt = 1;
-
-        while (attempt <= maxAttempts) {
-            console.log(`🔄 Internal Attempt ${attempt}/${maxAttempts}...`);
-            
-            try {
-                // Generate a fresh schedule for each attempt
-                const schedule = this.generateOptimizedSchedule(submissions);
-                
-                if (!schedule) {
-                    console.log(`❌ Attempt ${attempt} returned null schedule`);
-                    attempt++;
-                    continue;
-                }
-                
-                console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
-                
-                // If we found 100% coverage, use it immediately
-                if (schedule.coverage >= 100) {
-                    console.log(`🎯 PERFECT! Found 100% coverage on attempt ${attempt}`);
-                    schedule.variations = variations;
-                    schedule.attemptNumber = attempt;
-                    schedule.totalAttempts = maxAttempts;
-                    return schedule;
-                }
-                
-                // Otherwise, keep the best one so far
-                if (schedule.coverage > bestCoverage) {
-                    bestCoverage = schedule.coverage;
-                    bestSchedule = schedule;
-                    console.log(`⭐ New best: ${bestCoverage.toFixed(1)}% coverage`);
-                }
-                
-            } catch (error) {
-                console.log(`❌ Attempt ${attempt} failed:`, error);
-            }
-            
-            attempt++;
-        }
-
-        // Add metadata to the best schedule found
-        if (bestSchedule) {
-            bestSchedule.variations = variations;
-            bestSchedule.attemptNumber = "Best of " + maxAttempts;
-            bestSchedule.totalAttempts = maxAttempts;
-            console.log(`🏆 FINAL RESULT: Best coverage found was ${bestCoverage.toFixed(1)}%`);
-        }
-
-        return bestSchedule;
     },
 
     generateOptimizedSchedule: function(submissions) {
@@ -386,6 +565,7 @@ const ScheduleGenerator = {
 
     performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
         let coverage = 0;
+        const totalShifts = 42;
 
         [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
             const weekStartDay = weekIndex * 7;
@@ -410,9 +590,11 @@ const ScheduleGenerator = {
                     });
 
                     if (availableWorkers.length > 0) {
+                        const currentCoveragePercent = (coverage / totalShifts) * 100;
+                        
                         const scoredWorkers = availableWorkers.map(worker => ({
                             worker: worker,
-                            score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats)
+                            score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats, currentCoveragePercent)
                         }))
                         .filter(sw => sw.score > -500)
                         .sort((a, b) => b.score - a.score);
@@ -757,7 +939,7 @@ const ScheduleGenerator = {
         return week;
     },
 
-    calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats) {
+    calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats, currentCoverage = 0) {
         let score = 100;
         
         // Get total number of workers to adjust strategy for small teams
@@ -849,6 +1031,16 @@ const ScheduleGenerator = {
         
         if (stats.lastAssignedDay === globalDay - 1) {
             score -= 20;
+        }
+        
+        // NEW: Gap pattern optimization when coverage is high
+        if (currentCoverage >= 80) { // Start applying gap penalties when close to full coverage
+            const gapPenalty = this.calculateGapPatternPenalty(worker.name, globalDay, window.currentScheduleBeingGenerated);
+            score -= gapPenalty;
+            
+            if (gapPenalty > 0) {
+                console.log(`🎯 Gap pattern penalty: -${gapPenalty} for ${worker.name} on day ${globalDay}`);
+            }
         }
         
         // For small teams, increase randomization even more to ensure variation
