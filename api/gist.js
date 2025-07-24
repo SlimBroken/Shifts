@@ -105,7 +105,7 @@ router.get('/data', async (req, res) => {
     }
 });
 
-// Save data to GitHub Gist
+// Save data to GitHub Gist (Admin use)
 router.post('/data', async (req, res) => {
     try {
         if (!GITHUB_TOKEN || !GIST_ID) {
@@ -162,6 +162,144 @@ router.post('/data', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to save data to GitHub',
+            details: error.message
+        });
+    }
+});
+
+// NEW: Submit worker shift preferences
+router.post('/submit-preferences', async (req, res) => {
+    try {
+        if (!GITHUB_TOKEN || !GIST_ID) {
+            return res.status(500).json({
+                success: false,
+                error: 'Server configuration incomplete'
+            });
+        }
+
+        const submission = req.body;
+
+        // Validate submission
+        if (!submission.name || !submission.preferences) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid submission: name and preferences required'
+            });
+        }
+
+        console.log('👤 Worker submission received:', {
+            name: submission.name,
+            submittedAt: new Date(submission.submittedAt).toISOString(),
+            hasNotes: !!submission.notes
+        });
+
+        // First, get current data
+        const getCurrentData = async () => {
+            const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                headers: {
+                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+
+            const gist = await response.json();
+            const fileContent = gist.files['shift_data.json']?.content;
+            
+            if (fileContent) {
+                return JSON.parse(fileContent);
+            } else {
+                // Return default structure if no data exists
+                return {
+                    shiftSubmissions: [],
+                    approvedWorkers: [],
+                    preferencesLocked: false,
+                    lockTimestamp: '',
+                    scheduleConfig: { currentPeriod: null, history: [] }
+                };
+            }
+        };
+
+        const currentData = await getCurrentData();
+
+        // Check if preferences are locked
+        if (currentData.preferencesLocked) {
+            return res.status(423).json({
+                success: false,
+                error: 'Preference submissions are currently locked by SOC administration'
+            });
+        }
+
+        // Check if worker is approved
+        if (!currentData.approvedWorkers || !currentData.approvedWorkers.includes(submission.name)) {
+            return res.status(403).json({
+                success: false,
+                error: 'Worker not found in approved workers list. Contact SOC administrator.'
+            });
+        }
+
+        // Add unique ID to submission
+        const submissionWithId = {
+            ...submission,
+            id: Date.now(),
+            submittedAt: submission.submittedAt || Date.now(),
+            approved: false
+        };
+
+        // Remove any existing submission from this worker
+        const filteredSubmissions = currentData.shiftSubmissions.filter(s => s.name !== submission.name);
+        
+        // Add the new submission
+        filteredSubmissions.push(submissionWithId);
+
+        // Update the data structure
+        const updatedData = validateAndStructureData({
+            ...currentData,
+            shiftSubmissions: filteredSubmissions,
+            lastUpdate: Date.now(),
+            lastUpdateBy: `Worker: ${submission.name}`
+        });
+
+        // Save to GitHub
+        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                files: {
+                    'shift_data.json': {
+                        content: JSON.stringify(updatedData, null, 2)
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        console.log(`✅ Worker submission saved: ${submission.name} (${filteredSubmissions.length} total submissions)`);
+
+        res.json({
+            success: true,
+            message: 'Shift preferences submitted successfully',
+            submissionId: submissionWithId.id,
+            gistUrl: result.html_url
+        });
+
+    } catch (error) {
+        console.error('Error submitting worker preferences:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to submit preferences',
             details: error.message
         });
     }
@@ -290,7 +428,8 @@ router.get('/health', async (req, res) => {
             features: {
                 periodManagement: true,
                 dataValidation: true,
-                autoSync: true
+                autoSync: true,
+                workerSubmissions: true
             }
         });
     } catch (error) {
