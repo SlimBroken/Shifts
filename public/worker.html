@@ -979,24 +979,66 @@
 
         // Submit preferences
         function submitPreferences() {
-            const notes = document.getElementById('workerNotes').value.trim();
-            
-            // Check if any preferences selected
-            const hasPreferences = Object.values(shiftPreferences).some(day => 
-                day.morning || day.evening || day.night
-            );
+    const notes = document.getElementById('workerNotes').value.trim();
 
-            if (!hasPreferences) {
-                showAlert('Please select at least one shift preference.', 'warning');
-                return;
-            }
+    const submission = {
+        name: localStorage.getItem('verifiedWorker') || 'Unknown',
+        submittedAt: Date.now(),
+        preferences: shiftPreferences,
+        notes: notes,
+        approved: false
+    };
 
-            // Here you would normally send to server
-            console.log('Submitting preferences:', shiftPreferences);
-            console.log('Notes:', notes);
-            
-            showAlert('✅ Your preferences have been submitted successfully!', 'success');
+    console.log('📝 Submitting preferences:', submission);
+
+    // Optional fallback: save locally in case of failure
+    localStorage.setItem('latestSubmission', JSON.stringify(submission));
+
+    // Send to the new worker-specific endpoint
+    fetch('/api/submit-preferences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(submission)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP ${response.status}`);
+            });
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Shift preferences submitted successfully!', 'success');
+            console.log('✅ Server response:', data);
+            
+            // Optional: Show submission ID
+            if (data.submissionId) {
+                console.log('📋 Submission ID:', data.submissionId);
+            }
+        } else {
+            showAlert('❌ Submission failed: ' + (data.message || data.error), 'danger');
+            console.error('❌ Submission error:', data);
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error submitting preferences:', error);
+        
+        // Handle specific error cases
+        if (error.message.includes('locked')) {
+            showAlert('🔒 Preference submissions are currently locked by SOC administration. Please try again later.', 'warning');
+        } else if (error.message.includes('not found in approved')) {
+            showAlert('❌ Access denied: You are not in the approved workers list. Contact your SOC administrator.', 'danger');
+        } else if (error.message.includes('Worker not found')) {
+            showAlert('❌ Worker authorization error. Please contact your SOC administrator.', 'danger');
+        } else {
+            showAlert('❌ Failed to submit preferences. Please try again later or contact support.', 'danger');
+        }
+    });
+}
 
         // Clear form (reset to all available)
         function clearForm() {
