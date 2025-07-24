@@ -606,18 +606,18 @@
         </div>
 
         <div class="content">
-            <!-- Worker Info Bar -->
-            <div class="worker-info">
-                <div>
-                    <span class="worker-name">
-                        <span class="security-icon">👤</span> Welcome, <span id="workerDisplayName">John Doe</span>!
-                    </span>
-                    <div style="font-size: 12px; color: #bbf7d0; opacity: 0.8;">Verified SOC personnel access</div>
-                </div>
-                <button class="btn btn-danger" style="padding: 8px 15px; font-size: 14px;">
-                    <span class="security-icon">🚪</span> Logout
-                </button>
-            </div>
+            <!-- Replace the worker-info section in worker.html with this: -->
+<div class="worker-info">
+    <div>
+        <span class="worker-name">
+            <span class="security-icon">👤</span> Welcome, <span id="workerDisplayName">Loading...</span>!
+        </span>
+        <div style="font-size: 12px; color: #bbf7d0; opacity: 0.8;">Verified SOC personnel access</div>
+    </div>
+    <button class="btn btn-danger" style="padding: 8px 15px; font-size: 14px;" onclick="logout()">
+        <span class="security-icon">🚪</span> Logout
+    </button>
+</div>
 
             <div class="instructions">
                 <h3><span class="security-icon">📋</span> How to Use This Interface:</h3>
@@ -722,6 +722,102 @@
         
         // Day names
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // Update worker name display and setup logout
+        function initializeWorkerInterface() {
+            // Get the verified worker name from localStorage
+            const verifiedWorker = localStorage.getItem('verifiedWorker');
+            const verificationTime = localStorage.getItem('verificationTime');
+            
+            if (!verifiedWorker) {
+                // No verified worker found, redirect to check page
+                showAlert('❌ No verified worker session found. Redirecting to login...', 'warning');
+                setTimeout(() => {
+                    window.location.href = '/check';
+                }, 2000);
+                return false;
+            }
+            
+            // Check if verification is recent (within 24 hours)
+            if (verificationTime) {
+                const timeSince = Date.now() - parseInt(verificationTime);
+                const hoursOld = timeSince / (1000 * 60 * 60);
+                
+                if (hoursOld > 24) {
+                    showAlert('⚠️ Your session has expired. Please verify your access again.', 'warning');
+                    setTimeout(() => {
+                        window.location.href = '/check';
+                    }, 3000);
+                    return false;
+                }
+            }
+            
+            // Update the display name
+            const displayNameElement = document.getElementById('workerDisplayName');
+            if (displayNameElement) {
+                displayNameElement.textContent = verifiedWorker;
+            }
+            
+            console.log('✅ Worker interface initialized for:', verifiedWorker);
+            return true;
+        }
+
+        // Logout function
+        function logout() {
+            const workerName = localStorage.getItem('verifiedWorker') || 'Unknown';
+            
+            if (confirm(`Logout from SOC shift preferences?\n\nWorker: ${workerName}\n\nYou will need to verify access again to submit preferences.`)) {
+                // Clear verification data
+                localStorage.removeItem('verifiedWorker');
+                localStorage.removeItem('verificationTime');
+                
+                // Optional: Clear any unsaved submission data
+                localStorage.removeItem('latestSubmission');
+                
+                console.log('🚪 Worker logged out:', workerName);
+                
+                showAlert('👋 Logged out successfully. Redirecting to access verification...', 'info');
+                
+                // Redirect to check page
+                setTimeout(() => {
+                    window.location.href = '/check';
+                }, 1500);
+            }
+        }
+
+        // Session validation - check periodically if still authorized
+        function validateSession() {
+            const verifiedWorker = localStorage.getItem('verifiedWorker');
+            
+            if (!verifiedWorker) {
+                showAlert('❌ Session lost. Redirecting to login...', 'warning');
+                setTimeout(() => {
+                    window.location.href = '/check';
+                }, 2000);
+                return false;
+            }
+            
+            // Optional: Check with server if worker is still approved
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data.approvedWorkers) {
+                        const isStillApproved = data.data.approvedWorkers.includes(verifiedWorker);
+                        if (!isStillApproved) {
+                            showAlert('❌ Your access has been revoked by SOC administration. Please contact your supervisor.', 'danger');
+                            setTimeout(() => {
+                                logout();
+                            }, 3000);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.warn('⚠️ Could not validate session with server:', error);
+                    // Don't logout on network errors, just log the warning
+                });
+            
+            return true;
+        }
 
         // Get current period configuration from admin settings
         function getCurrentPeriodConfig() {
@@ -979,66 +1075,66 @@
 
         // Submit preferences
         function submitPreferences() {
-    const notes = document.getElementById('workerNotes').value.trim();
+            const notes = document.getElementById('workerNotes').value.trim();
 
-    const submission = {
-        name: localStorage.getItem('verifiedWorker') || 'Unknown',
-        submittedAt: Date.now(),
-        preferences: shiftPreferences,
-        notes: notes,
-        approved: false
-    };
+            const submission = {
+                name: localStorage.getItem('verifiedWorker') || 'Unknown',
+                submittedAt: Date.now(),
+                preferences: shiftPreferences,
+                notes: notes,
+                approved: false
+            };
 
-    console.log('📝 Submitting preferences:', submission);
+            console.log('📝 Submitting preferences:', submission);
 
-    // Optional fallback: save locally in case of failure
-    localStorage.setItem('latestSubmission', JSON.stringify(submission));
+            // Optional fallback: save locally in case of failure
+            localStorage.setItem('latestSubmission', JSON.stringify(submission));
 
-    // Send to the new worker-specific endpoint
-    fetch('/api/submit-preferences', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submission)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || `HTTP ${response.status}`);
+            // Send to the new worker-specific endpoint
+            fetch('/api/submit-preferences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(submission)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Shift preferences submitted successfully!', 'success');
+                    console.log('✅ Server response:', data);
+                    
+                    // Optional: Show submission ID
+                    if (data.submissionId) {
+                        console.log('📋 Submission ID:', data.submissionId);
+                    }
+                } else {
+                    showAlert('❌ Submission failed: ' + (data.message || data.error), 'danger');
+                    console.error('❌ Submission error:', data);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error submitting preferences:', error);
+                
+                // Handle specific error cases
+                if (error.message.includes('locked')) {
+                    showAlert('🔒 Preference submissions are currently locked by SOC administration. Please try again later.', 'warning');
+                } else if (error.message.includes('not found in approved')) {
+                    showAlert('❌ Access denied: You are not in the approved workers list. Contact your SOC administrator.', 'danger');
+                } else if (error.message.includes('Worker not found')) {
+                    showAlert('❌ Worker authorization error. Please contact your SOC administrator.', 'danger');
+                } else {
+                    showAlert('❌ Failed to submit preferences. Please try again later or contact support.', 'danger');
+                }
             });
         }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showAlert('✅ Shift preferences submitted successfully!', 'success');
-            console.log('✅ Server response:', data);
-            
-            // Optional: Show submission ID
-            if (data.submissionId) {
-                console.log('📋 Submission ID:', data.submissionId);
-            }
-        } else {
-            showAlert('❌ Submission failed: ' + (data.message || data.error), 'danger');
-            console.error('❌ Submission error:', data);
-        }
-    })
-    .catch(error => {
-        console.error('❌ Error submitting preferences:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('locked')) {
-            showAlert('🔒 Preference submissions are currently locked by SOC administration. Please try again later.', 'warning');
-        } else if (error.message.includes('not found in approved')) {
-            showAlert('❌ Access denied: You are not in the approved workers list. Contact your SOC administrator.', 'danger');
-        } else if (error.message.includes('Worker not found')) {
-            showAlert('❌ Worker authorization error. Please contact your SOC administrator.', 'danger');
-        } else {
-            showAlert('❌ Failed to submit preferences. Please try again later or contact support.', 'danger');
-        }
-    });
-}
 
         // Clear form (reset to all available)
         function clearForm() {
@@ -1066,7 +1162,18 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize worker interface first
+            const initialized = initializeWorkerInterface();
+            
+            if (!initialized) {
+                return; // Don't continue if worker verification failed
+            }
+            
+            // Continue with existing initialization
             initializePreferences();
+            
+            // Validate session every 5 minutes
+            setInterval(validateSession, 5 * 60 * 1000);
             
             // Check for period updates every 30 seconds
             setInterval(function() {
