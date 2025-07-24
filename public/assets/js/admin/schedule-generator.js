@@ -259,79 +259,45 @@ analyzeGapPatterns: function(schedule) {
     console.log('🔍 ANALYZING SINGLE-SHIFT GAP PATTERNS...');
     
     const analysis = {
-        singleShiftGaps: [], // Array of shift gap details
+        singleShiftGaps: [],
         totalSingleShiftGaps: 0,
-        workerShiftGapCounts: {},
-        workerShiftGapDetails: {} // Detailed gap info per worker
+        workerShiftGapCounts: {}
     };
     
-    const workers = schedule.workers;
-    
-    // Initialize worker gap counts
-    workers.forEach(worker => {
+    schedule.workers.forEach(worker => {
         analysis.workerShiftGapCounts[worker] = 0;
-        analysis.workerShiftGapDetails[worker] = [];
-    });
-    
-    // Analyze each worker's shift gaps
-    workers.forEach(worker => {
         const workerShifts = this.getWorkerAssignedShifts(worker, schedule);
         
         for (let i = 0; i < workerShifts.length - 1; i++) {
-            const currentShift = workerShifts[i];
-            const nextShift = workerShifts[i + 1];
-            const shiftsInBetween = nextShift - currentShift - 1;
+            const shiftsInBetween = workerShifts[i + 1] - workerShifts[i] - 1;
             
-            // Check for single-shift gaps
             if (shiftsInBetween === 1) {
-                // Convert back to day/shift for display
-                const currentDay = Math.floor(currentShift / 3);
-                const currentShiftType = this.getShiftTypeFromIndex(currentShift % 3);
-                const nextDay = Math.floor(nextShift / 3);
-                const nextShiftType = this.getShiftTypeFromIndex(nextShift % 3);
-                
-                const gapDetail = {
-                    worker: worker,
-                    shift1Index: currentShift,
-                    shift2Index: nextShift,
-                    shift1: `${currentDay} ${currentShiftType}`,
-                    shift2: `${nextDay} ${nextShiftType}`,
-                    description: `Works → 1 shift break (8hrs) → Works`
-                };
-                
-                analysis.singleShiftGaps.push(gapDetail);
                 analysis.totalSingleShiftGaps++;
                 analysis.workerShiftGapCounts[worker]++;
-                analysis.workerShiftGapDetails[worker].push(gapDetail);
                 
-                console.log(`⚠️ Single-shift gap: ${worker} works shift ${currentShift} → 8hr break → shift ${nextShift}`);
+                const shift1Day = Math.floor(workerShifts[i] / 3);
+                const shift1Type = this.getShiftTypeFromIndex(workerShifts[i] % 3);
+                const shift2Day = Math.floor(workerShifts[i + 1] / 3);
+                const shift2Type = this.getShiftTypeFromIndex(workerShifts[i + 1] % 3);
+                
+                console.log(`⚠️ ${worker}: Day ${shift1Day} ${shift1Type} → 8hr break → Day ${shift2Day} ${shift2Type}`);
             }
         }
     });
     
-    // Summary logging
     if (analysis.totalSingleShiftGaps === 0) {
-        console.log('✅ EXCELLENT: No single-shift gaps found! Workers have proper rest between assignments.');
+        console.log('✅ EXCELLENT: No single-shift gaps found!');
     } else {
-        console.log(`⚠️ Found ${analysis.totalSingleShiftGaps} single-shift gaps (8-hour breaks):`);
+        console.log(`⚠️ Found ${analysis.totalSingleShiftGaps} single-shift gaps (8-hour breaks)`);
         
-        // Sort workers by gap count (worst first)
-        const workersByShiftGaps = Object.entries(analysis.workerShiftGapCounts)
+        // Show worst offenders
+        const workersByGaps = Object.entries(analysis.workerShiftGapCounts)
             .filter(([worker, count]) => count > 0)
             .sort(([,a], [,b]) => b - a);
         
-        workersByShiftGaps.forEach(([worker, count]) => {
+        workersByGaps.forEach(([worker, count]) => {
             console.log(`   👤 ${worker}: ${count} single-shift gaps`);
-            analysis.workerShiftGapDetails[worker].forEach(gap => {
-                console.log(`      ⏰ ${gap.shift1} → 8hr break → ${gap.shift2}`);
-            });
         });
-        
-        // Show the worst offenders
-        if (workersByShiftGaps.length > 0) {
-            const worstWorker = workersByShiftGaps[0];
-            console.log(`🚨 WORST SHIFT GAP PATTERN: ${worstWorker[0]} has ${worstWorker[1]} single-shift gaps!`);
-        }
     }
     
     return analysis;
@@ -625,59 +591,50 @@ analyzeGapPatterns: function(schedule) {
         }
     },
 
-    performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
-        let coverage = 0;
-        const totalShifts = 42;
+   performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
+    let coverage = 0;
+    const totalShifts = 42;
 
-        [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
-            const weekStartDay = weekIndex * 7;
+    [schedule.week1, schedule.week2].forEach((week, weekIndex) => {
+        const weekStartDay = weekIndex * 7;
+        
+        for (let day = 0; day < 7; day++) {
+            const globalDay = weekStartDay + day;
+            const shiftsByPriority = ['night', 'morning', 'evening'];
             
-            for (let day = 0; day < 7; day++) {
-                const globalDay = weekStartDay + day;
-                
-                // STRATEGIC PRIORITY ORDER: Fill critical shifts first, leave evening for last
-                // Night shifts are most critical (security coverage)
-                // Morning shifts are essential (operations start)  
-                // Evening shifts can be left empty (day workers still present)
-                const shiftsByPriority = ['night', 'morning', 'evening'];
-                
-                shiftsByPriority.forEach(shift => {
-                    if (week.days[day].shifts[shift]) {
-                        coverage++;
-                        return;
-                    }
+            shiftsByPriority.forEach(shift => {
+                if (week.days[day].shifts[shift]) {
+                    coverage++;
+                    return;
+                }
 
-                    const availableWorkers = workers.filter(worker => {
-                        return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
-                    });
-
-                    if (availableWorkers.length > 0) {
-                        const currentCoveragePercent = (coverage / totalShifts) * 100;
-                        
-                        const scoredWorkers = availableWorkers.map(worker => ({
-                            worker: worker,
-                            score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats, currentCoveragePercent)
-                        }))
-                        .filter(sw => sw.score > -500)
-                        .sort((a, b) => b.score - a.score);
-
-                        if (scoredWorkers.length > 0) {
-                            const bestWorker = scoredWorkers[0].worker;
-                            this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
-                            coverage++;
-                            console.log(`✅ Assigned ${bestWorker.name} to ${shift} on day ${globalDay} (Priority: ${shift})`);
-                        } else {
-                            console.log(`⚠️ No suitable workers for ${shift} on day ${globalDay} after scoring`);
-                        }
-                    } else {
-                        console.log(`❌ No available workers for ${shift} on day ${globalDay}`);
-                    }
+                const availableWorkers = workers.filter(worker => {
+                    return this.isWorkerAvailable(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule);
                 });
-            }
-        });
 
-        return coverage;
-    },
+                if (availableWorkers.length > 0) {
+                    const currentCoveragePercent = (coverage / totalShifts) * 100;
+                    
+                    const scoredWorkers = availableWorkers.map(worker => ({
+                        worker: worker,
+                        score: this.calculateWorkerScore(worker, shift, day, globalDay, workerStats[worker.name], workerStats, currentCoveragePercent)
+                    }))
+                    .filter(sw => sw.score > -500)
+                    .sort((a, b) => b.score - a.score);
+
+                    if (scoredWorkers.length > 0) {
+                        const bestWorker = scoredWorkers[0].worker;
+                        this.assignWorkerToShift(bestWorker, shift, day, globalDay, week, workerStats, shiftTimes);
+                        coverage++;
+                        console.log(`✅ Assigned ${bestWorker.name} to ${shift} on day ${globalDay}`);
+                    }
+                }
+            });
+        }
+    });
+
+    return coverage;
+},
 
     fillEmptyShifts: function(schedule, workers, workerStats, shiftTimes, isAggressivePass = false) {
         let filledCount = 0;
@@ -1004,61 +961,37 @@ analyzeGapPatterns: function(schedule) {
     // ENHANCED: Add shift-gap penalty to worker scoring
 calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats, currentCoverage = 0) {
     let score = 100;
-    
-    // Get total number of workers to adjust strategy for small teams
     const totalWorkers = Object.keys(allWorkerStats).length;
     const isSmallTeam = totalWorkers <= 4;
     
-    // SHIFT TYPE PRIORITY BONUSES
+    // Standard scoring logic (keep existing)
     if (shift === 'night') {
-        score += 50; // Highest priority - critical security coverage
-        
+        score += 50;
         const currentWeek = Math.floor(globalDay / 7);
         const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, window.currentScheduleBeingGenerated);
-        
-        if (nightShiftsThisWeek >= 2) {
-            return -1000; // Hard limit
-        }
-        
-        if (nightShiftsThisWeek === 1) {
-            score -= 500;
-        }
-        
+        if (nightShiftsThisWeek >= 2) return -1000;
+        if (nightShiftsThisWeek === 1) score -= 500;
         score -= stats.nightShifts * 20;
-        
-        if (stats.nightShifts === 0) {
-            score += 15;
-        }
+        if (stats.nightShifts === 0) score += 15;
     }
     
     if (shift === 'morning') {
-        score += 30; // High priority - essential for operations
-        
+        score += 30;
         const currentWeek = Math.floor(globalDay / 7);
         const morningShiftsThisWeek = this.countMorningShiftsInWeek(worker.name, currentWeek);
-        
         if (morningShiftsThisWeek === 0) {
-            score += 1000; // Very important to ensure morning coverage
-            
+            score += 1000;
             const dayInWeek = globalDay % 7;
-            if (dayInWeek >= 4) {
-                score += 500; // Urgent if it's late in the week
-            }
+            if (dayInWeek >= 4) score += 500;
         } else {
             score -= morningShiftsThisWeek * 300;
         }
-        
-        if (stats.morningShifts === 0) {
-            score += 200;
-        }
+        if (stats.morningShifts === 0) score += 200;
     }
     
     if (shift === 'evening') {
-        score -= 20; // Lower priority - can be left empty (day workers present)
-        // BUT: Don't penalize as much for small teams to ensure better coverage
-        if (isSmallTeam) {
-            score += 10; // Reduce the penalty for small teams
-        }
+        score -= 20;
+        if (isSmallTeam) score += 10;
     }
     
     score -= stats.totalShifts * 5;
@@ -1066,65 +999,42 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
     const isPremiumShift = this.isPremiumWeekendShift(dayOfWeek, shift);
     if (isPremiumShift) {
         if (isSmallTeam) {
-            // For small teams, be much more lenient with premium shift penalties
-            score -= stats.premiumShifts * 8; // Reduced from 15 to 8
-            if (stats.premiumShifts === 0) {
-                score += 35; // Increased bonus for first premium shift
-            }
-            
-            // Special bonus for Saturday evening to ensure it gets filled
-            if (dayOfWeek === 6 && shift === 'evening') {
-                score += 25;
-                console.log(`🎯 Small team bonus: +25 for Saturday evening to ${worker.name}`);
-            }
+            score -= stats.premiumShifts * 8;
+            if (stats.premiumShifts === 0) score += 35;
+            if (dayOfWeek === 6 && shift === 'evening') score += 25;
         } else {
-            // Normal premium shift handling for larger teams
             score -= stats.premiumShifts * 15;
-            if (stats.premiumShifts === 0) {
-                score += 25;
-            }
+            if (stats.premiumShifts === 0) score += 25;
         }
     }
     
     if (dayOfWeek === 5 || dayOfWeek === 6) {
-        // Reduced weekend penalty for small teams
         const weekendPenalty = isSmallTeam ? 4 : 8;
         score -= stats.weekendShifts * weekendPenalty;
     }
     
-    if (stats.lastAssignedDay === globalDay - 1) {
-        score -= 20;
-    }
+    if (stats.lastAssignedDay === globalDay - 1) score -= 20;
     
-    // NEW: SINGLE-SHIFT GAP PREVENTION - Scale with coverage
-    if (currentCoverage >= 80) { // When coverage is high, be strict about shift gaps
-        
-        // Check if this assignment would create a single-shift gap
+    // 🚨 NEW: SINGLE-SHIFT GAP PREVENTION
+    if (currentCoverage >= 80) {
+        // Massive penalty when coverage is high
         if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-            // Apply massive penalty when coverage is high
-            const penalty = 800; // Very high penalty to discourage single-shift gaps
-            score -= penalty;
-            console.log(`🚨 SINGLE-SHIFT GAP PENALTY: -${penalty} for ${worker.name} (coverage: ${currentCoverage.toFixed(1)}%)`);
+            score -= 800;
+            console.log(`🚨 BLOCKED single-shift gap for ${worker.name}`);
         }
         
-        // Additional penalty for workers who already have single-shift gaps
-        const existingSingleShiftGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
-        if (existingSingleShiftGaps > 0) {
-            const escalatingPenalty = existingSingleShiftGaps * 200; // 200 per existing gap
-            score -= escalatingPenalty;
-            console.log(`🚨 ESCALATING SHIFT GAP PENALTY: -${escalatingPenalty} for ${worker.name} (has ${existingSingleShiftGaps} gaps)`);
+        // Extra penalty for workers who already have gaps
+        const existingGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
+        if (existingGaps > 0) {
+            score -= existingGaps * 200;
         }
-        
     } else if (currentCoverage >= 60) {
         // Moderate penalty when coverage is decent
         if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-            score -= 300; // Moderate penalty
-            console.log(`⚠️ Moderate shift gap penalty: -300 for ${worker.name} (coverage: ${currentCoverage.toFixed(1)}%)`);
+            score -= 300;
         }
     }
-    // Below 60% coverage, allow single-shift gaps to ensure coverage
     
-    // For small teams, increase randomization even more to ensure variation
     const randomFactor = isSmallTeam ? 75 : 50;
     return score + Math.random() * randomFactor;
 },
