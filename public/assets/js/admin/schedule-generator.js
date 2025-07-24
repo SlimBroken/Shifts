@@ -301,7 +301,7 @@ analyzeGapPatterns: function(schedule) {
     }
     
     return analysis;
-}
+},
 
     // Function to check if assigning a worker would create an 888 pattern
     wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
