@@ -343,14 +343,14 @@ analyzeGapPatterns: function(schedule) {
 
     // Helper function to check if a sequence is an 888 pattern for a specific worker
     is888Pattern: function(sequence, workerName) {
-    if (!Array.isArray(sequence) || sequence.length !== 5) return false;
-    return sequence[0] === workerName &&
-           sequence[1] !== workerName && sequence[1] !== null &&
-           sequence[2] === workerName &&
-           sequence[3] !== workerName && sequence[3] !== null &&
-           sequence[4] === workerName;
-}
-
+        // Pattern: Worker → Gap → Worker → Gap → Worker
+        return sequence.length === 5 &&
+               sequence[0] === workerName &&
+               sequence[1] !== workerName && sequence[1] !== null &&
+               sequence[2] === workerName &&
+               sequence[3] !== workerName && sequence[3] !== null &&
+               sequence[4] === workerName;
+    },
 
     // Helper function to get shift index (0=morning, 1=evening, 2=night)
     getShiftIndex: function(shift) {
@@ -959,42 +959,45 @@ analyzeGapPatterns: function(schedule) {
     },
 
     // ENHANCED: Add shift-gap penalty to worker scoring
-calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats, currentCoverage = 0, schedule) {
+calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWorkerStats, currentCoverage = 0) {
     let score = 100;
     const totalWorkers = Object.keys(allWorkerStats).length;
     const isSmallTeam = totalWorkers <= 4;
-
+    
+    // Standard scoring logic (keep existing)
     if (shift === 'night') {
         score += 50;
         const currentWeek = Math.floor(globalDay / 7);
-        const nightShiftsThisWeek = this.countNightShiftsInWeek(worker.name, currentWeek, schedule);
+        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, window.currentScheduleBeingGenerated);
         if (nightShiftsThisWeek >= 2) return -1000;
         if (nightShiftsThisWeek === 1) score -= 500;
         score -= stats.nightShifts * 20;
         if (stats.nightShifts === 0) score += 15;
     }
-
+    
     if (shift === 'morning') {
         score += 30;
         const currentWeek = Math.floor(globalDay / 7);
-        const morningShiftsThisWeek = this.countMorningShiftsInWeek(worker.name, currentWeek, schedule);
+        const morningShiftsThisWeek = this.countMorningShiftsInWeek(worker.name, currentWeek);
         if (morningShiftsThisWeek === 0) {
             score += 1000;
-            if (globalDay % 7 >= 4) score += 500;
+            const dayInWeek = globalDay % 7;
+            if (dayInWeek >= 4) score += 500;
         } else {
             score -= morningShiftsThisWeek * 300;
         }
         if (stats.morningShifts === 0) score += 200;
     }
-
+    
     if (shift === 'evening') {
         score -= 20;
         if (isSmallTeam) score += 10;
     }
-
+    
     score -= stats.totalShifts * 5;
-
-    if (this.isPremiumWeekendShift(dayOfWeek, shift)) {
+    
+    const isPremiumShift = this.isPremiumWeekendShift(dayOfWeek, shift);
+    if (isPremiumShift) {
         if (isSmallTeam) {
             score -= stats.premiumShifts * 8;
             if (stats.premiumShifts === 0) score += 35;
@@ -1004,18 +1007,37 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
             if (stats.premiumShifts === 0) score += 25;
         }
     }
-
+    
     if (dayOfWeek === 5 || dayOfWeek === 6) {
         const weekendPenalty = isSmallTeam ? 4 : 8;
         score -= stats.weekendShifts * weekendPenalty;
     }
-
+    
     if (stats.lastAssignedDay === globalDay - 1) score -= 20;
-
+    
+    // 🚨 NEW: SINGLE-SHIFT GAP PREVENTION
+    if (currentCoverage >= 80) {
+        // Massive penalty when coverage is high
+        if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
+            score -= 800;
+            console.log(`🚨 BLOCKED single-shift gap for ${worker.name}`);
+        }
+        
+        // Extra penalty for workers who already have gaps
+        const existingGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
+        if (existingGaps > 0) {
+            score -= existingGaps * 200;
+        }
+    } else if (currentCoverage >= 60) {
+        // Moderate penalty when coverage is decent
+        if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
+            score -= 300;
+        }
+    }
+    
     const randomFactor = isSmallTeam ? 75 : 50;
     return score + Math.random() * randomFactor;
-}
-
+},
 
 
     // NEW: Calculate current coverage percentage
@@ -1037,26 +1059,54 @@ calculateCurrentCoverage: function(schedule) {
 },
     
     isPremiumWeekendShift: function(dayOfWeek, shift) {
-    return (
-        (dayOfWeek === 5 && (shift === 'evening' || shift === 'night')) ||
-        (dayOfWeek === 6 && (shift === 'morning' || shift === 'evening'))
-    );
-}
+        if (dayOfWeek === 5 && (shift === 'evening' || shift === 'night')) {
+            return true;
+        }
+        if (dayOfWeek === 6 && (shift === 'morning' || shift === 'evening')) {
+            return true;
+        }
+        return false;
+    },
 
+    countNightShiftsInWeek: function(workerName, weekNumber) {
+        let week;
+        if (weekNumber === 0) {
+            week = window.currentScheduleBeingGenerated?.week1;
+        } else if (weekNumber === 1) {
+            week = window.currentScheduleBeingGenerated?.week2;
+        }
+        
+        if (!week) return 0;
+        
+        let nightShiftCount = 0;
+        week.days.forEach(day => {
+            if (day.shifts.night === workerName) {
+                nightShiftCount++;
+            }
+        });
+        
+        return nightShiftCount;
+    },
 
-    countNightShiftsInWeek: function(workerName, weekNumber, schedule) {
-    const week = weekNumber === 0 ? schedule.week1 : schedule.week2;
-    if (!week) return 0;
-    return week.days.reduce((count, day) => count + (day.shifts.night === workerName ? 1 : 0), 0);
-}
-
-
-    countMorningShiftsInWeek: function(workerName, weekNumber, schedule) {
-    const week = weekNumber === 0 ? schedule.week1 : schedule.week2;
-    if (!week) return 0;
-    return week.days.reduce((count, day) => count + (day.shifts.morning === workerName ? 1 : 0), 0);
-}
-
+    countMorningShiftsInWeek: function(workerName, weekNumber) {
+        let week;
+        if (weekNumber === 0) {
+            week = window.currentScheduleBeingGenerated?.week1;
+        } else if (weekNumber === 1) {
+            week = window.currentScheduleBeingGenerated?.week2;
+        }
+        
+        if (!week) return 0;
+        
+        let morningShiftCount = 0;
+        week.days.forEach(day => {
+            if (day.shifts.morning === workerName) {
+                morningShiftCount++;
+            }
+        });
+        
+        return morningShiftCount;
+    },
 
     calculateShiftStartTime: function(globalDay, shift, shiftTimes) {
         const baseDate = new Date(2025, 5, 1);
