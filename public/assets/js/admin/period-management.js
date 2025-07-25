@@ -194,40 +194,80 @@ const PeriodManagement = {
     },
 
     closePeriod: function() {
-        const currentPeriod = this.getCurrentPeriodConfig();
-        if (!currentPeriod) {
-            showAlert('❌ No active SOC period to close.', 'warning');
-            return;
+    const currentPeriod = this.getCurrentPeriodConfig();
+    if (!currentPeriod) {
+        showAlert('❌ No active SOC period to close.', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Close the current SOC period: ${currentPeriod.label}?\n\nThis will:\n• Prevent workers from submitting new preferences\n• Lock the current period\n• Require opening a new period for future submissions\n\nContinue with SOC period closure?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    console.log('🔒 Closing SOC period:', currentPeriod.label);
+    
+    // Extract last shifts from current schedule before closing
+    const lastShiftsData = this.extractLastShiftsFromSchedule();
+    
+    const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    if (config.currentPeriod) {
+        config.currentPeriod.isActive = false;
+        config.currentPeriod.closedAt = new Date().toISOString();
+        config.currentPeriod.closedBy = 'SOC Admin';
+        
+        // Save last shifts data
+        if (lastShiftsData) {
+            config.currentPeriod.lastShifts = lastShiftsData;
+            console.log('💾 Saved last shifts from period:', lastShiftsData);
         }
         
-        const confirmMessage = `Close the current SOC period: ${currentPeriod.label}?\n\nThis will:\n• Prevent workers from submitting new preferences\n• Lock the current period\n• Require opening a new period for future submissions\n\nContinue with SOC period closure?`;
+        localStorage.setItem('scheduleConfig', JSON.stringify(config));
         
-        if (!confirm(confirmMessage)) {
-            return;
-        }
+        // Lock preferences when period is closed
+        localStorage.setItem('preferencesLocked', 'true');
+        localStorage.setItem('lockTimestamp', Date.now().toString());
         
-        console.log('🔒 Closing SOC period:', currentPeriod.label);
+        saveData();
+        this.updateCurrentPeriodDisplay();
+        updateDisplay();
         
-        const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
-        if (config.currentPeriod) {
-            config.currentPeriod.isActive = false;
-            config.currentPeriod.closedAt = new Date().toISOString();
-            config.currentPeriod.closedBy = 'SOC Admin';
-            localStorage.setItem('scheduleConfig', JSON.stringify(config));
-            
-            // Lock preferences when period is closed
-            localStorage.setItem('preferencesLocked', 'true');
-            localStorage.setItem('lockTimestamp', Date.now().toString());
-            
-            saveData();
-            this.updateCurrentPeriodDisplay();
-            updateDisplay();
-            
-            showAlert(`🔒 SOC period closed: ${currentPeriod.label}. Workers can no longer submit preferences.`, 'info');
-            console.log('✅ SOC period closed successfully');
-        }
-    },
+        showAlert(`🔒 SOC period closed: ${currentPeriod.label}. Workers can no longer submit preferences.`, 'info');
+        console.log('✅ SOC period closed successfully');
+    }
+},
 
+// Add this new helper function to period-management.js
+extractLastShiftsFromSchedule: function() {
+    // Try to get the current schedule if it exists
+    if (!window.currentSchedule) {
+        console.log('⚠️ No current schedule found to extract last shifts');
+        return null;
+    }
+    
+    const schedule = window.currentSchedule;
+    const lastShifts = {};
+    
+    // Get the last day of week 2 (day 13, index 6 in week2)
+    const lastDay = schedule.week2?.days?.[6];
+    
+    if (!lastDay) {
+        console.log('⚠️ Could not find last day of schedule');
+        return null;
+    }
+    
+    // Extract who worked each shift on the last day
+    ['morning', 'evening', 'night'].forEach(shiftType => {
+        const worker = lastDay.shifts[shiftType];
+        if (worker) {
+            lastShifts[worker] = shiftType;
+        }
+    });
+    
+    console.log('📋 Extracted last shifts:', lastShifts);
+    return lastShifts;
+},
     updateScheduleRulesPeriodStatus: function() {
         const periodStatus = document.getElementById('scheduleRulesPeriodStatus');
         if (!periodStatus) return;
