@@ -83,6 +83,7 @@ const ScheduleGenerator = {
 
 
 // NEW: Check if assigning a worker would create a single-shift gap
+// Check if assigning a worker would create a single-shift gap
 wouldCreateSingleShiftGap: function(workerName, globalDay, shift, schedule) {
     // Convert the current assignment to absolute shift index
     const currentShiftIndex = globalDay * 3 + this.getShiftIndex(shift);
@@ -96,7 +97,14 @@ wouldCreateSingleShiftGap: function(workerName, globalDay, shift, schedule) {
         
         // If there's exactly 1 shift between assignments (gap of 2 means 1 shift in between)
         if (shiftGap === 2) {
-            console.log(`⚠️ SINGLE-SHIFT GAP: ${workerName} would work shift ${Math.min(currentShiftIndex, existingShiftIndex)} → 1 shift break → shift ${Math.max(currentShiftIndex, existingShiftIndex)}`);
+            const minShift = Math.min(currentShiftIndex, existingShiftIndex);
+            const maxShift = Math.max(currentShiftIndex, existingShiftIndex);
+            const gapShift = minShift + 1;
+            
+            const gapDay = Math.floor(gapShift / 3);
+            const gapType = this.getShiftTypeFromIndex(gapShift % 3);
+            
+            console.log(`⚠️ SINGLE-SHIFT GAP: ${workerName} would work shift ${minShift} → 1 shift gap (day ${gapDay} ${gapType}) → shift ${maxShift}`);
             return true;
         }
     }
@@ -321,42 +329,33 @@ analyzeGapPatterns: function(schedule) {
 },
 
     // Function to check if assigning a worker would create an 888 pattern
-    wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
-        // Convert day and shift to absolute shift index (0-41 for 42 total shifts)
-        const currentShiftIndex = globalDay * 3 + this.getShiftIndex(shift);
+    // Function to check if assigning a worker would create an 888 pattern
+wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
+    // Convert day and shift to absolute shift index (0-41 for 42 total shifts)
+    const currentShiftIndex = globalDay * 3 + this.getShiftIndex(shift);
+    
+    // Get all shifts currently assigned to this worker
+    const workerShifts = this.getWorkerAssignedShifts(workerName, schedule);
+    
+    // Add the proposed shift temporarily
+    const proposedShifts = [...workerShifts, currentShiftIndex].sort((a, b) => a - b);
+    
+    // Check all consecutive triplets of shifts
+    for (let i = 0; i < proposedShifts.length - 2; i++) {
+        const shift1 = proposedShifts[i];
+        const shift2 = proposedShifts[i + 1];
+        const shift3 = proposedShifts[i + 2];
         
-        // Check all possible 5-shift sequences that would include this assignment
-        for (let startShift = Math.max(0, currentShiftIndex - 4); 
-             startShift <= Math.min(37, currentShiftIndex); 
-             startShift++) {
-            
-            // Create the 5-shift sequence
-            const sequence = [];
-            for (let i = 0; i < 5; i++) {
-                const shiftIndex = startShift + i;
-                const day = Math.floor(shiftIndex / 3);
-                const shiftType = this.getShiftTypeFromIndex(shiftIndex % 3);
-                
-                if (shiftIndex === currentShiftIndex) {
-                    // This is the shift we're trying to assign
-                    sequence.push(workerName);
-                } else {
-                    // Get the currently assigned worker for this shift
-                    const assignedWorker = this.getAssignedWorker(day, shiftType, schedule);
-                    sequence.push(assignedWorker);
-                }
-            }
-            
-            // Check if this sequence creates an 888 pattern for any worker
-            if (this.is888Pattern(sequence, workerName)) {
-                console.log(`❌ 888 Pattern detected! Would create: [${sequence.join(', ')}] for ${workerName}`);
-                console.log(`   Sequence spans shifts ${startShift}-${startShift + 4} (days ${Math.floor(startShift/3)}-${Math.floor((startShift+4)/3)})`);
-                return true;
-            }
+        // Check if this creates an 888 pattern (exactly 1 shift gap between each)
+        if ((shift2 - shift1 === 2) && (shift3 - shift2 === 2)) {
+            console.log(`❌ 888 Pattern detected! ${workerName} would have:`);
+            console.log(`   Shift ${shift1} → gap → Shift ${shift2} → gap → Shift ${shift3}`);
+            return true;
         }
-        
-        return false;
-    },
+    }
+    
+    return false;
+},
 
     // Helper function to check if a sequence is an 888 pattern for a specific worker
     is888Pattern: function(sequence, workerName) {
@@ -454,51 +453,7 @@ analyzeGapPatterns: function(schedule) {
         
         return assignedDays;
     },
-
-    // BALANCED: Prevent specific 888 patterns while allowing good coverage
-    wouldCreateAnyGapPattern: function(workerName, globalDay, schedule) {
-        // Strategy: Allow gaps, but prevent the specific problematic 888 pattern:
-        // Worker → Gap → Worker → Gap → Worker (in any 5-day window)
-        
-        // Check all possible 5-day windows that include this assignment
-        for (let windowStart = Math.max(0, globalDay - 4); windowStart <= Math.min(9, globalDay); windowStart++) {
-            const windowEnd = windowStart + 4;
-            
-            // Build the 5-day sequence
-            const sequence = [];
-            for (let day = windowStart; day <= windowEnd; day++) {
-                if (day === globalDay) {
-                    sequence.push(workerName); // This is the assignment we're testing
-                } else {
-                    sequence.push(this.workerWorkedOnDay(workerName, day, schedule) ? workerName : null);
-                }
-            }
-            
-            // Check if this sequence creates the specific 888 pattern
-            if (this.is888Pattern(sequence, workerName)) {
-                console.log(`🚫 888 PATTERN BLOCKED: ${workerName} would create [${sequence.join(', ')}] in days ${windowStart}-${windowEnd}`);
-                return true;
-            }
-        }
-        
-        // Additional check: Prevent more than 2 assignments in any 3-day window 
-        // (this prevents excessive clustering while allowing flexibility)
-        if (globalDay >= 1 && globalDay <= 12) {
-            const dayBefore = globalDay - 1;
-            const dayAfter = globalDay + 1;
-            
-            let assignmentsIn3Days = 1; // Count today's assignment
-            if (this.workerWorkedOnDay(workerName, dayBefore, schedule)) assignmentsIn3Days++;
-            if (this.workerWorkedOnDay(workerName, dayAfter, schedule)) assignmentsIn3Days++;
-            
-            if (assignmentsIn3Days > 2) {
-                console.log(`🚫 CLUSTERING BLOCKED: ${workerName} would have ${assignmentsIn3Days} assignments in 3-day window (max 2)`);
-                return true;
-            }
-        }
-        
-        return false; // Allow this assignment
-    },
+    
 
     generateOptimizedSchedule: function(submissions) {
         try {
@@ -740,22 +695,15 @@ analyzeGapPatterns: function(schedule) {
         return false;
     }
     
-    // CRITICAL: Check for 888 pattern prevention
+    // STRICT: Always prevent single-shift gaps (shift-gap-shift)
+    if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 SINGLE GAP BLOCKED: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap`);
+        return false;
+    }
+    
+    // ABSOLUTE: Never allow 888 patterns (shift-gap-shift-gap-shift)
     if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-        console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-        return false;
-    }
-    
-    // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
-    if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
-        console.log(`🚫 COMPREHENSIVE MAIN: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
-        return false;
-    }
-    
-    // HARD CONSTRAINT: Block single-shift gaps when coverage is high
-    const currentCoverage = this.calculateCurrentCoverage(schedule);
-    if (currentCoverage >= 75 && this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
-        console.log(`🚫 HARD BLOCK: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        console.log(`🚫 888 PATTERN BLOCKED: ${worker.name} from ${shift} on day ${globalDay}`);
         return false;
     }
     
@@ -803,22 +751,15 @@ analyzeGapPatterns: function(schedule) {
         return false;
     }
     
-    // CRITICAL: Check for 888 pattern prevention in fill passes too!
+    // STRICT: Always prevent single-shift gaps (shift-gap-shift)
+    if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 FILL: Single gap blocked for ${worker.name} on ${shift} day ${globalDay}`);
+        return false;
+    }
+    
+    // ABSOLUTE: Never allow 888 patterns (shift-gap-shift-gap-shift)
     if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-        console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-        return false;
-    }
-    
-    // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
-    if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
-        console.log(`🚫 COMPREHENSIVE FILL: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
-        return false;
-    }
-    
-    // HARD CONSTRAINT: Block single-shift gaps in fill passes when coverage is high
-    const currentCoverage = this.calculateCurrentCoverage(schedule);
-    if (currentCoverage >= 75 && this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
-        console.log(`🚫 FILL HARD BLOCK: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        console.log(`🚫 FILL: 888 pattern blocked for ${worker.name} on day ${globalDay}`);
         return false;
     }
     
@@ -995,6 +936,18 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
     const totalWorkers = Object.keys(allWorkerStats).length;
     const isSmallTeam = totalWorkers <= 4;
     
+    // 🚨 ABSOLUTE PRIORITY: Prevent gap patterns
+    // Check for single-shift gaps (shift-gap-shift)
+    if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
+        score -= 2000; // Massive penalty - almost never select
+        console.log(`⚠️ Heavy penalty for ${worker.name} - would create single-shift gap`);
+    }
+    
+    // Check for 888 patterns (shift-gap-shift-gap-shift)
+    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
+        return -10000; // Absolute block
+    }
+    
     // Standard scoring logic (keep existing)
     if (shift === 'night') {
         score += 50;
@@ -1046,24 +999,10 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
     
     if (stats.lastAssignedDay === globalDay - 1) score -= 20;
     
-    // 🚨 NEW: SINGLE-SHIFT GAP PREVENTION
-    if (currentCoverage >= 80) {
-        // Massive penalty when coverage is high
-        if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-            score -= 800;
-            console.log(`🚨 BLOCKED single-shift gap for ${worker.name}`);
-        }
-        
-        // Extra penalty for workers who already have gaps
-        const existingGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
-        if (existingGaps > 0) {
-            score -= existingGaps * 200;
-        }
-    } else if (currentCoverage >= 60) {
-        // Moderate penalty when coverage is decent
-        if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-            score -= 300;
-        }
+    // Extra penalty for workers who already have gaps
+    const existingGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
+    if (existingGaps > 0) {
+        score -= existingGaps * 500; // Heavy penalty for workers with existing gaps
     }
     
     const randomFactor = isSmallTeam ? 75 : 50;
