@@ -64,7 +64,7 @@ const ScheduleGenerator = {
             
             ScheduleDisplay.displaySchedule(bestSchedule);
             
-            const gapInfo = bestSchedule.gapAnalysis ? ` (${bestSchedule.gapAnalysis.totalSingleGaps} gap patterns)` : '';
+            const gapInfo = bestSchedule.gapAnalysis ? ` (${bestSchedule.gapAnalysis.totalSingleShiftGaps} gap patterns)` : '';
             showAlert(`✅ Optimized schedule generated with ${bestSchedule.coverage.toFixed(1)}% coverage${gapInfo}!`, 'success');
             
             console.log('✅ Enhanced schedule generation completed successfully');
@@ -152,107 +152,112 @@ countWorkerSingleShiftGaps: function(workerName, schedule) {
 },
     
     generateBestOptimizedSchedule: function(submissions, variations) {
-        console.log('🎯 SEARCHING FOR BEST OPTIMIZED SCHEDULE...');
+    console.log('🎯 SEARCHING FOR BEST OPTIMIZED SCHEDULE...');
+    
+    let bestSchedule = null;
+    let bestCoverage = 0;
+    let bestGapScore = Infinity; // Lower is better for gap patterns
+    const maxAttempts = 20; // Increased attempts for optimization
+    let attempt = 1;
+    let perfectSchedules = []; // Store all 100% coverage schedules for comparison
+
+    while (attempt <= maxAttempts) {
+        console.log(`🔄 Optimization Attempt ${attempt}/${maxAttempts}...`);
         
-        let bestSchedule = null;
-        let bestCoverage = 0;
-        let bestGapScore = Infinity; // Lower is better for gap patterns
-        const maxAttempts = 20; // Increased attempts for optimization
-        let attempt = 1;
-        let perfectSchedules = []; // Store all 100% coverage schedules for comparison
-
-        while (attempt <= maxAttempts) {
-            console.log(`🔄 Optimization Attempt ${attempt}/${maxAttempts}...`);
+        try {
+            // Generate a fresh schedule for each attempt
+            const schedule = this.generateOptimizedSchedule(submissions);
             
-            try {
-                // Generate a fresh schedule for each attempt
-                const schedule = this.generateOptimizedSchedule(submissions);
-                
-                if (!schedule) {
-                    console.log(`❌ Attempt ${attempt} returned null schedule`);
-                    attempt++;
-                    continue;
-                }
-                
-                console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
-                
-                // If we found 100% coverage, analyze gap patterns
-                if (schedule.coverage >= 100) {
-                    const gapAnalysis = this.analyzeGapPatterns(schedule);
-                    schedule.gapAnalysis = gapAnalysis;
-                    
-                    console.log(`🎯 PERFECT COVERAGE! Gap score: ${gapAnalysis.totalSingleGaps} single gaps, ${gapAnalysis.totalGapDays} gap days`);
-                    
-                    perfectSchedules.push({
-                        schedule: schedule,
-                        gapScore: gapAnalysis.totalSingleGaps,
-                        attempt: attempt
-                    });
-                    
-                    // If this is the first perfect schedule or has fewer gaps, it's our best so far
-                    if (gapAnalysis.totalSingleGaps < bestGapScore) {
-                        bestGapScore = gapAnalysis.totalSingleGaps;
-                        bestSchedule = schedule;
-                        console.log(`⭐ New best gap optimization: ${gapAnalysis.totalSingleGaps} single gaps`);
-                    }
-                    
-                    // If we found a schedule with 0 single gaps, use it immediately
-                    if (gapAnalysis.totalSingleGaps === 0) {
-                        console.log(`🏆 PERFECT! Found schedule with 0 single gaps on attempt ${attempt}`);
-                        break;
-                    }
-                } else {
-                    // For non-perfect coverage, use the old logic
-                    if (schedule.coverage > bestCoverage) {
-                        bestCoverage = schedule.coverage;
-                        bestSchedule = schedule;
-                        console.log(`⭐ New best coverage: ${bestCoverage.toFixed(1)}%`);
-                    }
-                }
-                
-            } catch (error) {
-                console.log(`❌ Attempt ${attempt} failed:`, error);
+            if (!schedule) {
+                console.log(`❌ Attempt ${attempt} returned null schedule`);
+                attempt++;
+                continue;
             }
             
-            attempt++;
-        }
-
-        // Final selection logic
-        if (perfectSchedules.length > 0) {
-            // We have perfect coverage schedules, pick the one with fewest gaps
-            const bestPerfect = perfectSchedules.reduce((best, current) => 
-                current.gapScore < best.gapScore ? current : best
-            );
+            console.log(`📊 Attempt ${attempt}: ${schedule.coverage.toFixed(1)}% coverage`);
             
-            bestSchedule = bestPerfect.schedule;
-            bestSchedule.optimizationResult = {
-                totalAttempts: maxAttempts,
-                perfectSchedules: perfectSchedules.length,
-                selectedAttempt: bestPerfect.attempt,
-                finalGapScore: bestPerfect.gapScore
-            };
-            
-            console.log(`🏆 FINAL SELECTION: Attempt ${bestPerfect.attempt} with ${bestPerfect.gapScore} single gaps`);
-            console.log(`📊 Had ${perfectSchedules.length} perfect coverage options to choose from`);
-        }
-
-        // Add metadata to the best schedule found
-        if (bestSchedule) {
-            bestSchedule.variations = variations;
-            bestSchedule.attemptNumber = bestSchedule.optimizationResult ? 
-                `Optimized (${bestSchedule.optimizationResult.selectedAttempt}/${maxAttempts})` : 
-                `Best of ${maxAttempts}`;
-            bestSchedule.totalAttempts = maxAttempts;
-            
-            if (bestSchedule.coverage >= 100) {
-                console.log(`🎯 OPTIMIZATION COMPLETE: ${bestSchedule.coverage.toFixed(1)}% coverage with ${bestSchedule.gapAnalysis?.totalSingleGaps || 'unknown'} single gaps`);
+            // If we found 100% coverage, analyze gap patterns
+            if (schedule.coverage >= 100) {
+                const gapAnalysis = this.analyzeGapPatterns(schedule);
+                schedule.gapAnalysis = gapAnalysis;
+                
+                console.log(`🎯 PERFECT COVERAGE! Gap score: ${gapAnalysis.totalSingleShiftGaps} single gaps, ${gapAnalysis.totalGapDays} gap days`);
+                
+                perfectSchedules.push({
+                    schedule: schedule,
+                    gapScore: gapAnalysis.totalSingleShiftGaps,
+                    attempt: attempt
+                });
+                
+                // If this is the first perfect schedule or has fewer gaps, it's our best so far
+                if (gapAnalysis.totalSingleShiftGaps < bestGapScore) {
+                    bestGapScore = gapAnalysis.totalSingleShiftGaps;
+                    bestSchedule = schedule;
+                    console.log(`⭐ New best gap optimization: ${gapAnalysis.totalSingleShiftGaps} single gaps`);
+                }
+                
+                // If we found a schedule with 0 single gaps, use it immediately
+                if (gapAnalysis.totalSingleShiftGaps === 0) {
+                    console.log(`🏆 PERFECT! Found schedule with 0 single gaps on attempt ${attempt}`);
+                    break;
+                }
             } else {
-                console.log(`🏆 BEST RESULT: ${bestSchedule.coverage.toFixed(1)}% coverage (unable to achieve 100%)`);
+                // For non-perfect coverage, use the old logic
+                if (schedule.coverage > bestCoverage) {
+                    bestCoverage = schedule.coverage;
+                    bestSchedule = schedule;
+                    console.log(`⭐ New best coverage: ${bestCoverage.toFixed(1)}%`);
+                }
             }
+            
+        } catch (error) {
+            console.log(`❌ Attempt ${attempt} failed:`, error);
         }
+        
+        attempt++;
+    }
 
-        return bestSchedule;
-    },
+    // Final selection logic
+    if (perfectSchedules.length > 0) {
+        // We have perfect coverage schedules, pick the one with fewest gaps
+        const bestPerfect = perfectSchedules.reduce((best, current) => 
+            current.gapScore < best.gapScore ? current : best
+        );
+        
+        bestSchedule = bestPerfect.schedule;
+        bestSchedule.optimizationResult = {
+            totalAttempts: maxAttempts,
+            perfectSchedules: perfectSchedules.length,
+            selectedAttempt: bestPerfect.attempt,
+            finalGapScore: bestPerfect.gapScore
+        };
+        
+        console.log(`🏆 FINAL SELECTION: Attempt ${bestPerfect.attempt} with ${bestPerfect.gapScore} single gaps`);
+        console.log(`📊 Had ${perfectSchedules.length} perfect coverage options to choose from`);
+    }
+
+    // Add metadata to the best schedule found
+    if (bestSchedule) {
+        // Always analyze gap patterns for the final schedule
+        if (!bestSchedule.gapAnalysis) {
+            bestSchedule.gapAnalysis = this.analyzeGapPatterns(bestSchedule);
+        }
+        
+        bestSchedule.variations = variations;
+        bestSchedule.attemptNumber = bestSchedule.optimizationResult ? 
+            `Optimized (${bestSchedule.optimizationResult.selectedAttempt}/${maxAttempts})` : 
+            `Best of ${maxAttempts}`;
+        bestSchedule.totalAttempts = maxAttempts;
+        
+        if (bestSchedule.coverage >= 100) {
+            console.log(`🎯 OPTIMIZATION COMPLETE: ${bestSchedule.coverage.toFixed(1)}% coverage with ${bestSchedule.gapAnalysis?.totalSingleShiftGaps || 'unknown'} single-shift gaps`);
+        } else {
+            console.log(`🏆 BEST RESULT: ${bestSchedule.coverage.toFixed(1)}% coverage (unable to achieve 100%)`);
+        }
+    }
+
+    return bestSchedule;
+},
 
    // ENHANCED: Better analysis showing shift gaps
 analyzeGapPatterns: function(schedule) {
@@ -261,7 +266,9 @@ analyzeGapPatterns: function(schedule) {
     const analysis = {
         singleShiftGaps: [],
         totalSingleShiftGaps: 0,
-        workerShiftGapCounts: {}
+        totalSingleGaps: 0,  // Add alias for compatibility
+        workerShiftGapCounts: {},
+        totalGapDays: 0  // Add for compatibility
     };
     
     schedule.workers.forEach(worker => {
@@ -280,10 +287,20 @@ analyzeGapPatterns: function(schedule) {
                 const shift2Day = Math.floor(workerShifts[i + 1] / 3);
                 const shift2Type = this.getShiftTypeFromIndex(workerShifts[i + 1] % 3);
                 
+                analysis.singleShiftGaps.push({
+                    worker: worker,
+                    shift1: { day: shift1Day, type: shift1Type },
+                    shift2: { day: shift2Day, type: shift2Type }
+                });
+                
                 console.log(`⚠️ ${worker}: Day ${shift1Day} ${shift1Type} → 8hr break → Day ${shift2Day} ${shift2Type}`);
             }
         }
     });
+    
+    // Set alias for compatibility
+    analysis.totalSingleGaps = analysis.totalSingleShiftGaps;
+    analysis.totalGapDays = Math.floor(analysis.totalSingleShiftGaps / 3); // Rough estimate
     
     if (analysis.totalSingleShiftGaps === 0) {
         console.log('✅ EXCELLENT: No single-shift gaps found!');
@@ -714,103 +731,117 @@ analyzeGapPatterns: function(schedule) {
         return filledCount;
     },
 
-    isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
-        const currentWeek = Math.floor(globalDay / 7);
-        
-        // Check weekly limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
-        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
-            return false;
-        }
-        
-        // CRITICAL: Check for 888 pattern prevention
-        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-            console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-            return false;
-        }
-        
-        // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
-        if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
-            console.log(`🚫 COMPREHENSIVE MAIN: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
-            return false;
-        }
-        
-        // Check availability
-        if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
+   isWorkerAvailable: function(worker, shift, day, globalDay, week, workerStats, shiftTimes, schedule) {
+    const currentWeek = Math.floor(globalDay / 7);
+    
+    // Check weekly limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
+    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        return false;
+    }
+    
+    // CRITICAL: Check for 888 pattern prevention
+    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 MAIN PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+        return false;
+    }
+    
+    // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
+    if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
+        console.log(`🚫 COMPREHENSIVE MAIN: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
+        return false;
+    }
+    
+    // HARD CONSTRAINT: Block single-shift gaps when coverage is high
+    const currentCoverage = this.calculateCurrentCoverage(schedule);
+    if (currentCoverage >= 75 && this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 HARD BLOCK: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        return false;
+    }
+    
+    // Check availability
+    if (!worker.preferences[globalDay] || !worker.preferences[globalDay][shift]) return false;
 
-        // Check if already working this day (one shift per day rule)
-        const currentDayShifts = week.days[day].shifts;
-        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+    // Check if already working this day (one shift per day rule)
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-        // CRITICAL: Check 8-hour minimum break between consecutive shifts
-        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
-            return false;
-        }
+    // CRITICAL: Check 8-hour minimum break between consecutive shifts
+    if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+        return false;
+    }
 
-        // Night shift constraints
-        if (shift === 'night') {
-            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-            if (nightShiftsThisWeek >= 2) return false;
+    // Night shift constraints
+    if (shift === 'night') {
+        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+        if (nightShiftsThisWeek >= 2) return false;
 
-            // Avoid consecutive nights
-            if (globalDay > 0) {
-                const prevDay = globalDay - 1;
-                const prevWeekIndex = Math.floor(prevDay / 7);
-                const prevDayIndex = prevDay % 7;
-                const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
-                const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
+        // Avoid consecutive nights
+        if (globalDay > 0) {
+            const prevDay = globalDay - 1;
+            const prevWeekIndex = Math.floor(prevDay / 7);
+            const prevDayIndex = prevDay % 7;
+            const prevWeek = prevWeekIndex === 0 ? schedule.week1 : schedule.week2;
+            const prevShifts = prevWeek?.days?.[prevDayIndex]?.shifts;
 
-                if (prevShifts && prevShifts.night === worker.name) {
-                    return false;
-                }
+            if (prevShifts && prevShifts.night === worker.name) {
+                return false;
             }
         }
+    }
 
-        return true;
-    },
+    return true;
+},
 
     isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
-        const currentWeek = Math.floor(globalDay / 7);
-        const day = globalDay % 7;
-        
-        // Check weekly shift limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
-        const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
-        if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
-            return false;
-        }
-        
-        // CRITICAL: Check for 888 pattern prevention in fill passes too!
-        if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
-            console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
-            return false;
-        }
-        
-        // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
-        if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
-            console.log(`🚫 COMPREHENSIVE FILL: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
-            return false;
-        }
-        
-        // Check if worker wants this shift
-        if (!worker.preferences[globalDay]?.[shift]) return false;
+    const currentWeek = Math.floor(globalDay / 7);
+    const day = globalDay % 7;
+    
+    // Check weekly shift limit - ALWAYS maximum 6 shifts per week (legal/safety constraint)
+    const shiftsThisWeek = this.countWorkerShiftsInWeek(worker.name, currentWeek, schedule);
+    if (shiftsThisWeek >= MAX_SHIFTS_PER_WEEK) {
+        return false;
+    }
+    
+    // CRITICAL: Check for 888 pattern prevention in fill passes too!
+    if (this.wouldCreate888Pattern(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 FILL PASS: Blocked ${worker.name} from ${shift} on day ${globalDay} - would create 888 pattern`);
+        return false;
+    }
+    
+    // COMPREHENSIVE: Prevent ANY worker-gap-worker patterns that could lead to 888
+    if (this.wouldCreateAnyGapPattern(worker.name, globalDay, schedule)) {
+        console.log(`🚫 COMPREHENSIVE FILL: Blocked ${worker.name} - would create worker-gap-worker pattern on day ${globalDay}`);
+        return false;
+    }
+    
+    // HARD CONSTRAINT: Block single-shift gaps in fill passes when coverage is high
+    const currentCoverage = this.calculateCurrentCoverage(schedule);
+    if (currentCoverage >= 75 && this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
+        console.log(`🚫 FILL HARD BLOCK: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        return false;
+    }
+    
+    // Check if worker wants this shift
+    if (!worker.preferences[globalDay]?.[shift]) return false;
 
-        // Check if already working this day (one shift per day rule)
-        const currentDayShifts = week.days[day].shifts;
-        if (Object.values(currentDayShifts).includes(worker.name)) return false;
+    // Check if already working this day (one shift per day rule)
+    const currentDayShifts = week.days[day].shifts;
+    if (Object.values(currentDayShifts).includes(worker.name)) return false;
 
-        // CRITICAL: Check 8-hour minimum break between consecutive shifts
-        if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
-            return false;
-        }
+    // CRITICAL: Check 8-hour minimum break between consecutive shifts
+    if (!this.hasMinimumBreakTime(worker.name, globalDay, shift, schedule)) {
+        return false;
+    }
 
-        // Night shift specific checks
-        if (shift === 'night') {
-            const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
-            if (nightShiftsThisWeek >= 2) return false;
-        }
+    // Night shift specific checks
+    if (shift === 'night') {
+        const nightShiftsThisWeek = this.countNightShiftsInCurrentSchedule(worker.name, currentWeek, schedule);
+        if (nightShiftsThisWeek >= 2) return false;
+    }
 
-        return true;
-    },
+    return true;
+},
 
     countWorkerShiftsInWeek: function(workerName, weekNumber, schedule) {
         let week;
