@@ -99,99 +99,108 @@ const PeriodManagement = {
     },
 
     openNewPeriod: async function() {
-        const startDate = document.getElementById('newPeriodStart').value;
-        const endDate = document.getElementById('newPeriodEnd').value;
-        const label = document.getElementById('periodLabel').value;
-        
-        if (!startDate || !endDate || !label) {
-            showAlert('❌ Please fill in all SOC period details.', 'warning');
-            return;
+    const startDate = document.getElementById('newPeriodStart').value;
+    const endDate = document.getElementById('newPeriodEnd').value;
+    const label = document.getElementById('periodLabel').value;
+    
+    if (!startDate || !endDate || !label) {
+        showAlert('❌ Please fill in all SOC period details.', 'warning');
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff !== 13) {
+        showAlert('❌ SOC Period must be exactly 14 days (2 weeks).', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Open new SOC period: ${label}?\n\nThis will:\n• Archive current submissions\n• Clear existing schedules\n• Allow workers to submit new preferences\n\nContinue with SOC period activation?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    console.log('📅 Opening new SOC period:', label);
+    
+    // Get current config before creating new period
+    const currentConfig = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    
+    const newPeriod = {
+        startDate: startDate,
+        endDate: endDate,
+        label: label,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        createdBy: 'SOC Admin'
+    };
+    
+    let currentData = {
+        shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
+        approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
+        preferencesLocked: false,
+        lockTimestamp: '',
+        scheduleConfig: {
+            currentPeriod: newPeriod,
+            history: currentConfig.history || []
         }
-        
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
-        
-        if (daysDiff !== 13) {
-            showAlert('❌ SOC Period must be exactly 14 days (2 weeks).', 'warning');
-            return;
-        }
-        
-        const confirmMessage = `Open new SOC period: ${label}?\n\nThis will:\n• Archive current submissions\n• Clear existing schedules\n• Allow workers to submit new preferences\n\nContinue with SOC period activation?`;
-        
-        if (!confirm(confirmMessage)) {
-            return;
-        }
-        
-        console.log('📅 Opening new SOC period:', label);
-        
-        const newPeriod = {
-            startDate: startDate,
-            endDate: endDate,
-            label: label,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-            createdBy: 'SOC Admin'
+    };
+    
+    // Archive old submissions if requested
+    if (document.getElementById('archiveOldSubmissions').checked && currentData.shiftSubmissions.length > 0) {
+        const previousPeriod = currentConfig.currentPeriod;
+        const archiveEntry = {
+            archivedAt: new Date().toISOString(),
+            periodLabel: previousPeriod?.label || 'Previous Period',
+            submissions: [...currentData.shiftSubmissions],
+            archivedBy: 'SOC Admin',
+            // Preserve last shifts from the previous period if they exist
+            lastShifts: previousPeriod?.lastShifts || null
         };
+        currentData.scheduleConfig.history.unshift(archiveEntry);
         
-        let currentData = {
-            shiftSubmissions: JSON.parse(localStorage.getItem('shiftSubmissions') || '[]'),
-            approvedWorkers: JSON.parse(localStorage.getItem('approvedWorkers') || '[]'),
-            preferencesLocked: false,
-            lockTimestamp: '',
-            scheduleConfig: {
-                currentPeriod: newPeriod,
-                history: JSON.parse(localStorage.getItem('scheduleConfig') || '{}').history || []
-            }
-        };
-        
-        // Archive old submissions if requested
-        if (document.getElementById('archiveOldSubmissions').checked && currentData.shiftSubmissions.length > 0) {
-            const archiveEntry = {
-                archivedAt: new Date().toISOString(),
-                periodLabel: this.getCurrentPeriodConfig()?.label || 'Previous Period',
-                submissions: [...currentData.shiftSubmissions],
-                archivedBy: 'SOC Admin'
-            };
-            currentData.scheduleConfig.history.unshift(archiveEntry);
-            
-            // Keep only last 10 archived periods
-            if (currentData.scheduleConfig.history.length > 10) {
-                currentData.scheduleConfig.history = currentData.scheduleConfig.history.slice(0, 10);
-            }
-            
-            currentData.shiftSubmissions = [];
-            console.log('📦 SOC archived', archiveEntry.submissions.length, 'submissions from previous period');
+        // Keep only last 10 archived periods
+        if (currentData.scheduleConfig.history.length > 10) {
+            currentData.scheduleConfig.history = currentData.scheduleConfig.history.slice(0, 10);
         }
         
-        // Clear old schedules if requested
-        if (document.getElementById('clearOldSchedules').checked) {
-            document.getElementById('scheduleOutput').innerHTML = '';
-            console.log('🗑️ SOC cleared previous schedule displays');
+        currentData.shiftSubmissions = [];
+        console.log('📦 SOC archived', archiveEntry.submissions.length, 'submissions from previous period');
+        if (archiveEntry.lastShifts) {
+            console.log('💾 Preserved last shifts in archive:', archiveEntry.lastShifts);
         }
-        
-        // Save all data
-        localStorage.setItem('scheduleConfig', JSON.stringify(currentData.scheduleConfig));
-        localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
-        localStorage.setItem('preferencesLocked', 'false');
-        localStorage.setItem('lockTimestamp', '');
-        
-        // Update worker submissions in memory
-        workerSubmissions = currentData.shiftSubmissions;
-        
-        await saveData();
-        
-        this.updateCurrentPeriodDisplay();
-        updateDisplay();
-        
-        // Clear form
-        document.getElementById('newPeriodStart').value = '';
-        document.getElementById('newPeriodEnd').value = '';
-        document.getElementById('periodLabel').value = '';
-        
-        showAlert(`✅ New SOC period opened: ${label}. Workers can now submit their preferences!`, 'success');
-        console.log('✅ SOC period activated successfully:', label);
-    },
+    }
+    
+    // Clear old schedules if requested
+    if (document.getElementById('clearOldSchedules').checked) {
+        document.getElementById('scheduleOutput').innerHTML = '';
+        console.log('🗑️ SOC cleared previous schedule displays');
+    }
+    
+    // Save all data
+    localStorage.setItem('scheduleConfig', JSON.stringify(currentData.scheduleConfig));
+    localStorage.setItem('shiftSubmissions', JSON.stringify(currentData.shiftSubmissions));
+    localStorage.setItem('preferencesLocked', 'false');
+    localStorage.setItem('lockTimestamp', '');
+    
+    // Update worker submissions in memory
+    workerSubmissions = currentData.shiftSubmissions;
+    
+    await saveData();
+    
+    this.updateCurrentPeriodDisplay();
+    updateDisplay();
+    
+    // Clear form
+    document.getElementById('newPeriodStart').value = '';
+    document.getElementById('newPeriodEnd').value = '';
+    document.getElementById('periodLabel').value = '';
+    
+    showAlert(`✅ New SOC period opened: ${label}. Workers can now submit their preferences!`, 'success');
+    console.log('✅ SOC period activated successfully:', label);
+},
 
     closePeriod: function() {
     const currentPeriod = this.getCurrentPeriodConfig();
