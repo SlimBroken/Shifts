@@ -563,7 +563,7 @@ wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
         }
     },
 
-   performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
+  performSchedulingPass: function(schedule, workers, workerStats, shiftTimes, passNumber) {
     let coverage = 0;
     const totalShifts = 42;
 
@@ -937,15 +937,22 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
     const isSmallTeam = totalWorkers <= 4;
     
     // 🚨 ABSOLUTE PRIORITY: Prevent gap patterns
-    // Check for single-shift gaps (shift-gap-shift)
+    // Check for single-shift gaps (shift-gap-shift) with dynamic penalty based on coverage
     if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-        score -= 2000; // Massive penalty - almost never select
-        console.log(`⚠️ Heavy penalty for ${worker.name} - would create single-shift gap`);
+        if (currentCoverage < 75) {
+            // Low coverage: lighter penalty to allow more flexibility
+            score -= 500; // Moderate penalty
+            console.log(`⚠️ Moderate penalty for ${worker.name} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        } else {
+            // High coverage: heavy penalty to avoid gaps
+            score -= 2000; // Massive penalty - almost never select
+            console.log(`⚠️ Heavy penalty for ${worker.name} - would create single-shift gap (coverage: ${currentCoverage.toFixed(1)}%)`);
+        }
     }
     
     // Check for 888 patterns (shift-gap-shift-gap-shift)
     if (this.wouldCreate888Pattern(worker.name, globalDay, shift, window.currentScheduleBeingGenerated)) {
-        return -10000; // Absolute block
+        return -10000; // Absolute block regardless of coverage
     }
     
     // Standard scoring logic (keep existing)
@@ -999,10 +1006,11 @@ calculateWorkerScore: function(worker, shift, dayOfWeek, globalDay, stats, allWo
     
     if (stats.lastAssignedDay === globalDay - 1) score -= 20;
     
-    // Extra penalty for workers who already have gaps
+    // Extra penalty for workers who already have gaps (also dynamic based on coverage)
     const existingGaps = this.countWorkerSingleShiftGaps(worker.name, window.currentScheduleBeingGenerated);
     if (existingGaps > 0) {
-        score -= existingGaps * 500; // Heavy penalty for workers with existing gaps
+        const gapPenalty = currentCoverage < 75 ? 200 : 500;
+        score -= existingGaps * gapPenalty;
     }
     
     const randomFactor = isSmallTeam ? 75 : 50;
