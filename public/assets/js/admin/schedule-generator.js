@@ -695,6 +695,20 @@ wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
         return false;
     }
     
+    // NEW: Check if this is first 2 shifts of new period and worker had last shift in previous period
+    if (globalDay === 0) { // First day of new period
+        const lastPeriodShifts = this.getLastPeriodShifts();
+        if (lastPeriodShifts && lastPeriodShifts[worker.name]) {
+            const lastShift = lastPeriodShifts[worker.name];
+            
+            // Check if this would violate 8-hour break rule
+            if (!this.isValidShiftTransition(lastShift, shift)) {
+                console.log(`⏰ CROSS-PERIOD VIOLATION: ${worker.name} had ${lastShift} on last day of previous period, cannot do ${shift} on first day`);
+                return false;
+            }
+        }
+    }
+    
     // STRICT: Always prevent single-shift gaps (shift-gap-shift)
     if (this.wouldCreateSingleShiftGap(worker.name, globalDay, shift, schedule)) {
         console.log(`🚫 SINGLE GAP BLOCKED: ${worker.name} on ${shift} day ${globalDay} - would create single-shift gap`);
@@ -739,6 +753,23 @@ wouldCreate888Pattern: function(workerName, globalDay, shift, schedule) {
     }
 
     return true;
+},
+
+// Add this new helper function to schedule-generator.js
+getLastPeriodShifts: function() {
+    const config = JSON.parse(localStorage.getItem('scheduleConfig') || '{}');
+    
+    // Look through history for the most recent closed period with last shifts data
+    if (config.history && config.history.length > 0) {
+        for (const historicalPeriod of config.history) {
+            if (historicalPeriod.lastShifts) {
+                console.log('📋 Found last period shifts:', historicalPeriod.lastShifts);
+                return historicalPeriod.lastShifts;
+            }
+        }
+    }
+    
+    return null;
 },
 
     isWorkerAvailableForFill: function(worker, shift, globalDay, week, workerStats, schedule) {
